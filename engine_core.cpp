@@ -76,6 +76,12 @@ void EngineCore::Render() {
     ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();
 
+    // This is necessary because the window size does not update automatically when the window is maximized
+    if (window_was_maximized_) {
+        model_->Initialize();
+        window_was_maximized_ = false;
+    }
+
     if (show_demo_window_)
         ImGui::ShowDemoWindow(&show_demo_window_);
 
@@ -85,10 +91,11 @@ void EngineCore::Render() {
         if (ImGui::Button("Game of Life (Infinite Grid)")) {
             model_ = GameOfLifeInfinite::GetInstance(renderer_);
         } else if (ImGui::Button("Game of Life (Fixed Grid)")) {
-            SDL_GetWindowSize(window_, &width_, &height_);
             model_ = GameOfLifeFixed::GetInstance(renderer_);
-            model_->SetWidthHeight(width_, height_);
-            model_->Initialize();
+        } else if (ImGui::Button("Firemodel")) {
+            SDL_MaximizeWindow(window_);
+            window_was_maximized_ = true;
+            model_ = FireModel::GetInstance(renderer_);
         }
         ImGui::End();
     } else {

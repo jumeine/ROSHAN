@@ -6,7 +6,9 @@
 #define ROSHAN_FIREMODEL_H
 
 #include "../../model_interface.h"
-#include "firemodel_datastructure.h"
+#include "firemodel_gridmap.h"
+#include "firemodel_renderer.h"
+#include "wind.h"
 
 
 class FireModel : public IModel{
@@ -30,8 +32,15 @@ private:
 
     void RandomizeCells();
 
-    FireModelDataStructure* model_datastructure_;
+    GridMap* gridmap_;
+    FireModelRenderer* model_renderer_;
+    Wind* wind_;
     static FireModel* instance_;
+    int cell_size_ = 4;
+    double dt_ = 0.1;
+    double tau_mem_ = 10;
+    int width_;
+    int height_;
 
 };
 

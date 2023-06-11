@@ -65,7 +65,7 @@ void GameOfLifeInfinite::HandleEvents(SDL_Event event, ImGuiIO* io) {
 }
 
 void GameOfLifeInfinite::Render() {
-    model_renderer_->Render(width_, height_, state_, cell_size_);
+    model_renderer_->Render(state_, cell_size_);
 }
 
 void GameOfLifeInfinite::RandomizeCells() {

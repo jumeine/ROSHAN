@@ -17,7 +17,7 @@ public:
     static GameOfLifeFixedRenderer* GetInstance(SDL_Renderer* renderer) {
         return instance_ = (instance_ != nullptr) ? instance_ : new GameOfLifeFixedRenderer(renderer);
     }
-    void Render(int width, int height, std::vector<std::vector<bool>> state, int cell_size, int rows, int cols);
+    void Render(std::vector<std::vector<bool>> state, int cell_size, int rows, int cols);
     ImVec4 background_color_ = ImVec4(0.0f, 0.0f, 0.0f, 1.00f);
 
 private:
@@ -25,7 +25,10 @@ private:
     //~GameOfLifeInfiniteRenderer(){}
     static GameOfLifeFixedRenderer* instance_;
     void DrawCells(std::vector<std::vector<bool>> state, int cell_size, int rows, int cols);
-    void DrawGrid(int width, int height, int cell_size, int rows, int cols);
+    void DrawGrid(int cell_size, int rows, int cols);
+
+    int width_;
+    int height_;
 
     SDL_Renderer* renderer_;
 

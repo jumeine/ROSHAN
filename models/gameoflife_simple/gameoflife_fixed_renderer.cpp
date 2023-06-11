@@ -6,11 +6,12 @@
 
 GameOfLifeFixedRenderer* GameOfLifeFixedRenderer::instance_ = nullptr;
 
-void GameOfLifeFixedRenderer::Render(int width, int height, std::vector<std::vector<bool>> state, int cell_size, int rows, int cols) {
+void GameOfLifeFixedRenderer::Render(std::vector<std::vector<bool>> state, int cell_size, int rows, int cols) {
     SDL_SetRenderDrawColor(renderer_, (Uint8)(background_color_.x * 255), (Uint8)(background_color_.y * 255), (Uint8)(background_color_.z * 255), (Uint8)(background_color_.w * 255));
     SDL_RenderClear(renderer_);
+    SDL_GetRendererOutputSize(renderer_, &width_, &height_);
     DrawCells(state, cell_size, rows, cols);
-    DrawGrid(width, height, cell_size, rows, cols);
+    DrawGrid(cell_size, rows, cols);
 }
 
 GameOfLifeFixedRenderer::GameOfLifeFixedRenderer(SDL_Renderer *renderer) {
@@ -30,7 +31,7 @@ void GameOfLifeFixedRenderer::DrawCells(std::vector<std::vector<bool>> state, in
     }
 }
 
-void GameOfLifeFixedRenderer::DrawGrid(int width, int height, int cell_size, int rows, int cols) {
+void GameOfLifeFixedRenderer::DrawGrid(int cell_size, int rows, int cols) {
     SDL_SetRenderDrawColor(renderer_, 53, 53, 53, 255);  // color for the grid
 
     // Draw vertical grid lines

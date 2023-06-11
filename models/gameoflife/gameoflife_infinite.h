@@ -46,7 +46,7 @@ private:
     int cell_size_ = 10;
 
 
-    //std::vector<std::vector<bool>> state_;
+    //std::vector<std::vector<bool>> cellState;
     static GameOfLifeInfinite* instance_;
 
 };

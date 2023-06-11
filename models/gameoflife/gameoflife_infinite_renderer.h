@@ -21,7 +21,7 @@ public:
         return instance_ = (instance_ != nullptr) ? instance_ : new GameOfLifeInfiniteRenderer(renderer);
     }
 
-    void Render(int width, int height, CellState state, int cell_size);
+    void Render(CellState state, int cell_size);
     ImVec4 background_color_ = ImVec4(0.0f, 0.0f, 0.0f, 1.00f);
 
 private:
@@ -29,7 +29,9 @@ private:
     //~GameOfLifeInfiniteRenderer(){}
     static GameOfLifeInfiniteRenderer* instance_;
     void DrawCells(CellState state, int cell_size);
-    void DrawGrid(int width, int height, int cell_size);
+    void DrawGrid(int cell_size);
+    int width_;
+    int height_;
 
     SDL_Renderer* renderer_;
 

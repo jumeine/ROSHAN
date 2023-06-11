@@ -46,7 +46,7 @@ private:
     std::vector<std::vector<bool>> state_[2];
 
 
-    //std::vector<std::vector<bool>> state_;
+    //std::vector<std::vector<bool>> cellState;
     static GameOfLifeFixed* instance_;
 
 };

@@ -33,6 +33,7 @@
 
 # Folders
 cmake-build-debug
+.idea
 
 # Dependencies
 imgui

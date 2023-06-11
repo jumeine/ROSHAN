@@ -8,6 +8,8 @@ GameOfLifeFixed* GameOfLifeFixed::instance_ = nullptr;
 
 GameOfLifeFixed::GameOfLifeFixed(SDL_Renderer* renderer) {
     model_renderer_ = GameOfLifeFixedRenderer::GetInstance(renderer);
+    SDL_GetRendererOutputSize(renderer, &width_, &height_);
+    Initialize();
 }
 
 void GameOfLifeFixed::Initialize() {
@@ -79,7 +81,7 @@ void GameOfLifeFixed::HandleEvents(SDL_Event event, ImGuiIO* io) {
 }
 
 void GameOfLifeFixed::Render() {
-    model_renderer_->Render(width_, height_, state_[current_state_], cell_size_, rows_, cols_);
+    model_renderer_->Render(state_[current_state_], cell_size_, rows_, cols_);
 }
 
 void GameOfLifeFixed::RandomizeCells() {

@@ -5,24 +5,32 @@
 #ifndef ROSHAN_WIND_H
 #define ROSHAN_WIND_H
 
+#include <cmath>
+#include "model_parameters.h"
 
 class Wind {
 
 public:
 
-    Wind(double Uw_i, double A);
+    Wind(FireModelParameters &parameters);
 
-    void UpdateWind(double new_Uw_i, double new_A);
-    double GetWindSpeed() const {return Uw_i_;}
-    double GetA() const {return A_;}
-    double GetTurbulece() const {return u_prime_;}
-    const double min_Uw_i_ = 0.0;
-    const double max_Uw_i_ = 15.0;
-    const double min_A_ = 0.0;
-    const double max_A_ = 10.0;
+    double GetCurrentWindSpeed() const {return Uw_;}
+    double getWindSpeedComponent1() const { return Uw_i1_; }
+    double getWindSpeedComponent2() const { return Uw_i2_; }
+    double GetCurrentA() const {return A_;}
+    double GetCurrentTurbulece() const {return u_prime_;}
+    double GetCurrentAngle() const {return angle_;}
+
+    void UpdateWind();
 
 private:
-    double Uw_i_; // Wind speed in the ith direction
+    void CalculateComponents();
+    FireModelParameters &parameters_;
+    double Uw_;    // The 10-m wind speed
+    double angle_; // The angle of the wind direction
+    double Uw_i1_; // The component of the wind speed in the 1st direction
+    double Uw_i2_; // The component of the wind speed in the 2nd direction
+    // Atmospheric boundary layer parameters
     double A_; // Parameter related to turbulent velocity fluctuations
     double u_prime_; // Turbulent velocity fluctuations
 };

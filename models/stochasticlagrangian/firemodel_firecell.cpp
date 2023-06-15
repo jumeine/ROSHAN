@@ -4,70 +4,62 @@
 
 #include "firemodel_firecell.h"
 
-FireCell::FireCell(Wind* wind, double Lt, int x, int y) {
-    burningDuration_ = 100;
-    ignitionDelay_ = 2;
+FireCell::FireCell(int x, int y, FireModelParameters &parameters) : parameters_(parameters) {
+    burningDuration_ = parameters_.GetCellBurningDuration();
+    ignitionDelay_ = parameters_.GetCellIgnitionThreshold();
     tickingDuration_ = 0;
-    cell_state_ = 0; // 0 = unburned, 1 = burning, 2 = burned
-    wind_ = wind;
-    Lt_ = Lt;
+    cell_state_ = UNBURNED; // 0 = unburned, 1 = burning, 2 = burned
     x_ = x;
     y_ = y;
 
+    // TODO Auslagern der Zufallszahlen in eine eigene Klasse?
     // Initialize random number generator
     std::random_device rd;
     std::mt19937 gen(rd());
-
     std::uniform_real_distribution<> dis(0.1, 0.2);
     std::uniform_int_distribution<> sign_dis(-1, 1);
     ignitionDelay_ += sign_dis(gen) * ignitionDelay_ * dis(gen);
 }
 
-bool FireCell::GetIgnitionState() {
-    if(cell_state_ == 1) {
-        return true;
+CellState FireCell::GetIgnitionState() {
+    return cell_state_;
+}
+
+void FireCell::Ignite() {
+    if (cell_state_ != UNBURNED) {
+        throw std::runtime_error("FireCell::Ignite() called on a cell that is not unburned");
     }
-    return false;
+    cell_state_ = BURNING;
 }
 
-VirtualParticle FireCell::Ignite(double dt) {
-    cell_state_ = 1;
-    VirtualParticle particle = EmitVirtualParticle(dt);
+VirtualParticle FireCell::EmitVirtualParticle() {
+    VirtualParticle particle(x_, y_, parameters_.GetTauMemVirt(), parameters_.GetYStVirt(),
+                             parameters_.GetYLimVirt(), parameters_.GetFlVirt(), parameters_.GetC0Virt(),
+                             parameters_.GetLt());
 
     return particle;
 }
 
-VirtualParticle FireCell::EmitVirtualParticle(double dt) {
-    // Create a new particle
-    double u_prime = wind_->GetTurbulece();
-    double Uw_i = wind_->GetWindSpeed();
-    VirtualParticle particle(x_, y_, tau_mem_);
-    particle.UpdateState(u_prime, Lt_, Uw_i, dt);
+RadiationParticle FireCell::EmitRadiationParticle() {
+    RadiationParticle radiation_particle(x_, y_, parameters_.GetLr(), parameters_.GetSf0(),
+                                         parameters_.GetYStRad(),parameters_.GetYLimRad());
 
-    return particle;
-}
-
-RadiationParticle FireCell::EmitRadiationParticle(double x1, double x2, double angle, double status, double decay_timescale, double dt) {
-    RadiationParticle radiation_particle(x1, x2, angle, status, decay_timescale);
-    radiation_particle.UpdateState(dt);
-
-    // Add the new radiation particle to the cell's collection
     return radiation_particle;
 }
 
-void FireCell::Tick(double dt) {
+void FireCell::Tick() {
     //throw an error if cellState ignited cells do not tick
-    if (cell_state_ == 1) {
-        throw std::runtime_error("FireCell::tick() called on ignited cell");
+    if (cell_state_ == BURNING || cell_state_ == BURNED) {
+        throw std::runtime_error("FireCell::Tick() called on a cell that is not unburned");
     }
 
-    tickingDuration_ += dt;
+    tickingDuration_ += parameters_.GetDt();
 }
 
-void FireCell::burn(double dt) {
-    burningDuration_ -= dt;
+void FireCell::burn() {
+    burningDuration_ -= parameters_.GetDt();
     if (burningDuration_ <= 0) {
-        cell_state_ = 2;
+        cell_state_ = BURNED;
     }
 }
 
@@ -80,9 +72,6 @@ bool FireCell::ShouldIgnite() {
 }
 
 void FireCell::Extinguish() {
-    cell_state_ = 2;
-}
-
-void FireCell::SetTauMem(double tau_mem) {
-    tau_mem_ = tau_mem;
+    // TODO useful?
+    cell_state_ = BURNED;
 }

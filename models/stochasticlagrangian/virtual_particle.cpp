@@ -4,22 +4,26 @@
 
 #include "virtual_particle.h"
 
-VirtualParticle::VirtualParticle(int x, int y, double tau_mem) {
+VirtualParticle::VirtualParticle(int x, int y, double tau_mem, double Y_st,
+                                 double Y_lim, double Fl, double C0, double Lt){
     for (int i = 0; i < 2; ++i) {
         U_[i] = 0.0;
     }
     X_[0] = x;
     X_[1] = y;
-    Y_st_ = 1.0;
-    tau_mem_ = tau_mem; // A few tens of seconds
-    Y_lim_ = 0.2;
-    Fl_ = 1.0;
-    C0_ = 2.0;
+    tau_mem_ = tau_mem;
+    Y_st_ = Y_st;
+    Y_lim_ = Y_lim;
+    Fl_ = Fl;
+    C0_ = C0;
+    Lt_ = Lt;
 }
 
-void VirtualParticle::UpdateState(double u_prime, double Lt, double Uw_i, double dt) {
+void VirtualParticle::UpdateState(Wind wind, double dt) {
     // Update Y_st
     Y_st_ -= Y_st_ / tau_mem_ * dt;
+    double u_prime = wind.GetCurrentTurbulece();
+    std::vector<double> Uw_i = {wind.getWindSpeedComponent1(), wind.getWindSpeedComponent2()};
 
     // Update X and U for each direction
     for (int i = 0; i < 2; ++i) {
@@ -27,7 +31,9 @@ void VirtualParticle::UpdateState(double u_prime, double Lt, double Uw_i, double
         double N_i = ((double) rand() / (RAND_MAX)) * 2.0 - 1.0; // this is a simplification
 
         // Update U
-        U_[i] += -(((2.0 + 3.0 * C0_) / 4.0) * (u_prime / Lt) * (U_[i] - Uw_i) * dt) + pow((C0_ * pow(u_prime, 3) / Lt * dt), 0.5) * N_i;
+        U_[i] += -(((2.0 + 3.0 * C0_) / 4.0) * (u_prime / Lt_) *
+                (U_[i] - Uw_i[i]) * dt) +
+                        pow((C0_ * pow(u_prime, 3) / Lt_ * dt), 0.5) * N_i;
 
         // Update X
         X_[i] += Fl_ * U_[i] * dt;

@@ -8,6 +8,7 @@
 #include "../../model_interface.h"
 #include "firemodel_gridmap.h"
 #include "firemodel_renderer.h"
+#include "model_parameters.h"
 #include "wind.h"
 
 
@@ -35,12 +36,14 @@ private:
     GridMap* gridmap_;
     FireModelRenderer* model_renderer_;
     Wind* wind_;
+    FireModelParameters parameters_;
     static FireModel* instance_;
     int cell_size_ = 4;
-    double dt_ = 0.1;
+    double dt_ = 1;
     double tau_mem_ = 10;
     int width_;
     int height_;
+    double running_time_;
 
 };
 

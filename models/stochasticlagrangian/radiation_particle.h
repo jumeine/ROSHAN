@@ -10,8 +10,10 @@
 class RadiationParticle {
 
 public:
-    RadiationParticle(double x1, double x2, double angle, double status, double decayTimescale);
+    RadiationParticle(double x, double y, double Lr, double Sf_0, double Y_st, double Y_lim);
     void UpdateState(double dt);
+    void GetPosition(double &x1, double &x2) const;
+    void RemoveParticle();
     bool IsCapableOfIgnition() const { return Y_st_ >= Y_lim_; }
 
 private:
@@ -21,7 +23,8 @@ private:
     double Y_st_;         // Burning status
     double Y_lim_;        // Ignition limit
     double tau_mem_;      // Decay timescale
-    double Lr_;           // Scaling factor for new position
+    double Lr_; //10;      // A const Scaling factor
+    double Sf_0_;    // A constant which represents the no-wind propagation speed
 
 };
 

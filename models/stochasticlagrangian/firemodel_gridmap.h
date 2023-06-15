@@ -10,28 +10,32 @@
 #include "../../point.h"
 #include "../../point_hash.h"
 #include "firemodel_firecell.h"
+#include "model_parameters.h"
 #include "wind.h"
 
 class GridMap {
 public:
-    GridMap(int rows, int cols, Wind* wind);
+    GridMap(int rows, int cols, Wind* wind, FireModelParameters &parameters);
     ~GridMap();
 
     int GetRows();
     int GetCols();
-    void IgniteCell(int i, int j, double dt);
-    void UpdateState(double Lt, double dt);
-    void UpdateParticles(double u_prime, double Lt, double Uw_i, double dt);
-    void UpdateCells(double dt);
-    void HandleInteractions(double dt);
+    void IgniteCell(int i, int j);
+    void UpdateVirtualParticles(std::unordered_set<Point>& visited_cells);
+    void UpdateRadiationParticles(std::unordered_set<Point>& visited_cells);
+    void UpdateParticles();
+    void UpdateCells();
     int GetNumParticles();
-    void SetTauMem(double tau_mem);
+    int GetNumCells() { return rows_ * cols_; }
+    std::vector<VirtualParticle> GetVirtualParticles() const { return virtual_particles_; }
+    std::vector<RadiationParticle> GetRadiationParticles() const { return radiation_particles_; }
 
     FireCell& At(int i, int j) {
         return *cells_[i][j];
     }
 
 private:
+    FireModelParameters &parameters_;
     Wind* wind_;
     int rows_;
     int cols_;

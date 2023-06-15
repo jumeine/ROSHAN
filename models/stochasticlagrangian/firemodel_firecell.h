@@ -8,7 +8,9 @@
 #include "../../point.h"
 #include "virtual_particle.h"
 #include "radiation_particle.h"
+#include "model_parameters.h"
 #include "wind.h"
+#include "utils.h"
 #include <vector>
 #include <random>
 #include <chrono>
@@ -16,30 +18,28 @@
 class FireCell {
 
 public:
-    FireCell(Wind* wind, double Lt, int x, int y);
+    FireCell(int x, int y, FireModelParameters &parameters);
 
-    bool GetIgnitionState();
-    int GetCellState() { return cell_state_; }
+    CellState GetIgnitionState();
+    CellState GetCellState() { return cell_state_; }
 
-    VirtualParticle Ignite(double dt);
-    VirtualParticle EmitVirtualParticle(double dt);
-    RadiationParticle EmitRadiationParticle(double x1, double x2, double angle, double status, double decayTimescale, double dt);
+    void Ignite();
+    VirtualParticle EmitVirtualParticle();
+    RadiationParticle EmitRadiationParticle();
 
-    void Tick(double dt);
-    void burn(double dt);
+    void Tick();
+    void burn();
     bool ShouldIgnite();
     void Extinguish();
-    void SetTauMem(double tau_mem);
 private:
+    FireModelParameters &parameters_;
+
     double burningDuration_;
     double tickingDuration_;
     double ignitionDelay_;
-    double Lt_;
-    double tau_mem_;
     int x_;
     int y_;
-    int cell_state_;
-    Wind* wind_;
+    CellState cell_state_;
 };
 
 

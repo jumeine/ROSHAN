@@ -47,6 +47,9 @@ bool EngineCore::Init(){
 
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();
+    ImGuiStyle& style = ImGui::GetStyle();
+    style.FrameBorderSize = 1.0f; // Set border size to 1.0f
+    style.FrameRounding = 6.0f; // Set rounding to 5.0f
     //ImGui::StyleColorsLight();
 
     // Setup Platform/Renderer backends
@@ -80,6 +83,7 @@ void EngineCore::Render() {
     if (window_was_maximized_) {
         model_->Initialize();
         window_was_maximized_ = false;
+        render_simulation_ = true;
     }
 
     if (show_demo_window_)
@@ -95,6 +99,7 @@ void EngineCore::Render() {
         } else if (ImGui::Button("Firemodel")) {
             SDL_MaximizeWindow(window_);
             window_was_maximized_ = true;
+            render_simulation_ = false;
             model_ = FireModel::GetInstance(renderer_);
         }
         ImGui::End();

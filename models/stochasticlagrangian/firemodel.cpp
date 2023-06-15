@@ -7,16 +7,14 @@
 FireModel* FireModel::instance_ = nullptr;
 
 FireModel::FireModel(SDL_Renderer *renderer) {
-    model_renderer_ = FireModelRenderer::GetInstance(renderer);
+    model_renderer_ = FireModelRenderer::GetInstance(renderer, parameters_);
     wind_ = new Wind(parameters_);
     Initialize();
 }
 
 void FireModel::Initialize() {
-    model_renderer_->getWidthHeight(width_, height_);
-    int rows = std::ceil(static_cast<float>(width_) / cell_size_);
-    int cols = std::ceil(static_cast<float>(height_) / cell_size_);
-    gridmap_ = new GridMap(rows, cols, wind_, parameters_);
+    model_renderer_->GetScreenResolution(width_, height_);
+    gridmap_ = new GridMap(wind_, parameters_);
     model_renderer_->SetGridMap(gridmap_);
     running_time_ = 0;
 }
@@ -38,7 +36,6 @@ void FireModel::Config() {
 //        //Reset();
     ImGui::Text("Window Options");
     ImGui::SliderInt("Cell Size", &cell_size_, 2, 100);
-    ImGui::ColorEdit3("Background Colour", (float*)&model_renderer_->background_color_); // Edit 3 floats representing a color
     ImGui::Text("Simulation Options");
     ImGui::SliderScalar("Simulation Speed (dt)", ImGuiDataType_Double, &parameters_.dt_, &parameters_.min_dt_, &parameters_.max_dt_, "%.8f", 1.0f);
     if (ImGui::Button("Init new Grid"))
@@ -86,17 +83,36 @@ void FireModel::Config() {
 }
 
 void FireModel::Render() {
-    model_renderer_->Render(gridmap_, cell_size_);
+    model_renderer_->Render(gridmap_);
 }
 
 void FireModel::HandleEvents(SDL_Event event, ImGuiIO *io) {
-    if (event.type == SDL_MOUSEBUTTONDOWN && !io->WantCaptureMouse) {
+    if (event.type == SDL_MOUSEBUTTONDOWN && !io->WantCaptureMouse && event.button.button == SDL_BUTTON_LEFT) {
         int x, y;
         SDL_GetMouseState(&x, &y);
-        int _x = x / cell_size_;
-        int _y = y / cell_size_;
-        if ( _x < gridmap_->GetRows() && _y < gridmap_->GetCols())
-            gridmap_->IgniteCell(_x, _y);
+        std::pair<int, int> gridPos = model_renderer_->ScreenToGridPosition(x, y);
+
+        if (gridPos.first >= 0 && gridPos.first < gridmap_->GetRows() && gridPos.second >= 0 && gridPos.second < gridmap_->GetCols()) {
+            if(gridmap_->GetCellState(gridPos.first, gridPos.second) == CellState::UNBURNED)
+                gridmap_->IgniteCell(gridPos.first, gridPos.second);
+            else if(gridmap_->GetCellState(gridPos.first, gridPos.second) == CellState::BURNING)
+                gridmap_->ExtinguishCell(gridPos.first, gridPos.second);
+        }
+
+    } else if (event.type == SDL_MOUSEWHEEL && !io->WantCaptureMouse) {
+        if (event.wheel.y > 0) // scroll up
+        {
+            model_renderer_->ApplyZoom(1.1);
+        }
+        else if (event.wheel.y < 0) // scroll down
+        {
+            model_renderer_->ApplyZoom(0.9);
+        }
+    } else if (event.type == SDL_MOUSEMOTION && !io->WantCaptureMouse) {
+        if (event.button.button == SDL_BUTTON_MIDDLE) // Middle mouse button is pressed
+        {
+            model_renderer_->ChangeCameraPosition(-event.motion.xrel, -event.motion.yrel);
+        }
     }
 }
 

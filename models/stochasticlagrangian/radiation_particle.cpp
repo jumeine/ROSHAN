@@ -12,16 +12,15 @@ RadiationParticle::RadiationParticle(double x, double y, double Lr, double Sf_0,
     phi_r_ = angle;
     Lr_ = Lr;
     Sf_0_ = Sf_0;
-    tau_mem_ = Lr_ / Sf_0_; // A few tens of seconds
-    //TODO these values are hardcoded, change that
+    tau_mem_ = Lr_ / Sf_0_; // A few tens of seconds (s)
     Y_st_ = Y_st;
     Y_lim_ = Y_lim;
 }
 
 void RadiationParticle::UpdateState(double dt) {
     // Update position
-    X_[0] += (Lr_ * cos(phi_r_)) * dt;
-    X_[1] += (Lr_ * sin(phi_r_)) * dt;
+    X_[0] += (Sf_0_ * cos(phi_r_)) * dt;
+    X_[1] += (Sf_0_ * sin(phi_r_)) * dt;
 
     // Update burning status
     Y_st_ -= Y_st_ / tau_mem_ * dt;

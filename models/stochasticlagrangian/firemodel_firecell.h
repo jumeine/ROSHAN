@@ -36,9 +36,9 @@ private:
 
     double burningDuration_;
     double tickingDuration_;
-    double ignitionDelay_;
-    int x_;
-    int y_;
+    double tau_ign;
+    int x_; // Start of the x coordinate in meters (m)
+    int y_; // Start of the y coordinate in meters (m)
     CellState cell_state_;
 };
 

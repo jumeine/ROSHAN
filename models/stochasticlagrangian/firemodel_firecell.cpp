@@ -6,11 +6,11 @@
 
 FireCell::FireCell(int x, int y, FireModelParameters &parameters) : parameters_(parameters) {
     burningDuration_ = parameters_.GetCellBurningDuration();
-    ignitionDelay_ = parameters_.GetCellIgnitionThreshold();
+    tau_ign = parameters_.GetIgnitionDelayTime();
     tickingDuration_ = 0;
     cell_state_ = UNBURNED; // 0 = unburned, 1 = burning, 2 = burned
-    x_ = x;
-    y_ = y;
+    x_ = x * parameters_.GetCellSize();
+    y_ = y * parameters_.GetCellSize();
 
     // TODO Auslagern der Zufallszahlen in eine eigene Klasse?
     // Initialize random number generator
@@ -18,7 +18,7 @@ FireCell::FireCell(int x, int y, FireModelParameters &parameters) : parameters_(
     std::mt19937 gen(rd());
     std::uniform_real_distribution<> dis(0.1, 0.2);
     std::uniform_int_distribution<> sign_dis(-1, 1);
-    ignitionDelay_ += sign_dis(gen) * ignitionDelay_ * dis(gen);
+    tau_ign += sign_dis(gen) * tau_ign * dis(gen);
 }
 
 CellState FireCell::GetIgnitionState() {
@@ -33,7 +33,7 @@ void FireCell::Ignite() {
 }
 
 VirtualParticle FireCell::EmitVirtualParticle() {
-    VirtualParticle particle(x_, y_, parameters_.GetTauMemVirt(), parameters_.GetYStVirt(),
+    VirtualParticle particle(x_ + (parameters_.GetCellSize() * 0.5), y_ + (parameters_.GetCellSize() * 0.5), parameters_.GetTauMemVirt(), parameters_.GetYStVirt(),
                              parameters_.GetYLimVirt(), parameters_.GetFlVirt(), parameters_.GetC0Virt(),
                              parameters_.GetLt());
 
@@ -41,7 +41,7 @@ VirtualParticle FireCell::EmitVirtualParticle() {
 }
 
 RadiationParticle FireCell::EmitRadiationParticle() {
-    RadiationParticle radiation_particle(x_, y_, parameters_.GetLr(), parameters_.GetSf0(),
+    RadiationParticle radiation_particle(x_ + (parameters_.GetCellSize() * 0.5), y_ + (parameters_.GetCellSize() * 0.5), parameters_.GetLr(), parameters_.GetSf0(),
                                          parameters_.GetYStRad(),parameters_.GetYLimRad());
 
     return radiation_particle;
@@ -52,7 +52,6 @@ void FireCell::Tick() {
     if (cell_state_ == BURNING || cell_state_ == BURNED) {
         throw std::runtime_error("FireCell::Tick() called on a cell that is not unburned");
     }
-
     tickingDuration_ += parameters_.GetDt();
 }
 
@@ -64,7 +63,7 @@ void FireCell::burn() {
 }
 
 bool FireCell::ShouldIgnite() {
-    if (tickingDuration_ >= ignitionDelay_) {
+    if (tickingDuration_ >= tau_ign) {
         tickingDuration_ = 0;
         return true;
     }
@@ -72,6 +71,5 @@ bool FireCell::ShouldIgnite() {
 }
 
 void FireCell::Extinguish() {
-    // TODO useful?
     cell_state_ = BURNED;
 }

@@ -73,3 +73,10 @@ bool FireCell::ShouldIgnite() {
 void FireCell::Extinguish() {
     cell_state_ = BURNED;
 }
+
+void FireCell::ShowInfo() {
+    ImGui::Text("Cell state: %d", cell_state_);
+    ImGui::Text("Burning duration: %f", burningDuration_);
+    ImGui::Text("Ticking duration: %f", tickingDuration_);
+    ImGui::Text("Tau ign: %f", tau_ign);
+}

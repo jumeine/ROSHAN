@@ -5,6 +5,7 @@
 #ifndef ROSHAN_MODEL_PARAMETERS_H
 #define ROSHAN_MODEL_PARAMETERS_H
 
+#include <math.h>
 
 class FireModelParameters {
 
@@ -91,6 +92,8 @@ public:
     double max_burning_duration_ = 200.0;
     double min_ignition_threshold_ = 1.0;
     double max_ignition_threshold_ = 60.0;
+    double min_cell_size_ = 1.0;
+    double max_cell_size_ = 100.0;
 
 
     // Parameters for the wind
@@ -107,8 +110,11 @@ public:
     const double max_A_ = 0.4;
 
     void ConvertRealToGridCoordinates(double x, double y, int &i, int &j) {
-        i = int(x / GetCellSize());
-        j = int(y / GetCellSize());
+        // round x and y to get the cell coordinates
+        i = int(trunc(x / GetCellSize()));
+        j = int(trunc(y / GetCellSize()));
+//        i = int(round(round(x) / GetCellSize()));
+//        j = int(round(round(y) / GetCellSize()));
     }
 
     void ConvertRealToRenderCoordinates(double x, double y, double &i, double &j) {

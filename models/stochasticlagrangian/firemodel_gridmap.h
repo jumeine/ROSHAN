@@ -28,6 +28,7 @@ public:
     void UpdateParticles();
     void UpdateCells();
     int GetNumParticles();
+    void ShowCellInfo(int x, int y);
     int GetNumCells() { return rows_ * cols_; }
     std::vector<VirtualParticle> GetVirtualParticles() const { return virtual_particles_; }
     std::vector<RadiationParticle> GetRadiationParticles() const { return radiation_particles_; }

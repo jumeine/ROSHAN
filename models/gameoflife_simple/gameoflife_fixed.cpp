@@ -102,3 +102,7 @@ void GameOfLifeFixed::SetWidthHeight(int width, int height) {
     width_ = width;
     height_ = height;
 }
+
+void GameOfLifeFixed::ShowPopups() {
+
+}

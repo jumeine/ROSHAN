@@ -129,6 +129,7 @@ void EngineCore::Render() {
             model_->Config();
             ImGui::TreePop();
         }
+        model_->ShowPopups();
         ImGui::End();
     }
 

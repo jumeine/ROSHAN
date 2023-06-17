@@ -19,6 +19,7 @@ public:
     void UpdateState(Wind wind, double dt);
     void RemoveParticle();
     void GetPosition(double& x1, double& x2) const;
+    double GetIntensity() const { return Y_st_; }
     bool IsCapableOfIgnition() const;
 
 private:

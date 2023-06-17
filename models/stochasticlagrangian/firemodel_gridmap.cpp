@@ -143,7 +143,7 @@ void GridMap::UpdateCells() {
         int x = it->x_;
         int y = it->y_;
         cells_[x][y]->burn();
-        if (!cells_[x][y]->GetIgnitionState()) {
+        if (cells_[x][y]->GetIgnitionState() == CellState::BURNED) {
             // The cell has burned out, so it is no longer burning
             it = burning_cells_.erase(it);
         } else {
@@ -163,4 +163,8 @@ void GridMap::ExtinguishCell(int x, int y) {
 
 CellState GridMap::GetCellState(int x, int y) {
     return cells_[x][y]->GetIgnitionState();
+}
+
+void GridMap::ShowCellInfo(int x, int y) {
+    cells_[x][y]->ShowInfo();
 }

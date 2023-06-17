@@ -5,6 +5,8 @@
 #ifndef ROSHAN_FIREMODEL_H
 #define ROSHAN_FIREMODEL_H
 
+#include <set>
+#include <map>
 #include "../../model_interface.h"
 #include "firemodel_gridmap.h"
 #include "firemodel_renderer.h"
@@ -26,6 +28,7 @@ public:
     void Render() override;
     void SetWidthHeight(int width, int height) override;
     void HandleEvents(SDL_Event event, ImGuiIO* io) override;
+    void ShowPopups() override;
 
 private:
     FireModel(SDL_Renderer* renderer);
@@ -33,17 +36,18 @@ private:
 
     void RandomizeCells();
 
+
     GridMap* gridmap_;
     FireModelRenderer* model_renderer_;
     Wind* wind_;
     FireModelParameters parameters_;
     static FireModel* instance_;
-    int cell_size_ = 4;
-    double dt_ = 1;
-    double tau_mem_ = 10;
-    int width_;
-    int height_;
     double running_time_;
+
+    //For the Popup of Cells
+    bool show_popup_ = false;
+    std::set<std::pair<int, int>> popups_;
+    std::map<std::pair<int, int>, bool> popup_has_been_opened_;
 
 };
 

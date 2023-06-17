@@ -113,16 +113,18 @@ void FireModelRenderer::DrawGrid() {
     }
 }
 
-void FireModelRenderer::DrawCircle(int x, int y, int radius) {
-    SDL_SetRenderDrawColor(renderer_, 255, 255, 0, 255); // yellow
-    for(int w = 0; w < radius * 2; w++)
-    {
-        for(int h = 0; h < radius * 2; h++)
-        {
+void FireModelRenderer::DrawCircle(int x, int y, int min_radius, double intensity) {
+    int max_radius = 3 * min_radius;
+    int radius = min_radius + static_cast<int>((max_radius - min_radius) * ((intensity - 0.2) / (1.0 - 0.2)));
+    unsigned char g = static_cast<int>(255 * ((intensity - 0.2) / (1.0 - 0.2)));
+    SDL_Color color = {255, g, 0, 255};
+
+    SDL_SetRenderDrawColor(renderer_, color.r, color.g, color.b, color.a);
+    for(int w = 0; w < radius * 2; w++) {
+        for(int h = 0; h < radius * 2; h++) {
             int dx = radius - w; // horizontal offset
             int dy = radius - h; // vertical offset
-            if((dx*dx + dy*dy) <= (radius * radius))
-            {
+            if((dx*dx + dy*dy) <= (radius * radius)) {
                 SDL_RenderDrawPoint(renderer_, x + dx, y + dy);
             }
         }
@@ -140,8 +142,6 @@ void FireModelRenderer::DrawParticles() {
 
     const std::vector<RadiationParticle> particles = gridmap_->GetRadiationParticles();
 
-    // Set color for radiation particles (let's say yellow)
-    SDL_SetRenderDrawColor(renderer_, 255, 255, 0, 255);
     if (!particles.empty()) {
         for (const auto& particle : particles) {
             double x, y;
@@ -152,14 +152,11 @@ void FireModelRenderer::DrawParticles() {
             int posx = static_cast<int>((i + GetCamX()) * static_cast<int>(cellsize) + offset_x);
             int posy = static_cast<int>((j + GetCamY()) * static_cast<int>(cellsize) + offset_y);
 
-            DrawCircle(posx, posy, static_cast<int>(cellsize / 4));  // Scaling with zoom
+            DrawCircle(posx, posy, static_cast<int>(cellsize / 3.5), particle.GetIntensity());  // Scaling with zoom
         }
     }
 
     const std::vector<VirtualParticle> virtual_particles = gridmap_->GetVirtualParticles();
-
-    // Set color for fire particles (let's say yellow too lol)
-    SDL_SetRenderDrawColor(renderer_, 250, 250, 0, 255);
 
     if (!virtual_particles.empty()) {
         for (const auto& particle : virtual_particles) {
@@ -170,56 +167,10 @@ void FireModelRenderer::DrawParticles() {
             // Converting the particle positions from grid to screen space
             int posx = static_cast<int>((i + GetCamX()) * static_cast<int>(cellsize) + offset_x);
             int posy = static_cast<int>((j + GetCamY()) * static_cast<int>(cellsize) + offset_y);
-            DrawCircle(posx, posy, static_cast<int>(cellsize / 4));  // Scaling with zoom
+            DrawCircle(posx, posy, static_cast<int>(cellsize / (zoom_ * 7)), particle.GetIntensity());  // Scaling with zoom
         }
     }
 }
-
-//void FireModelRenderer::DrawCircle(int x, int y, int radius) {
-//    SDL_SetRenderDrawColor(renderer_, 255, 255, 0, 255); // yellow
-//    for(int w = 0; w < radius * 2; w++)
-//    {
-//        for(int h = 0; h < radius * 2; h++)
-//        {
-//            int dx = radius - w; // horizontal offset
-//            int dy = radius - h; // vertical offset
-//            if((dx*dx + dy*dy) <= (radius * radius))
-//            {
-//                SDL_RenderDrawPoint(renderer_, x + dx, y + dy);
-//            }
-//        }
-//    }
-//}
-//
-//void FireModelRenderer::DrawParticles() {
-//    // Set color for particles (let's say yellow)
-//    SDL_SetRenderDrawColor(renderer_, 255, 255, 0, 255);
-//    double cellsize = GetCellSize();
-//    const std::vector<RadiationParticle> particles = gridmap_->GetRadiationParticles();
-//
-//    if (!particles.empty()) {
-//        for (const auto& particle : particles) {
-//            double x, y;
-//            particle.GetPosition(x, y);
-//            int posx = (static_cast<int>(x) * cellsize) + cellsize / 2;
-//            int posy = (static_cast<int>(y) * cellsize) + cellsize / 2;
-//            DrawCircle(posx, posy, 1);
-//        }
-//    }
-//
-//    const std::vector<VirtualParticle> fire_particles = gridmap_->GetVirtualParticles();
-//
-//    if (!fire_particles.empty()) {
-//        for (const auto& particle : fire_particles) {
-//            double x, y;
-//            particle.GetPosition(x, y);
-//            int posx = (static_cast<int>(x) * cellsize) + cellsize / 2;
-//            int posy = (static_cast<int>(y) * cellsize) + cellsize / 2;
-//            DrawCircle(posx, posy, 1);
-//        }
-//    }
-//
-//}
 
 std::pair<int, int> FireModelRenderer::ScreenToGridPosition(int x, int y) {
     GetScreenResolution(width_, height_);
@@ -230,8 +181,6 @@ std::pair<int, int> FireModelRenderer::ScreenToGridPosition(int x, int y) {
     // Calculate offsets
     int offset_x = (width_ - gridmap_->GetCols() * cellsize) / 2;
     int offset_y = (height_ - gridmap_->GetRows() * cellsize) / 2;
-//    offset_x = 0;
-//    offset_y = 0;
 
     // Convert screen coordinates to grid coordinates
     int _x = static_cast<int>(((x - offset_x) / static_cast<int>(cellsize)) - GetCamX());

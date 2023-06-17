@@ -57,7 +57,7 @@ private:
     bool show_demo_window_ = false;
     bool update_simulation_ = false;
     bool render_simulation_ = true;
-    int delay_ = 100;
+    int delay_ = 0;
 
     // For Init of the Window
     bool window_was_maximized_ = false;

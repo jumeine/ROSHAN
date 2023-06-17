@@ -9,6 +9,7 @@
 #include "virtual_particle.h"
 #include "radiation_particle.h"
 #include "model_parameters.h"
+#include "imgui.h"
 #include "wind.h"
 #include "utils.h"
 #include <vector>
@@ -31,6 +32,7 @@ public:
     void burn();
     bool ShouldIgnite();
     void Extinguish();
+    void ShowInfo();
 private:
     FireModelParameters &parameters_;
 

@@ -13,6 +13,7 @@ public:
     RadiationParticle(double x, double y, double Lr, double Sf_0, double Y_st, double Y_lim);
     void UpdateState(double dt);
     void GetPosition(double &x1, double &x2) const;
+    double GetIntensity() const { return Y_st_; }
     void RemoveParticle();
     bool IsCapableOfIgnition() const { return Y_st_ >= Y_lim_; }
 

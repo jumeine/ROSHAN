@@ -33,7 +33,7 @@ public:
     // Camera position
     double GetCamX() const { return static_cast<int>(std::round(camX_)); }
     double GetCamY() const { return static_cast<int>(std::round(camY_)); }
-    void ChangeCameraPosition(double x, double y) { camX_ -= x; camY_ -= y;}
+    void ChangeCameraPosition(double x, double y) { camX_ -= x * camera_speed_; camY_ -= y * camera_speed_;}
     // Zoom level
     void ApplyZoom(double z);
 private:
@@ -41,7 +41,7 @@ private:
 
     void DrawCells();
     void DrawGrid();
-    void DrawCircle(int x, int y, int radius);
+    void DrawCircle(int x, int y, int min_radius, double intensity);
     void DrawParticles();
 
     FireModelParameters& parameters_;
@@ -50,6 +50,7 @@ private:
     int width_;
     int height_;
     // Camera position
+    const double camera_speed_ = 0.3;
     double camX_ = 0.0;
     double camY_ = 0.0;
     // Zoom level

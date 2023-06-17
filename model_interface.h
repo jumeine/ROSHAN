@@ -20,6 +20,8 @@ public:
     virtual void Render() = 0;
     virtual void SetWidthHeight(int width, int height) = 0;
     virtual void HandleEvents(SDL_Event event, ImGuiIO* io) = 0;
+    virtual void ShowPopups() = 0;
+
 };
 
 

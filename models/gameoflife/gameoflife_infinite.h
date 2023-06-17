@@ -29,6 +29,7 @@ public:
     void Render() override;
     void SetWidthHeight(int width, int height) override;
     void HandleEvents(SDL_Event event, ImGuiIO* io) override;
+    void ShowPopups() override;
 
 private:
     GameOfLifeInfinite(SDL_Renderer* renderer);

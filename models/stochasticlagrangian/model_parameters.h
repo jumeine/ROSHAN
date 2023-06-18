@@ -28,7 +28,7 @@ public:
     double GetYStVirt() const {return virtualparticle_y_st_;}
     double virtualparticle_y_lim_ = 0.2;  // How long the Particle is able to cause ignition (no real world unit yet)
     double GetYLimVirt() const {return virtualparticle_y_lim_;}
-    double virtualparticle_fl_ = 0.15;  // Scaling factor for new position (need to calibrate)
+    double virtualparticle_fl_ = 0.1;  // Scaling factor for new position (need to calibrate)
     double GetFlVirt() const {return virtualparticle_fl_;}
     double virtualparticle_c0_ = 1.98; // A constant close to 2
     double GetC0Virt() const {return virtualparticle_c0_;}
@@ -56,7 +56,7 @@ public:
     double GetYStRad() const {return radiationparticle_y_st_;}
     double radiationparticle_y_lim_ = 0.2;
     double GetYLimRad() const {return radiationparticle_y_lim_;}
-    double radiationparticle_Lr_ = 10.0; // Height of emmission source (m)
+    double radiationparticle_Lr_ = 10.0; // Characteristic radiation length in meters (m)
     double GetLr() const {return radiationparticle_Lr_;}
     double radiationparticle_sf_0 = 0.06; // Zero Wind propagation m/s
     double GetSf0() const {return radiationparticle_sf_0;}
@@ -66,10 +66,10 @@ public:
 
     // Parameter for the Grid
     // Number of cells in the x direction (rows)
-    int grid_nx_ = 100;
+    int grid_nx_ = 400;
     int GetGridNx() const {return grid_nx_;}
     // Number of cells in the y direction (cols)
-    int grid_ny_ = 100;
+    int grid_ny_ = 400;
     int GetGridNy() const {return grid_ny_;}
 
 
@@ -99,13 +99,13 @@ public:
     // Parameters for the wind
     double wind_uw_ = 10.0; // The 10-m wind speed in m/s
     double GetWindSpeed() const {return wind_uw_;}
-    double wind_angle_ = 0.0; // The angle of the wind direction
+    double wind_angle_ = 0.0; // The angle of the wind direction (in rad)
     double GetAngle() const {return wind_angle_;}
     double wind_a_ = 0.3; // The component of the wind speed in the 1st direction
     double GetA() const {return wind_a_;}
     // Minimum and maximum values for the ImGui Sliders for the wind
     const double min_Uw_ = 0.0;
-    const double max_Uw_ = 15.0;
+    const double max_Uw_ = 35.0; // Hurricane
     const double min_A_ = 0.2;
     const double max_A_ = 0.4;
 

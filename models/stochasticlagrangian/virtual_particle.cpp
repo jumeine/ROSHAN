@@ -5,7 +5,7 @@
 #include "virtual_particle.h"
 
 VirtualParticle::VirtualParticle(int x, int y, double tau_mem, double Y_st,
-                                 double Y_lim, double Fl, double C0, double Lt){
+                                 double Y_lim, double Fl, double C0, double Lt, std::mt19937 gen){
     for (int i = 0; i < 2; ++i) {
         U_[i] = 0.0;
     }
@@ -17,6 +17,8 @@ VirtualParticle::VirtualParticle(int x, int y, double tau_mem, double Y_st,
     Fl_ = Fl;
     C0_ = C0;
     Lt_ = Lt;
+
+    gen_ = gen;
 }
 
 void VirtualParticle::UpdateState(Wind wind, double dt) {
@@ -28,7 +30,8 @@ void VirtualParticle::UpdateState(Wind wind, double dt) {
     // Update X and U for each direction
     for (int i = 0; i < 2; ++i) {
         // Generate a normally-distributed random number for N_i
-        double N_i = ((double) rand() / (RAND_MAX)) * 2.0 - 1.0; // this is a simplification
+        std::normal_distribution<> d(0,1);
+        double N_i = d(gen_);
 
         // Update U
         U_[i] += -(((2.0 + 3.0 * C0_) / 4.0) * (u_prime / Lt_) *

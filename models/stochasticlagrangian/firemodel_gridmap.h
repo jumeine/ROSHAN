@@ -12,6 +12,7 @@
 #include "firemodel_firecell.h"
 #include "model_parameters.h"
 #include "wind.h"
+#include <random>
 
 class GridMap {
 public:
@@ -46,6 +47,10 @@ private:
     std::vector<std::vector<FireCell*>> cells_;
     std::unordered_set<Point> ticking_cells_;
     std::unordered_set<Point> burning_cells_;
+
+    // Random decives and Generators for the Cells
+    std::random_device rd_;
+    std::mt19937 gen_;
 
     std::vector<VirtualParticle> virtual_particles_;
     std::vector<RadiationParticle> radiation_particles_;

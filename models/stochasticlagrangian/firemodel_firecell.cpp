@@ -4,7 +4,7 @@
 
 #include "firemodel_firecell.h"
 
-FireCell::FireCell(int x, int y, FireModelParameters &parameters) : parameters_(parameters) {
+FireCell::FireCell(int x, int y, std::mt19937 gen, FireModelParameters &parameters) : parameters_(parameters) {
     burningDuration_ = parameters_.GetCellBurningDuration();
     tau_ign = parameters_.GetIgnitionDelayTime();
     tickingDuration_ = 0;
@@ -14,11 +14,10 @@ FireCell::FireCell(int x, int y, FireModelParameters &parameters) : parameters_(
 
     // TODO Auslagern der Zufallszahlen in eine eigene Klasse?
     // Initialize random number generator
-    std::random_device rd;
-    std::mt19937 gen(rd());
+    gen_ = gen;
     std::uniform_real_distribution<> dis(0.1, 0.2);
     std::uniform_int_distribution<> sign_dis(-1, 1);
-    tau_ign += sign_dis(gen) * tau_ign * dis(gen);
+    tau_ign += sign_dis(gen_) * tau_ign * dis(gen_);
 }
 
 CellState FireCell::GetIgnitionState() {
@@ -35,14 +34,14 @@ void FireCell::Ignite() {
 VirtualParticle FireCell::EmitVirtualParticle() {
     VirtualParticle particle(x_ + (parameters_.GetCellSize() * 0.5), y_ + (parameters_.GetCellSize() * 0.5), parameters_.GetTauMemVirt(), parameters_.GetYStVirt(),
                              parameters_.GetYLimVirt(), parameters_.GetFlVirt(), parameters_.GetC0Virt(),
-                             parameters_.GetLt());
+                             parameters_.GetLt(), gen_);
 
     return particle;
 }
 
 RadiationParticle FireCell::EmitRadiationParticle() {
     RadiationParticle radiation_particle(x_ + (parameters_.GetCellSize() * 0.5), y_ + (parameters_.GetCellSize() * 0.5), parameters_.GetLr(), parameters_.GetSf0(),
-                                         parameters_.GetYStRad(),parameters_.GetYLimRad());
+                                         parameters_.GetYStRad(),parameters_.GetYLimRad(), gen_);
 
     return radiation_particle;
 }

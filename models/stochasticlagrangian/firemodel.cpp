@@ -97,7 +97,7 @@ void FireModel::Config() {
 
         ImGui::SeparatorText("Wind");
         double min_angle_degree = 0;
-        double max_angle_degree = 360;
+        double max_angle_degree = (2* M_PI);
         bool update_wind = false;
         ImGui::Text("Wind Speed");
         if(ImGui::SliderScalar("##Wind Speed", ImGuiDataType_Double, &parameters_.wind_uw_, &parameters_.min_Uw_, &parameters_.max_Uw_, "%.3f", 1.0f)) update_wind = true;

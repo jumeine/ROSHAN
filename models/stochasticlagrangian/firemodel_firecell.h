@@ -19,7 +19,7 @@
 class FireCell {
 
 public:
-    FireCell(int x, int y, FireModelParameters &parameters);
+    FireCell(int x, int y, std::mt19937 gen, FireModelParameters &parameters);
 
     CellState GetIgnitionState();
     CellState GetCellState() { return cell_state_; }
@@ -42,6 +42,10 @@ private:
     int x_; // Start of the x coordinate in meters (m)
     int y_; // Start of the y coordinate in meters (m)
     CellState cell_state_;
+
+    // Random Generator for the particles
+    std::mt19937 gen_;
+
 };
 
 

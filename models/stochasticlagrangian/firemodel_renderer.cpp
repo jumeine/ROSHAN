@@ -152,7 +152,7 @@ void FireModelRenderer::DrawParticles() {
             int posx = static_cast<int>((i + GetCamX()) * static_cast<int>(cellsize) + offset_x);
             int posy = static_cast<int>((j + GetCamY()) * static_cast<int>(cellsize) + offset_y);
 
-            DrawCircle(posx, posy, static_cast<int>(cellsize / 3.5), particle.GetIntensity());  // Scaling with zoom
+            DrawCircle(posx, posy, static_cast<int>(cellsize / 6), particle.GetIntensity());  // Scaling with zoom
         }
     }
 
@@ -167,7 +167,7 @@ void FireModelRenderer::DrawParticles() {
             // Converting the particle positions from grid to screen space
             int posx = static_cast<int>((i + GetCamX()) * static_cast<int>(cellsize) + offset_x);
             int posy = static_cast<int>((j + GetCamY()) * static_cast<int>(cellsize) + offset_y);
-            DrawCircle(posx, posy, static_cast<int>(cellsize / (zoom_ * 7)), particle.GetIntensity());  // Scaling with zoom
+            DrawCircle(posx, posy, static_cast<int>(cellsize / 6), particle.GetIntensity());  // Scaling with zoom
         }
     }
 }

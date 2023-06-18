@@ -9,10 +9,13 @@ GridMap::GridMap(Wind* wind, FireModelParameters &parameters) : parameters_(para
     cols_ = parameters_.GetGridNy(); //in cells
     wind_ = wind;
 
+    // Generate a normally-distributed random number for phi_r
+    gen_ = std::mt19937(rd_());
+
     cells_ = std::vector<std::vector<FireCell*>>(rows_, std::vector<FireCell*>(cols_, nullptr));
     for (int x = 0; x < rows_; ++x) {
         for (int y = 0; y < cols_; ++y) {
-            cells_[x][y] = new FireCell(x, y, parameters_);  // Note the use of 'new' here.
+            cells_[x][y] = new FireCell(x, y, gen_, parameters_);  // Note the use of 'new' here.
         }
     }
 }

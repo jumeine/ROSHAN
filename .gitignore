@@ -38,3 +38,10 @@ cmake-build-debug
 # Dependencies
 imgui
 nodejs
+
+# Server Junk
+openstreetmap/data.json
+openstreetmap/node_modules/
+openstreetmap/package-lock.json
+openstreetmap/server.log
+openstreetmap/server.pid

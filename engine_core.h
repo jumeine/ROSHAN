@@ -5,6 +5,10 @@
 #ifndef ROSHAN_ENGINE_CORE_H
 #define ROSHAN_ENGINE_CORE_H
 
+#include <cstdlib>
+#include <iostream>
+#include <fstream>
+#include <chrono>
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_sdlrenderer2.h"
@@ -16,6 +20,7 @@
 #include "models/gameoflife/gameoflife_infinite.h"
 #include "models/gameoflife_simple/gameoflife_fixed.h"
 #include "models/stochasticlagrangian/firemodel.h"
+#include "CORINE/dataset_handler.h"
 
 #if !SDL_VERSION_ATLEAST(2,0,17)
 #error This backend requires SDL 2.0.17+ because of SDL_RenderGeometry() function
@@ -63,6 +68,10 @@ private:
     bool window_was_maximized_ = false;
     int width_ = 1000;
     int height_ = 750;
+
+    // For the Node.js server
+    void StartServer();
+    void StopServer();
 
     static EngineCore* instance_;
 };

@@ -86,6 +86,10 @@ void FireModel::Config() {
         ImGui::SliderScalar("Lr", ImGuiDataType_Double, &parameters_.radiationparticle_Lr_, &parameters_.min_Lr_, &parameters_.max_Lr_, "%.3f", 1.0f);
 
         ImGui::SeparatorText("Cell (Terrain)");
+        if (ImGui::Button("Open Browser")) {
+            std::string url = "http://localhost:3000/map.html";
+            OpenBrowser(url);
+        }
         if (ImGui::Button("init new grid"))
             Initialize();
         ImGui::Text("Cell Size [init new grid afterwards]");
@@ -165,4 +169,21 @@ void FireModel::HandleEvents(SDL_Event event, ImGuiIO *io) {
 
 void FireModel::SetWidthHeight(int width, int height) {
     // Outdated
+}
+
+void FireModel::OpenBrowser(std::string url) {
+    std::string command;
+
+#if defined(_WIN32)
+    command = std::string("start ");
+#elif defined(__APPLE__)
+    command = std::string("open ");
+#elif defined(__linux__)
+    command = std::string("xdg-open ");
+#endif
+
+    // system call
+    if(system((command + url).c_str()) == -1) {
+        std::cerr << "Error opening URL: " << url << std::endl;
+    }
 }

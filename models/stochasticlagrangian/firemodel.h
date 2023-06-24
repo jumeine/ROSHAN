@@ -5,6 +5,8 @@
 #ifndef ROSHAN_FIREMODEL_H
 #define ROSHAN_FIREMODEL_H
 
+#include <cstdlib>
+#include <iostream>
 #include <set>
 #include <map>
 #include "../../model_interface.h"
@@ -43,6 +45,9 @@ private:
     FireModelParameters parameters_;
     static FireModel* instance_;
     double running_time_;
+
+    void OpenBrowser(std::string url);
+
 
     //For the Popup of Cells
     bool show_popup_ = false;

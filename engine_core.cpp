@@ -62,7 +62,7 @@ bool EngineCore::Init(){
         return false;
     }
 
-    //
+    StartServer();
     return is_running_ = true;
 }
 
@@ -100,6 +100,7 @@ void EngineCore::Render() {
             SDL_MaximizeWindow(window_);
             window_was_maximized_ = true;
             render_simulation_ = false;
+            DatasetHandler handler = DatasetHandler("/home/nex/Downloads/CLMS_CLCplus_RASTER_2018_010m_eu_03035_V1_1/Data/CLMS_CLCplus_RASTER_2018_010m_eu_03035_V1_1.tif");
             model_ = FireModel::GetInstance(renderer_);
         }
         ImGui::End();
@@ -168,6 +169,7 @@ void EngineCore::HandleEvents() {
 }
 
 void EngineCore::Clean() {
+    StopServer();
     // Cleanup
     ImGui_ImplSDLRenderer2_Shutdown();
     ImGui_ImplSDL2_Shutdown();
@@ -176,6 +178,35 @@ void EngineCore::Clean() {
     SDL_DestroyRenderer(renderer_);
     SDL_DestroyWindow(window_);
     SDL_Quit();
+}
+
+void EngineCore::StartServer() {
+    int result = std::system("cd ../openstreetmap && npm start");
+    if(result == -1){
+        std::cerr << "Failed to execute system command. Errno: " << errno << std::endl;
+    } else {
+        int exit_status = WEXITSTATUS(result);
+        std::cout << "System command executed with exit status: " << exit_status << std::endl;
+    }
+}
+
+void EngineCore::StopServer() {
+    std::ifstream pidFile("../openstreetmap/server.pid");
+    if (!pidFile) {
+        std::cerr << "Failed to find server.pid file. Can't close nodejs server\n" << std::endl;
+        return;
+    }
+
+    int pid;
+    pidFile >> pid;
+    if (!pidFile) {
+        std::cerr << "Failed to read pid from server.pid file. Can't close nodejs server\n" << std::endl;
+        return;
+    }
+
+    std::string kill_command = "kill " + std::to_string(pid);
+    std::cout << kill_command << std::endl;
+    std::system(kill_command.c_str());
 }
 
 

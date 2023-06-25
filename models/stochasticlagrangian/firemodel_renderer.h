@@ -22,7 +22,7 @@ public:
 
     void Initialize();
     void Update();
-    void Render(GridMap* gridmap);
+    void Render();
     void GetScreenResolution(int& width, int& height);
     void SetGridMap(GridMap* gridmap) { gridmap_ = gridmap; }
 
@@ -58,6 +58,8 @@ private:
     double show_grid_;
 
     static FireModelRenderer* instance_;
+
+    double current_cellsize_;
 };
 
 

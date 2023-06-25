@@ -4,11 +4,12 @@
 
 #include "firemodel_firecell.h"
 
-FireCell::FireCell(int x, int y, std::mt19937 gen, FireModelParameters &parameters) : parameters_(parameters) {
+FireCell::FireCell(int x, int y, std::mt19937 gen, FireModelParameters &parameters, int raster_value) : parameters_(parameters) {
     burningDuration_ = parameters_.GetCellBurningDuration();
     tau_ign = parameters_.GetIgnitionDelayTime();
     tickingDuration_ = 0;
-    cell_state_ = UNBURNED; // 0 = unburned, 1 = burning, 2 = burned
+    cell_initial_state_ = CellState(raster_value);
+    cell_state_ = CellState(raster_value);
     x_ = x * parameters_.GetCellSize();
     y_ = y * parameters_.GetCellSize();
 
@@ -25,10 +26,10 @@ CellState FireCell::GetIgnitionState() {
 }
 
 void FireCell::Ignite() {
-    if (cell_state_ != UNBURNED) {
+    if (cell_state_ == GENERIC_BURNING || cell_state_ == GENERIC_BURNED) {
         throw std::runtime_error("FireCell::Ignite() called on a cell that is not unburned");
     }
-    cell_state_ = BURNING;
+    cell_state_ = GENERIC_BURNING;
 }
 
 VirtualParticle FireCell::EmitVirtualParticle() {
@@ -48,7 +49,7 @@ RadiationParticle FireCell::EmitRadiationParticle() {
 
 void FireCell::Tick() {
     //throw an error if cellState ignited cells do not tick
-    if (cell_state_ == BURNING || cell_state_ == BURNED) {
+    if (cell_state_ == GENERIC_BURNING || cell_state_ == GENERIC_BURNED) {
         throw std::runtime_error("FireCell::Tick() called on a cell that is not unburned");
     }
     tickingDuration_ += parameters_.GetDt();
@@ -57,7 +58,7 @@ void FireCell::Tick() {
 void FireCell::burn() {
     burningDuration_ -= parameters_.GetDt();
     if (burningDuration_ <= 0) {
-        cell_state_ = BURNED;
+        cell_state_ = GENERIC_BURNED;
     }
 }
 
@@ -70,7 +71,7 @@ bool FireCell::ShouldIgnite() {
 }
 
 void FireCell::Extinguish() {
-    cell_state_ = BURNED;
+    cell_state_ = cell_initial_state_;
 }
 
 void FireCell::ShowInfo() {

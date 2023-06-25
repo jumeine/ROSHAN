@@ -65,7 +65,6 @@ private:
     int delay_ = 0;
 
     // For Init of the Window
-    bool window_was_maximized_ = false;
     int width_ = 1000;
     int height_ = 750;
 

@@ -14,6 +14,7 @@
 #include "firemodel_renderer.h"
 #include "model_parameters.h"
 #include "wind.h"
+#include "../CORINE/dataset_handler.h"
 
 
 class FireModel : public IModel{
@@ -33,8 +34,8 @@ public:
     void ShowPopups() override;
 
 private:
-    FireModel(SDL_Renderer* renderer);
-    ~FireModel(){}
+    explicit FireModel(SDL_Renderer* renderer);
+    ~FireModel() override {delete gridmap_; delete model_renderer_; delete wind_; delete dataset_handler_;}
 
     void RandomizeCells();
 
@@ -47,12 +48,16 @@ private:
     double running_time_;
 
     void OpenBrowser(std::string url);
-
+    DatasetHandler* dataset_handler_;
+    void ResetGridMap(std::vector<std::vector<int>>* rasterData = nullptr);
 
     //For the Popup of Cells
     bool show_popup_ = false;
     std::set<std::pair<int, int>> popups_;
     std::map<std::pair<int, int>, bool> popup_has_been_opened_;
+
+    //Flags
+    bool browser_selection_flag_ = true;  // If set to true, will load a new GridMap from a file.
 
 };
 

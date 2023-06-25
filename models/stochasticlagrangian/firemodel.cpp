@@ -8,15 +8,23 @@ FireModel* FireModel::instance_ = nullptr;
 
 FireModel::FireModel(SDL_Renderer *renderer) {
     model_renderer_ = FireModelRenderer::GetInstance(renderer, parameters_);
-    wind_ = new Wind(parameters_);
-    Initialize();
 }
 
 void FireModel::Initialize() {
+    wind_ = new Wind(parameters_);
+    dataset_handler_ = new DatasetHandler("/home/nex/Downloads/CLMS_CLCplus_RASTER_2018_010m_eu_03035_V1_1/Data/CLMS_CLCplus_RASTER_2018_010m_eu_03035_V1_1.tif");
     gridmap_ = new GridMap(wind_, parameters_);
     model_renderer_->SetGridMap(gridmap_);
     running_time_ = 0;
 }
+
+void FireModel::ResetGridMap(std::vector<std::vector<int>>* rasterData) {
+    delete gridmap_;
+    gridmap_ = new GridMap(wind_, parameters_, rasterData);
+    model_renderer_->SetGridMap(gridmap_);
+    running_time_ = 0;
+}
+
 
 void FireModel::Update() {
     running_time_ += parameters_.GetDt();
@@ -90,8 +98,10 @@ void FireModel::Config() {
             std::string url = "http://localhost:3000/map.html";
             OpenBrowser(url);
         }
-        if (ImGui::Button("init new grid"))
-            Initialize();
+        if (ImGui::Button("Reset GridMap"))
+            ResetGridMap();
+        if (ImGui::Button("Load GridMap from Browser Selection"))
+            browser_selection_flag_ = true;
         ImGui::Text("Cell Size [init new grid afterwards]");
         ImGui::SliderScalar("##Cell Size", ImGuiDataType_Double, &parameters_.cell_size_, &parameters_.min_cell_size_, &parameters_.max_cell_size_, "%.3f", 1.0f);
         ImGui::Text("Cell Ignition Threshold");
@@ -124,22 +134,22 @@ void FireModel::Config() {
 }
 
 void FireModel::Render() {
-    model_renderer_->Render(gridmap_);
+    model_renderer_->Render();
 }
 
 void FireModel::HandleEvents(SDL_Event event, ImGuiIO *io) {
+    // SDL Events
     if (event.type == SDL_MOUSEBUTTONDOWN && !io->WantCaptureMouse && event.button.button == SDL_BUTTON_LEFT) {
         int x, y;
         SDL_GetMouseState(&x, &y);
         std::pair<int, int> gridPos = model_renderer_->ScreenToGridPosition(x, y);
 
         if (gridPos.first >= 0 && gridPos.first < gridmap_->GetRows() && gridPos.second >= 0 && gridPos.second < gridmap_->GetCols()) {
-            if(gridmap_->GetCellState(gridPos.first, gridPos.second) == CellState::UNBURNED)
+            if(gridmap_->GetCellState(gridPos.first, gridPos.second) != CellState::GENERIC_BURNING || gridmap_->GetCellState(gridPos.first, gridPos.second) != CellState::GENERIC_BURNED)
                 gridmap_->IgniteCell(gridPos.first, gridPos.second);
-            else if(gridmap_->GetCellState(gridPos.first, gridPos.second) == CellState::BURNING)
+            else if(gridmap_->GetCellState(gridPos.first, gridPos.second) == CellState::GENERIC_BURNING)
                 gridmap_->ExtinguishCell(gridPos.first, gridPos.second);
         }
-
     } else if (event.type == SDL_MOUSEWHEEL && !io->WantCaptureMouse) {
         if (event.wheel.y > 0) // scroll up
         {
@@ -164,6 +174,14 @@ void FireModel::HandleEvents(SDL_Event event, ImGuiIO *io) {
             popups_.insert(cell_pos);
             popup_has_been_opened_.insert({cell_pos, false});
         }
+    }
+    // Browser Events
+    // TODO: Eventloop only gets executed when Application is in Focus. Fix this.
+    if (dataset_handler_->NewDataPointExists() && browser_selection_flag_) {
+        std::vector<std::vector<int>> rasterData;
+        dataset_handler_->LoadRasterDataFromFile(rasterData);
+        ResetGridMap(&rasterData);
+        browser_selection_flag_ = false;
     }
 }
 

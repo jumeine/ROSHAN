@@ -27,6 +27,7 @@ bool EngineCore::Init(){
         SDL_Log("Error creating SDL_Window: %s\n", SDL_GetError());
         return false;
     }
+    SDL_MaximizeWindow(window_);
     renderer_ = SDL_CreateRenderer(window_, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
     if (renderer_ == nullptr)
     {
@@ -62,7 +63,7 @@ bool EngineCore::Init(){
         return false;
     }
 
-    StartServer();
+    //StartServer();
     return is_running_ = true;
 }
 
@@ -79,13 +80,6 @@ void EngineCore::Render() {
     ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();
 
-    // This is necessary because the window size does not update automatically when the window is maximized
-    if (window_was_maximized_) {
-        model_->Initialize();
-        window_was_maximized_ = false;
-        render_simulation_ = true;
-    }
-
     if (show_demo_window_)
         ImGui::ShowDemoWindow(&show_demo_window_);
 
@@ -97,11 +91,8 @@ void EngineCore::Render() {
         } else if (ImGui::Button("Game of Life (Fixed Grid)")) {
             model_ = GameOfLifeFixed::GetInstance(renderer_);
         } else if (ImGui::Button("Firemodel")) {
-            SDL_MaximizeWindow(window_);
-            window_was_maximized_ = true;
-            render_simulation_ = false;
-            DatasetHandler handler = DatasetHandler("/home/nex/Downloads/CLMS_CLCplus_RASTER_2018_010m_eu_03035_V1_1/Data/CLMS_CLCplus_RASTER_2018_010m_eu_03035_V1_1.tif");
             model_ = FireModel::GetInstance(renderer_);
+            model_->Initialize();
         }
         ImGui::End();
     } else {
@@ -137,7 +128,7 @@ void EngineCore::Render() {
     // Rendering
     ImGui::Render();
     SDL_RenderSetScale(renderer_, io_->DisplayFramebufferScale.x, io_->DisplayFramebufferScale.y);
-    if (model_ != nullptr && render_simulation_) {
+    if (model_ != nullptr) {
         model_->Render();
     }
     else {
@@ -169,7 +160,7 @@ void EngineCore::HandleEvents() {
 }
 
 void EngineCore::Clean() {
-    StopServer();
+    //StopServer();
     // Cleanup
     ImGui_ImplSDLRenderer2_Shutdown();
     ImGui_ImplSDL2_Shutdown();

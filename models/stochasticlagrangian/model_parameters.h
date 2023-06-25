@@ -13,7 +13,7 @@ public:
     FireModelParameters() = default;
 
     //Render parameters
-    bool render_grid_ = true;
+    bool render_grid_ = false;
 
     // Simulation parameters
     double dt_ = 1; // in seconds (s)
@@ -66,10 +66,10 @@ public:
 
     // Parameter for the Grid
     // Number of cells in the x direction (rows)
-    int grid_nx_ = 400;
+    int grid_nx_ = 200;
     int GetGridNx() const {return grid_nx_;}
     // Number of cells in the y direction (cols)
-    int grid_ny_ = 400;
+    int grid_ny_ = 200;
     int GetGridNy() const {return grid_ny_;}
 
 

@@ -16,7 +16,7 @@
 
 class GridMap {
 public:
-    GridMap(Wind* wind, FireModelParameters &parameters);
+    GridMap(Wind* wind, FireModelParameters &parameters, std::vector<std::vector<int>>* rasterData = nullptr);
     ~GridMap();
 
     int GetRows();

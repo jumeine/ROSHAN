@@ -4,9 +4,15 @@
 
 #include "firemodel_gridmap.h"
 
-GridMap::GridMap(Wind* wind, FireModelParameters &parameters) : parameters_(parameters) {
-    rows_ = parameters_.GetGridNx(); //in cells
-    cols_ = parameters_.GetGridNy(); //in cells
+GridMap::GridMap(Wind* wind, FireModelParameters &parameters,
+                 std::vector<std::vector<int>>* rasterData) : parameters_(parameters) {
+    if (rasterData != nullptr) {
+        rows_ = rasterData->size();
+        cols_ = (rasterData->empty()) ? 0 : (*rasterData)[0].size();
+    } else {
+        rows_ = parameters_.GetGridNx(); //in cells
+        cols_ = parameters_.GetGridNy(); //in cells
+    }
     wind_ = wind;
 
     // Generate a normally-distributed random number for phi_r
@@ -15,7 +21,11 @@ GridMap::GridMap(Wind* wind, FireModelParameters &parameters) : parameters_(para
     cells_ = std::vector<std::vector<FireCell*>>(rows_, std::vector<FireCell*>(cols_, nullptr));
     for (int x = 0; x < rows_; ++x) {
         for (int y = 0; y < cols_; ++y) {
-            cells_[x][y] = new FireCell(x, y, gen_, parameters_);  // Note the use of 'new' here.
+            if (rasterData) {
+                cells_[x][y] = new FireCell(x, y, gen_, parameters_, (*rasterData)[x][y]);
+            } else {
+                cells_[x][y] = new FireCell(x, y, gen_, parameters_);
+            }
         }
     }
 }
@@ -47,7 +57,7 @@ void GridMap::UpdateVirtualParticles(std::unordered_set<Point>& visited_cells) {
         // Add particle to visited cells
         visited_cells.insert(p);
 
-        if (particle.IsCapableOfIgnition() && cells_[p.x_][p.y_]->GetIgnitionState() == UNBURNED) {
+        if (particle.IsCapableOfIgnition() && cells_[p.x_][p.y_]->GetIgnitionState() == GENERIC_UNBURNED) {
             ticking_cells_.insert(p);
         }
     }
@@ -77,7 +87,7 @@ void GridMap::UpdateRadiationParticles(std::unordered_set<Point> &visited_cells)
         Point p = Point(i, j);
         // Add particle to visited cells
         visited_cells.insert(p);
-        if (particle.IsCapableOfIgnition() && cells_[p.x_][p.y_]->GetIgnitionState() == UNBURNED) {
+        if (particle.IsCapableOfIgnition() && cells_[p.x_][p.y_]->GetIgnitionState() == GENERIC_UNBURNED) {
             ticking_cells_.insert(p);
         }
     }
@@ -146,7 +156,7 @@ void GridMap::UpdateCells() {
         int x = it->x_;
         int y = it->y_;
         cells_[x][y]->burn();
-        if (cells_[x][y]->GetIgnitionState() == CellState::BURNED) {
+        if (cells_[x][y]->GetIgnitionState() == CellState::GENERIC_BURNED) {
             // The cell has burned out, so it is no longer burning
             it = burning_cells_.erase(it);
         } else {

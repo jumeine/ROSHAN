@@ -13,7 +13,7 @@ public:
     FireModelParameters() = default;
 
     //Render parameters
-    bool render_grid_ = false;
+    bool render_grid_ = true;
 
     // Simulation parameters
     double dt_ = 1; // in seconds (s)
@@ -113,8 +113,6 @@ public:
         // round x and y to get the cell coordinates
         i = int(trunc(x / GetCellSize()));
         j = int(trunc(y / GetCellSize()));
-//        i = int(round(round(x) / GetCellSize()));
-//        j = int(round(round(y) / GetCellSize()));
     }
 
     void ConvertRealToRenderCoordinates(double x, double y, double &i, double &j) {

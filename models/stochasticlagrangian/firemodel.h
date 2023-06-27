@@ -11,7 +11,7 @@
 #include <map>
 #include "../../model_interface.h"
 #include "firemodel_gridmap.h"
-#include "firemodel_renderer.h"
+#include "rendering/firemodel_renderer.h"
 #include "model_parameters.h"
 #include "wind.h"
 #include "../CORINE/dataset_handler.h"
@@ -57,7 +57,7 @@ private:
     std::map<std::pair<int, int>, bool> popup_has_been_opened_;
 
     //Flags
-    bool browser_selection_flag_ = true;  // If set to true, will load a new GridMap from a file.
+    bool browser_selection_flag_ = false;  // If set to true, will load a new GridMap from a file.
 
 };
 

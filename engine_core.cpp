@@ -63,7 +63,7 @@ bool EngineCore::Init(){
         return false;
     }
 
-    //StartServer();
+    StartServer();
     return is_running_ = true;
 }
 
@@ -160,7 +160,7 @@ void EngineCore::HandleEvents() {
 }
 
 void EngineCore::Clean() {
-    //StopServer();
+    StopServer();
     // Cleanup
     ImGui_ImplSDLRenderer2_Shutdown();
     ImGui_ImplSDL2_Shutdown();

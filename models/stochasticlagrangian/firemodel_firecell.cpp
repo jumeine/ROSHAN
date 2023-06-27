@@ -10,6 +10,7 @@ FireCell::FireCell(int x, int y, std::mt19937 gen, FireModelParameters &paramete
     tickingDuration_ = 0;
     cell_initial_state_ = CellState(raster_value);
     cell_state_ = CellState(raster_value);
+    cell_ = GetCell();
     x_ = x * parameters_.GetCellSize();
     y_ = y * parameters_.GetCellSize();
 
@@ -23,6 +24,61 @@ FireCell::FireCell(int x, int y, std::mt19937 gen, FireModelParameters &paramete
 
 CellState FireCell::GetIgnitionState() {
     return cell_state_;
+}
+
+ICell *FireCell::GetCell() {
+    // Create switch statement for each cell state in CellState enum
+    ICell *cell_;
+    switch (cell_state_) {
+        case GENERIC_UNBURNED:
+            cell_ = new CellGenericUnburned();
+            break;
+        case GENERIC_BURNING:
+            cell_ = new CellGenericBurning();
+            break;
+        case GENERIC_BURNED:
+            cell_ = new CellGenericBurned();
+            break;
+        case LICHENS_AND_MOSSES:
+            cell_ = new CellLichensAndMosses();
+            break;
+        case LOW_GROWING_WOODY_PLANTS:
+            cell_ = new CellLowGrowingWoodyPlants();
+            break;
+        case NON_AND_SPARSLEY_VEGETATED:
+            cell_ = new CellNonAndSparsleyVegetated();
+            break;
+        case OUTSIDE_AREA:
+            cell_ = new CellOutsideArea();
+            break;
+        case PERIODICALLY_HERBACEOUS:
+            cell_ = new CellPeriodicallyHerbaceous();
+            break;
+        case PERMANENT_HERBACEOUS:
+            cell_ = new CellPermanentHerbaceous();
+            break;
+        case SEALED:
+            cell_ = new CellSealed();
+            break;
+        case SNOW_AND_ICE:
+            cell_ = new CellSnowAndIce();
+            break;
+        case WATER:
+            cell_ = new CellWater();
+            break;
+        case WOODY_BROADLEAVED_DECIDUOUS_TREES:
+            cell_ = new CellWoodyBroadleavedDeciduousTrees();
+            break;
+        case WOODY_BROADLEAVED_EVERGREEN_TREES:
+            cell_ = new CellWoodyBroadleavedEvergreenTrees();
+            break;
+        case WOODY_NEEDLE_LEAVED_TREES:
+            cell_ = new CellWoodyNeedleLeavedTrees();
+            break;
+        default:
+            throw std::runtime_error("FireCell::GetCell() called on a celltype that is not defined");
+    }
+    return cell_;
 }
 
 void FireCell::Ignite() {
@@ -79,4 +135,8 @@ void FireCell::ShowInfo() {
     ImGui::Text("Burning duration: %f", burningDuration_);
     ImGui::Text("Ticking duration: %f", tickingDuration_);
     ImGui::Text("Tau ign: %f", tau_ign);
+}
+
+void FireCell::Render(SDL_Renderer* renderer, SDL_Rect rectangle) {
+    cell_->Render(renderer, rectangle);
 }

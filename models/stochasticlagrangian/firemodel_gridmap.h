@@ -43,7 +43,6 @@ private:
     Wind* wind_;
     int rows_; // Number of rows in the grid
     int cols_; // Number of columns in the grid
-    double cell_size_; // Size of each cell in the grid in meters (m)
     std::vector<std::vector<FireCell*>> cells_;
     std::unordered_set<Point> ticking_cells_;
     std::unordered_set<Point> burning_cells_;

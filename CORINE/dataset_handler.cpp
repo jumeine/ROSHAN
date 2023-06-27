@@ -77,7 +77,7 @@ void DatasetHandler::GetCoordinatesFromFile() {
             k++;
         }
     }
-    //DeleteDataFile();
+    DeleteDataFile();
 }
 
 bool DatasetHandler::NewDataPointExists() {

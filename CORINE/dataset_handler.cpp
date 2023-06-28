@@ -151,14 +151,14 @@ void DatasetHandler::LoadRasterDataFromFile(std::vector<std::vector<int>> &raste
     int height = (int)((minY - maxY) / adfGeoTransform[5]);
 
     // Create a 2D vector to store the raster data
-    rasterData.resize(height, std::vector<int>(width));
+    rasterData.resize(width, std::vector<int>(height));
 
     // Read the data from the input dataset directly into the 2D vector
     for (int i = 0; i < height; ++i) {
         for (int j = 0; j < width; ++j) {
             int pixelValue;
             dataset_->GetRasterBand(1)->RasterIO(GF_Read, startX + j, startY + i, 1, 1, &pixelValue, 1, 1, GDT_Int32, 0, 0);
-            rasterData[i][j] = pixelValue;
+            rasterData[j][i] = pixelValue;
         }
     }
 }

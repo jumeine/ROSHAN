@@ -26,7 +26,7 @@ set(SDL2_LIBRARIES /usr/local/lib/libSDL2.so)
 
 add_executable(ROSHAN
         main.cpp
-        utils.cpp
+        models/stochasticlagrangian/utils.cpp
         model_interface.h
         point.h
         point_hash.h

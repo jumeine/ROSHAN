@@ -32,6 +32,10 @@ public:
     void SetWidthHeight(int width, int height) override;
     void HandleEvents(SDL_Event event, ImGuiIO* io) override;
     void ShowPopups() override;
+    void ImGuiSimulationSpeed() override;
+    void ImGuiModelMenu() override;
+    void ShowControls(std::function<void(bool&, bool&, int&)> controls, bool &update_simulation, bool &render_simulation, int &delay) override;
+
 
 private:
     explicit FireModel(SDL_Renderer* renderer);
@@ -58,7 +62,15 @@ private:
 
     //Flags
     bool browser_selection_flag_ = false;  // If set to true, will load a new GridMap from a file.
+    bool show_demo_window_ = false;
+    bool show_controls_ = false;
+    bool show_model_analysis_ = false;
+    bool show_model_parameter_config_ = false;
+    bool model_startup_ = false;
 
+    void ShowParameterConfig();
+
+    bool ImGuiOnStartup();
 };
 
 

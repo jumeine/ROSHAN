@@ -106,3 +106,15 @@ void GameOfLifeFixed::SetWidthHeight(int width, int height) {
 void GameOfLifeFixed::ShowPopups() {
 
 }
+
+void GameOfLifeFixed::ImGuiSimulationSpeed() {
+
+}
+
+void GameOfLifeFixed::ImGuiModelMenu() {
+
+}
+
+void GameOfLifeFixed::ShowControls(std::function<void(bool &, bool &, int &)> controls, bool &update_simulation, bool &render_simulation, int &delay) {
+    controls(update_simulation, render_simulation, delay);
+}

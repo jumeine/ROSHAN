@@ -21,7 +21,7 @@ void GameOfLifeInfinite::Initialize() {
 }
 
 void GameOfLifeInfinite::Update() {
-    CellState new_state;
+    CellStateGOF new_state;
 
     // Find all cells that need to be updated
     for (const auto& [cell, is_alive] : state_) {
@@ -109,4 +109,16 @@ void GameOfLifeInfinite::SetWidthHeight(int width, int height) {
 
 void GameOfLifeInfinite::ShowPopups() {
 
+}
+
+void GameOfLifeInfinite::ImGuiSimulationSpeed() {
+
+}
+
+void GameOfLifeInfinite::ImGuiModelMenu() {
+
+}
+
+void GameOfLifeInfinite::ShowControls(std::function<void(bool&, bool&, int&)> controls, bool &update_simulation, bool &render_simulation, int &delay) {
+    controls(update_simulation, render_simulation, delay);
 }

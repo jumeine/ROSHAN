@@ -6,7 +6,7 @@
 
 GameOfLifeInfiniteRenderer* GameOfLifeInfiniteRenderer::instance_ = nullptr;
 
-void GameOfLifeInfiniteRenderer::Render(CellState state, int cell_size) {
+void GameOfLifeInfiniteRenderer::Render(CellStateGOF state, int cell_size) {
     SDL_SetRenderDrawColor(renderer_, (Uint8)(background_color_.x * 255), (Uint8)(background_color_.y * 255), (Uint8)(background_color_.z * 255), (Uint8)(background_color_.w * 255));
     SDL_RenderClear(renderer_);
     SDL_GetRendererOutputSize(renderer_, &width_, &height_);
@@ -19,7 +19,7 @@ GameOfLifeInfiniteRenderer::GameOfLifeInfiniteRenderer(SDL_Renderer *renderer) {
     SDL_GetRendererOutputSize(renderer, &width_, &height_);
 }
 
-void GameOfLifeInfiniteRenderer::DrawCells(CellState state, int cell_size) {
+void GameOfLifeInfiniteRenderer::DrawCells(CellStateGOF state, int cell_size) {
     SDL_SetRenderDrawColor(renderer_, 255, 255, 255, 255);
 
     for (const auto& [cell, is_alive] : state) {

@@ -14,7 +14,6 @@
 #include "imgui_impl_sdlrenderer2.h"
 #include <stdio.h>
 #include <SDL.h>
-#include "utils.h"
 #include <iostream>
 #include "model_interface.h"
 #include "models/gameoflife/gameoflife_infinite.h"
@@ -42,6 +41,7 @@ public:
 
     inline bool IsRunning() { return is_running_; }
     inline SDL_Renderer* GetRenderer() { return renderer_; }
+    void ImGuiSimulationControls(bool &update_simulation, bool &render_simulation, int &delay);
 
 private:
     EngineCore(){}
@@ -65,14 +65,18 @@ private:
     int delay_ = 0;
 
     // For Init of the Window
-    int width_ = 1000;
-    int height_ = 750;
+    int width_ = 1600;
+    int height_ = 900;
 
     // For the Node.js server
     void StartServer();
     void StopServer();
 
     static EngineCore* instance_;
+
+    // ImGui Stuff
+    bool ImGuiModelSelection();
+
 };
 
 

@@ -29,6 +29,7 @@ bool EngineCore::Init(){
     }
     SDL_MaximizeWindow(window_);
     renderer_ = SDL_CreateRenderer(window_, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
+    SDL_GetRendererOutputSize(renderer_, &width_, &height_);
     if (renderer_ == nullptr)
     {
         SDL_Log("Error creating SDL_Renderer: %s\n", SDL_GetError());
@@ -69,9 +70,90 @@ bool EngineCore::Init(){
 
 void EngineCore::Update() {
     if (update_simulation_) {
+        SDL_GetRendererOutputSize(renderer_, &width_, &height_);
+        model_->SetWidthHeight(width_, height_);
         model_->Update();
         SDL_Delay(delay_);
     }
+}
+
+bool EngineCore::ImGuiModelSelection(){
+    if (model_ == nullptr) {
+        SDL_GetRendererOutputSize(renderer_, &width_, &height_);
+        ImVec2 window_size = ImVec2(500, 120);
+        ImGui::SetNextWindowSize(window_size);
+        ImVec2 appWindowPos = ImVec2((width_ - window_size.x) * 0.5f, (height_ - window_size.y) * 0.5f);
+        ImGui::SetNextWindowPos(appWindowPos);
+
+        ImGui::Begin("Model Selection", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove);
+        ImGui::Spacing();
+
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.45f, 0.6f, 0.85f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.45f, 0.7f, 0.95f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.45f, 0.5f, 0.75f, 1.0f));
+
+        if (ImGui::Button("Game of Life (Infinite Grid)", ImVec2(-1, 0))) {
+            model_ = GameOfLifeInfinite::GetInstance(renderer_);
+        }
+        ImGui::Separator();
+        if (ImGui::Button("Game of Life (Fixed Grid)", ImVec2(-1, 0))) {
+            model_ = GameOfLifeFixed::GetInstance(renderer_);
+        }
+        ImGui::Separator();
+        if (ImGui::Button("Firemodel", ImVec2(-1, 0))) {
+            model_ = FireModel::GetInstance(renderer_);
+//            model_->Initialize();
+        }
+
+        ImGui::PopStyleColor(3);
+        ImGui::End();
+        return true;
+    }
+    return false;
+}
+
+void EngineCore::ImGuiSimulationControls(bool &update_simulation, bool &render_simulation, int &delay) {
+    ImGui::Begin("Simulation Controls", nullptr);
+    bool button_color = false;
+    if (update_simulation) {
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.35f, 0.6f, 0.85f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.45f, 0.7f, 0.95f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.25f, 0.5f, 0.75f, 1.0f));
+        button_color = true;
+    }
+    if (ImGui::Button(update_simulation ? "Stop Simulation" : "Start Simulation")) {
+        update_simulation = !update_simulation;
+    }
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Click to %s the simulation.", update_simulation ? "stop" : "start");
+    if (button_color) {
+        ImGui::PopStyleColor(3);
+    }
+    ImGui::SameLine();
+
+    button_color = false;
+    if (render_simulation) {
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.35f, 0.6f, 0.85f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.45f, 0.7f, 0.95f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.25f, 0.5f, 0.75f, 1.0f));
+        button_color = true;
+    }
+    if (ImGui::Button(render_simulation ? "Stop Rendering" : "Start Rendering")) {
+        render_simulation = !render_simulation;
+    }
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Click to %s rendering the simulation.", render_simulation ? "stop" : "start");
+    if (button_color) {
+        ImGui::PopStyleColor(3);
+    }
+    ImGui::SameLine();
+
+    ImGui::Text("Simulation Delay");
+    ImGui::SliderInt("Delay (ms)", &delay, 0, 500);
+    ImGui::Spacing();
+    model_->ImGuiSimulationSpeed();
+    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io_->Framerate, io_->Framerate);
+    ImGui::End();
 }
 
 void EngineCore::Render() {
@@ -80,55 +162,19 @@ void EngineCore::Render() {
     ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();
 
-    if (show_demo_window_)
-        ImGui::ShowDemoWindow(&show_demo_window_);
-
-    // Choose model if model is not set
-    if (model_ == nullptr) {
-        ImGui::Begin("Choose Model");
-        if (ImGui::Button("Game of Life (Infinite Grid)")) {
-            model_ = GameOfLifeInfinite::GetInstance(renderer_);
-        } else if (ImGui::Button("Game of Life (Fixed Grid)")) {
-            model_ = GameOfLifeFixed::GetInstance(renderer_);
-        } else if (ImGui::Button("Firemodel")) {
-            model_ = FireModel::GetInstance(renderer_);
-            model_->Initialize();
-        }
-        ImGui::End();
-    } else {
-        ImGui::Begin("Controls");
-        SDL_GetWindowSize(window_, &width_, &height_);
-        model_->SetWidthHeight(width_, height_);
-        if (ImGui::TreeNode("Simulation Controls")) {
-            ImVec4 updateColor = update_simulation_ ? ImGui::GetStyle().Colors[ImGuiCol_ButtonActive] : ImGui::GetStyle().Colors[ImGuiCol_Button];
-            if (ImGui::Button("Start/Stop Simulation")) {
-                update_simulation_ = !update_simulation_;
-            }
-            ImGui::SameLine();
-            ImGui::TextColored(updateColor, "%s", update_simulation_ ? "Simulation is running" : "Simulation is stopped");
-            ImVec4 renderColor = render_simulation_ ? ImGui::GetStyle().Colors[ImGuiCol_ButtonActive] : ImGui::GetStyle().Colors[ImGuiCol_Button];
-            if (ImGui::Button("Render Simulation")) {
-                render_simulation_ = !render_simulation_;
-            }
-            ImGui::SameLine();
-            ImGui::TextColored(renderColor, "%s", render_simulation_ ? "Simulation is rendered" : "Simulation is not rendered");
-            ImGui::Checkbox("Demo Window", &show_demo_window_);      // Edit bools storing our window open/close state
-            ImGui::SliderInt("Delay (ms)", &delay_, 0, 500);
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io_->Framerate, io_->Framerate);
-            ImGui::TreePop();
-        }
-        if (ImGui::TreeNode("Model Controls")) {
-            model_->Config();
-            ImGui::TreePop();
-        }
+    if(!ImGuiModelSelection()) {
+        std::function<void(bool&, bool&, int&)> controls =
+                std::bind(&EngineCore::ImGuiSimulationControls, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+        model_->ShowControls(controls, update_simulation_, render_simulation_, delay_);
+        model_->ImGuiModelMenu();
+        model_->Config();
         model_->ShowPopups();
-        ImGui::End();
     }
 
     // Rendering
     ImGui::Render();
     SDL_RenderSetScale(renderer_, io_->DisplayFramebufferScale.x, io_->DisplayFramebufferScale.y);
-    if (model_ != nullptr) {
+    if (model_ != nullptr && render_simulation_) {
         model_->Render();
     }
     else {
@@ -139,6 +185,79 @@ void EngineCore::Render() {
     ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
     SDL_RenderPresent(renderer_);
 }
+
+//void EngineCore::Render() {
+//    // Start the Dear ImGui frame
+//    ImGui_ImplSDLRenderer2_NewFrame();
+//    ImGui_ImplSDL2_NewFrame();
+//    ImGui::NewFrame();
+//
+//    if(!ImGuiModelSelection()) {
+//        ImGui::Begin("Control Window");
+//        model_->ImGuiModelMenu();
+//        if (ImGui::TreeNode("Simulation Controls")) {
+//            bool button_color = false;
+//            if (update_simulation_) {
+//                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.35f, 0.6f, 0.85f, 1.0f));
+//                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.45f, 0.7f, 0.95f, 1.0f));
+//                ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.25f, 0.5f, 0.75f, 1.0f));
+//                button_color = true;
+//            }
+//            if (ImGui::Button(update_simulation_ ? "Stop Simulation" : "Start Simulation")) {
+//                update_simulation_ = !update_simulation_;
+//            }
+//            if (ImGui::IsItemHovered())
+//                ImGui::SetTooltip("Click to %s the simulation.", update_simulation_ ? "stop" : "start");
+//            if (button_color) {
+//                ImGui::PopStyleColor(3);
+//            }
+//            ImGui::SameLine();
+//
+//            button_color = false;
+//            if (render_simulation_) {
+//                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.35f, 0.6f, 0.85f, 1.0f));
+//                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.45f, 0.7f, 0.95f, 1.0f));
+//                ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.25f, 0.5f, 0.75f, 1.0f));
+//                button_color = true;
+//            }
+//            if (ImGui::Button(render_simulation_ ? "Stop Rendering" : "Start Rendering")) {
+//                render_simulation_ = !render_simulation_;
+//            }
+//            if (ImGui::IsItemHovered())
+//                ImGui::SetTooltip("Click to %s rendering the simulation.", render_simulation_ ? "stop" : "start");
+//            if (button_color) {
+//                ImGui::PopStyleColor(3);
+//            }
+//            ImGui::SameLine();
+//
+//            ImGui::Text("Simulation Delay");
+//            ImGui::SliderInt("Delay (ms)", &delay_, 0, 500);
+//            ImGui::Spacing();
+//            model_->ImGuiSimulationSpeed();
+//            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io_->Framerate, io_->Framerate);
+//            ImGui::TreePop();
+//        }
+//        if (ImGui::TreeNode("Model Controls")) {
+//            model_->Config();
+//            ImGui::TreePop();
+//        }
+//        model_->ShowPopups();
+//        ImGui::End();
+//    }
+//    // Rendering
+//    ImGui::Render();
+//    SDL_RenderSetScale(renderer_, io_->DisplayFramebufferScale.x, io_->DisplayFramebufferScale.y);
+//    if (model_ != nullptr && render_simulation_) {
+//        model_->Render();
+//    }
+//    else {
+//        SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 255);
+//        SDL_RenderClear(renderer_);
+//    }
+//
+//    ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
+//    SDL_RenderPresent(renderer_);
+//}
 
 void EngineCore::HandleEvents() {
     // Poll and handle events (inputs, window resize, etc.)

@@ -85,7 +85,7 @@ void FireCell::Ignite() {
     if (cell_state_ == GENERIC_BURNING || cell_state_ == GENERIC_BURNED) {
         throw std::runtime_error("FireCell::Ignite() called on a cell that is not unburned");
     }
-    cell_state_ = GENERIC_BURNING;
+    SetCellState(GENERIC_BURNING);
 }
 
 VirtualParticle FireCell::EmitVirtualParticle() {
@@ -114,7 +114,7 @@ void FireCell::Tick() {
 void FireCell::burn() {
     burningDuration_ -= parameters_.GetDt();
     if (burningDuration_ <= 0) {
-        cell_state_ = GENERIC_BURNED;
+        SetCellState(GENERIC_BURNED);
     }
 }
 
@@ -127,11 +127,20 @@ bool FireCell::ShouldIgnite() {
 }
 
 void FireCell::Extinguish() {
-    cell_state_ = cell_initial_state_;
+    SetCellState(cell_initial_state_);
+}
+
+void FireCell::SetCellState(CellState cell_state) {
+    cell_state_ = cell_state;
+    delete cell_;
+    cell_ = GetCell();
 }
 
 void FireCell::ShowInfo() {
-    ImGui::Text("Cell state: %d", cell_state_);
+    ImVec4 color = cell_->GetColor();
+    ImGui::ColorButton("MyColor##3", {color.x / 255, color.y / 255, color.z / 255, color.w / 255}, ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoPicker);
+    ImGui::SameLine();
+    ImGui::Text(CellStateToString(cell_state_).c_str());
     ImGui::Text("Burning duration: %f", burningDuration_);
     ImGui::Text("Ticking duration: %f", tickingDuration_);
     ImGui::Text("Tau ign: %f", tau_ign);
@@ -139,4 +148,8 @@ void FireCell::ShowInfo() {
 
 void FireCell::Render(SDL_Renderer* renderer, SDL_Rect rectangle) {
     cell_->Render(renderer, rectangle);
+}
+
+FireCell::~FireCell() {
+    delete cell_;
 }

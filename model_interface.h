@@ -8,6 +8,7 @@
 #include <vector>
 #include "imgui.h"
 #include <SDL.h>
+#include <functional>
 
 class IModel {
 public:
@@ -21,7 +22,9 @@ public:
     virtual void SetWidthHeight(int width, int height) = 0;
     virtual void HandleEvents(SDL_Event event, ImGuiIO* io) = 0;
     virtual void ShowPopups() = 0;
-
+    virtual void ImGuiSimulationSpeed() = 0;
+    virtual void ImGuiModelMenu() = 0;
+    virtual void ShowControls(std::function<void(bool&, bool&, int&)> controls, bool &update_simulation, bool &render_simulation, int &delay) = 0;
 };
 
 

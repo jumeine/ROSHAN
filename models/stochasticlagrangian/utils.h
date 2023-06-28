@@ -5,6 +5,8 @@
 #ifndef ROSHAN_UTILS_H
 #define ROSHAN_UTILS_H
 
+#include <string>
+
 enum CellState { GENERIC_UNBURNED = 0,
                  SEALED = 1,
                  WOODY_NEEDLE_LEAVED_TREES = 2,
@@ -20,5 +22,7 @@ enum CellState { GENERIC_UNBURNED = 0,
                  OUTSIDE_AREA = 254,
                  GENERIC_BURNING = 60,
                  GENERIC_BURNED = 61};
+
+std::string CellStateToString(CellState cell_state);
 
 #endif //ROSHAN_UTILS_H

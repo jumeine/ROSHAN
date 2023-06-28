@@ -29,6 +29,9 @@ public:
     void SetWidthHeight(int width, int height) override;
     void HandleEvents(SDL_Event event, ImGuiIO* io) override;
     void ShowPopups() override;
+    void ImGuiSimulationSpeed() override;
+    void ImGuiModelMenu() override;
+    void ShowControls(std::function<void(bool&, bool&, int&)> controls, bool &update_simulation, bool &render_simulation, int &delay) override;
 
 
 private:

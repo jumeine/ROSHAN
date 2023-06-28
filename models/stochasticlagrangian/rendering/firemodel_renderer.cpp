@@ -14,13 +14,15 @@ FireModelRenderer::FireModelRenderer(SDL_Renderer *renderer, FireModelParameters
 
 void FireModelRenderer::Render() {
     SDL_RenderClear(renderer_);
-    GetScreenResolution(width_, height_);
-    camera_.SetCellSize(gridmap_->GetRows(), gridmap_->GetCols(), width_, height_);
-    camera_.SetOffset(gridmap_->GetRows(), gridmap_->GetCols(), width_, height_);
-    DrawCells();
-    if (parameters_.render_grid_)
-        DrawGrid();
-    DrawParticles();
+    if (gridmap_ != nullptr) {
+        GetScreenResolution(width_, height_);
+        camera_.SetCellSize(gridmap_->GetRows(), gridmap_->GetCols(), width_, height_);
+        camera_.SetOffset(gridmap_->GetRows(), gridmap_->GetCols(), width_, height_);
+        DrawCells();
+        if (parameters_.render_grid_)
+            DrawGrid();
+        DrawParticles();
+    }
     // Hintergrundfarbe
     SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 255);
 }
@@ -53,7 +55,7 @@ void FireModelRenderer::DrawGrid() {
     int rows = gridmap_->GetRows();
     int cols = gridmap_->GetCols();
 
-    int cell_size = static_cast<int>(camera_.GetCellSize());
+    int cell_size = static_cast<int>(floor(camera_.GetCellSize()));
 
     // Set color for the grid (light grey)
     SDL_SetRenderDrawColor(renderer_, 53, 53, 53, 255);  // color for the grid
@@ -62,18 +64,14 @@ void FireModelRenderer::DrawGrid() {
 
     // Draw horizontal grid lines
     for (int i = 0; i <= rows; i++) {
-        int start_x = x0;
         int y = y0 + i * cell_size;
-        int end_x = x_end;
-        SDL_RenderDrawLine(renderer_, start_x, y, end_x, y);
+        SDL_RenderDrawLine(renderer_, x0, y, x_end, y);
     }
 
     // Draw vertical grid lines
     for (int i = 0; i <= cols; i++) {
-        int start_y = y0;
         int x = x0  + i * cell_size;
-        int end_y = y_end;
-        SDL_RenderDrawLine(renderer_, x, start_y, x, end_y);
+        SDL_RenderDrawLine(renderer_, x, y0, x, y_end);
     }
 }
 

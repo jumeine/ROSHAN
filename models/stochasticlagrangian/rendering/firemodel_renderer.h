@@ -24,6 +24,7 @@ public:
     void Render();
     void GetScreenResolution(int& width, int& height);
     void SetGridMap(GridMap* gridmap) { gridmap_ = gridmap; }
+    SDL_Renderer* GetRenderer() { return renderer_; }
 
     // Converter Functions
     std::pair<int, int> ScreenToGridPosition(int x, int y);
@@ -42,7 +43,7 @@ private:
     FireModelParameters& parameters_;
     FireModelCamera camera_;
     SDL_Renderer* renderer_;
-    GridMap* gridmap_;
+    GridMap* gridmap_ = nullptr;
     int width_;
     int height_;
     // Camera position

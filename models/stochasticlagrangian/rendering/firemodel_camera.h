@@ -23,8 +23,8 @@ public:
     double GetOffsetX() const { return offset_x_; }
     double GetOffsetY() const { return offset_y_; }
 
-    std::pair<int, int> ScreenToGridPosition(int screenX, int screenY);
-    std::pair<int, int> WorldToScreen(double worldX, double worldY);
+    std::pair<int, int> ScreenToGridPosition(int screenX, int screenY) const;
+    std::pair<int, int> WorldToScreen(double worldX, double worldY) const;
 private:
     double x_;
     double y_;

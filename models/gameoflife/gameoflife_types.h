@@ -19,7 +19,7 @@ namespace std {
 }
 
 using Cell = std::pair<int, int>;
-using CellState = std::unordered_map<Cell, bool, std::hash<Cell>>;
+using CellStateGOF = std::unordered_map<Cell, bool, std::hash<Cell>>;
 using Neighbors = std::vector<Cell>;
 
 #endif //ROSHAN_GAMEOFLIFE_TYPES_H

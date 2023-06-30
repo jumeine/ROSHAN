@@ -2,6 +2,7 @@
 // Created by nex on 08.06.23.
 //
 
+#include <iostream>
 #include "firemodel_renderer.h"
 
 FireModelRenderer* FireModelRenderer::instance_ = nullptr;
@@ -10,21 +11,30 @@ FireModelRenderer::FireModelRenderer(SDL_Renderer *renderer, FireModelParameters
     renderer_ = renderer;
     camera_ = FireModelCamera();
     GetScreenResolution(width_, height_);
+    drawing_surface_ = SDL_CreateRGBSurfaceWithFormat(0, width_, height_, 32, SDL_PIXELFORMAT_ARGB8888);
+    back_buffer_ = SDL_CreateTexture(renderer_,SDL_PIXELFORMAT_RGBA8888,SDL_TEXTUREACCESS_TARGET,width_,height_);
+    pixel_buffer_ = new Uint32[width_ * height_];
+    texture_ = SDL_CreateTexture(renderer_,SDL_PIXELFORMAT_ARGB8888,SDL_TEXTUREACCESS_STREAMING,width_,height_);
+    if (texture_ == NULL) {
+        SDL_Log("Unable to create texture from surface: %s", SDL_GetError());
+        return;
+    }
 }
 
 void FireModelRenderer::Render() {
     SDL_RenderClear(renderer_);
     if (gridmap_ != nullptr) {
         GetScreenResolution(width_, height_);
-        camera_.SetCellSize(gridmap_->GetRows(), gridmap_->GetCols(), width_, height_);
-        camera_.SetOffset(gridmap_->GetRows(), gridmap_->GetCols(), width_, height_);
+        camera_.SetViewport(width_, height_);
+        camera_.SetCellSize(gridmap_->GetRows(), gridmap_->GetCols());
+        camera_.SetOffset(gridmap_->GetRows(), gridmap_->GetCols());
         DrawCells();
         if (parameters_.render_grid_)
             DrawGrid();
         DrawParticles();
     }
     // Hintergrundfarbe
-    SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 255);
+    SDL_SetRenderDrawColor(renderer_, 41, 49, 51, 255);
 }
 
 void FireModelRenderer::GetScreenResolution(int& width, int& height) {
@@ -36,19 +46,28 @@ void FireModelRenderer::DrawCells() {
     int rows = gridmap_->GetRows();
     int cols = gridmap_->GetCols();
 
+    // Clear the surface
+    SDL_memset(drawing_surface_->pixels, 0, drawing_surface_->h * drawing_surface_->pitch);
+
     // Start drawing cells from the cell at the camera position
     for (int x = 0; x < cols; ++x) {
         for (int y = 0; y < rows; ++y) {
-                auto [screen_x, screen_y] = camera_.WorldToScreen(x, y);
-                SDL_Rect cellRect = {
-                        screen_x,
-                        screen_y,
-                        static_cast<int>(camera_.GetCellSize()),
-                        static_cast<int>(camera_.GetCellSize())
-                };
-                gridmap_->At(x, y).Render(renderer_, cellRect);
+            auto [screen_x, screen_y] = camera_.WorldToScreen(x, y);
+            SDL_Rect cellRect = {
+                    screen_x,
+                    screen_y,
+                    static_cast<int>(camera_.GetCellSize()),
+                    static_cast<int>(camera_.GetCellSize())
+            };
+            gridmap_->At(x, y).Render(drawing_surface_, cellRect);
         }
     }
+
+    // Update the texture
+    SDL_UpdateTexture(texture_, NULL, drawing_surface_->pixels, drawing_surface_->pitch);
+
+    // Render the texture to the screen
+    SDL_RenderCopy(renderer_, texture_, NULL, NULL);
 }
 
 void FireModelRenderer::DrawGrid() {
@@ -130,5 +149,12 @@ std::pair<int, int> FireModelRenderer::ScreenToGridPosition(int x, int y) {
     auto [screenX, screenY] = camera_.ScreenToGridPosition(x, y);
 
     return std::make_pair(screenX, screenY);
+}
+
+FireModelRenderer::~FireModelRenderer() {
+    //Destroy Backbuffer
+    SDL_DestroyTexture(back_buffer_);
+    SDL_FreeSurface(drawing_surface_);
+    SDL_DestroyTexture(texture_);
 }
 

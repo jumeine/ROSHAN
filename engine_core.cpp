@@ -28,13 +28,13 @@ bool EngineCore::Init(){
         return false;
     }
     SDL_MaximizeWindow(window_);
-    renderer_ = SDL_CreateRenderer(window_, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
-    SDL_GetRendererOutputSize(renderer_, &width_, &height_);
+    renderer_ = SDL_CreateRenderer(window_, -1, SDL_RENDERER_ACCELERATED);
     if (renderer_ == nullptr)
     {
         SDL_Log("Error creating SDL_Renderer: %s\n", SDL_GetError());
         return false;
     }
+    SDL_GetRendererOutputSize(renderer_, &width_, &height_);
     //SDL_RendererInfo info;
     //SDL_GetRendererInfo(renderer, &info);
     //SDL_Log("Current SDL_Renderer: %s", info.name);
@@ -178,10 +178,9 @@ void EngineCore::Render() {
         model_->Render();
     }
     else {
-        SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 255);
+        SDL_SetRenderDrawColor(renderer_, 41, 49, 51, 255);
         SDL_RenderClear(renderer_);
     }
-
     ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
     SDL_RenderPresent(renderer_);
 }

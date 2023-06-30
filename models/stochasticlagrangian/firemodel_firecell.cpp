@@ -8,6 +8,7 @@ FireCell::FireCell(int x, int y, std::mt19937 gen, FireModelParameters &paramete
     burningDuration_ = parameters_.GetCellBurningDuration();
     tau_ign = parameters_.GetIgnitionDelayTime();
     tickingDuration_ = 0;
+    surface_ = SDL_CreateRGBSurfaceWithFormat(0, 1, 1, 32, SDL_PIXELFORMAT_ARGB8888);
     cell_initial_state_ = CellState(raster_value);
     cell_state_ = CellState(raster_value);
     cell_ = GetCell();
@@ -31,49 +32,49 @@ ICell *FireCell::GetCell() {
     ICell *cell_;
     switch (cell_state_) {
         case GENERIC_UNBURNED:
-            cell_ = new CellGenericUnburned();
+            cell_ = new CellGenericUnburned(surface_->format);
             break;
         case GENERIC_BURNING:
-            cell_ = new CellGenericBurning();
+            cell_ = new CellGenericBurning(surface_->format);
             break;
         case GENERIC_BURNED:
-            cell_ = new CellGenericBurned();
+            cell_ = new CellGenericBurned(surface_->format);
             break;
         case LICHENS_AND_MOSSES:
-            cell_ = new CellLichensAndMosses();
+            cell_ = new CellLichensAndMosses(surface_->format);
             break;
         case LOW_GROWING_WOODY_PLANTS:
-            cell_ = new CellLowGrowingWoodyPlants();
+            cell_ = new CellLowGrowingWoodyPlants(surface_->format);
             break;
         case NON_AND_SPARSLEY_VEGETATED:
-            cell_ = new CellNonAndSparsleyVegetated();
+            cell_ = new CellNonAndSparsleyVegetated(surface_->format);
             break;
         case OUTSIDE_AREA:
-            cell_ = new CellOutsideArea();
+            cell_ = new CellOutsideArea(surface_->format);
             break;
         case PERIODICALLY_HERBACEOUS:
-            cell_ = new CellPeriodicallyHerbaceous();
+            cell_ = new CellPeriodicallyHerbaceous(surface_->format);
             break;
         case PERMANENT_HERBACEOUS:
-            cell_ = new CellPermanentHerbaceous();
+            cell_ = new CellPermanentHerbaceous(surface_->format);
             break;
         case SEALED:
-            cell_ = new CellSealed();
+            cell_ = new CellSealed(surface_->format);
             break;
         case SNOW_AND_ICE:
-            cell_ = new CellSnowAndIce();
+            cell_ = new CellSnowAndIce(surface_->format);
             break;
         case WATER:
-            cell_ = new CellWater();
+            cell_ = new CellWater(surface_->format);
             break;
         case WOODY_BROADLEAVED_DECIDUOUS_TREES:
-            cell_ = new CellWoodyBroadleavedDeciduousTrees();
+            cell_ = new CellWoodyBroadleavedDeciduousTrees(surface_->format);
             break;
         case WOODY_BROADLEAVED_EVERGREEN_TREES:
-            cell_ = new CellWoodyBroadleavedEvergreenTrees();
+            cell_ = new CellWoodyBroadleavedEvergreenTrees(surface_->format);
             break;
         case WOODY_NEEDLE_LEAVED_TREES:
-            cell_ = new CellWoodyNeedleLeavedTrees();
+            cell_ = new CellWoodyNeedleLeavedTrees(surface_->format);
             break;
         default:
             throw std::runtime_error("FireCell::GetCell() called on a celltype that is not defined");
@@ -140,16 +141,17 @@ void FireCell::ShowInfo() {
     ImVec4 color = cell_->GetColor();
     ImGui::ColorButton("MyColor##3", {color.x / 255, color.y / 255, color.z / 255, color.w / 255}, ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoPicker);
     ImGui::SameLine();
-    ImGui::Text(CellStateToString(cell_state_).c_str());
+    ImGui::TextUnformatted(CellStateToString(cell_state_).c_str());
     ImGui::Text("Burning duration: %f", burningDuration_);
     ImGui::Text("Ticking duration: %f", tickingDuration_);
     ImGui::Text("Tau ign: %f", tau_ign);
 }
 
-void FireCell::Render(SDL_Renderer* renderer, SDL_Rect rectangle) {
-    cell_->Render(renderer, rectangle);
+void FireCell::Render(SDL_Surface* surface, SDL_Rect rectangle) {
+    cell_->Render(surface,rectangle);
 }
 
 FireCell::~FireCell() {
     delete cell_;
+    SDL_FreeSurface(surface_);
 }

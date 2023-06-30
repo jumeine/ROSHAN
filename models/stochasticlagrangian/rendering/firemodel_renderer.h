@@ -32,6 +32,9 @@ public:
     // Camera functions
     void ChangeCameraPosition(double x, double y) { camera_.Move(x, y);}
     void ApplyZoom(double z) { camera_.Zoom(z);}
+
+    ~FireModelRenderer();
+
 private:
     FireModelRenderer(SDL_Renderer* renderer, FireModelParameters& parameters);
 
@@ -43,6 +46,10 @@ private:
     FireModelParameters& parameters_;
     FireModelCamera camera_;
     SDL_Renderer* renderer_;
+    SDL_Texture* back_buffer_;
+    SDL_Surface* drawing_surface_;
+    SDL_Texture* texture_;
+    Uint32* pixel_buffer_;
     GridMap* gridmap_ = nullptr;
     int width_;
     int height_;

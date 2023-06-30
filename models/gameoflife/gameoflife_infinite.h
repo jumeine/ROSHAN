@@ -5,7 +5,7 @@
 #ifndef ROSHAN_GAMEOFLIFE_INFINITE_H
 #define ROSHAN_GAMEOFLIFE_INFINITE_H
 
-#include "../../model_interface.h"
+#include "model_interface.h"
 #include "gameoflife_types.h"
 #include "gameoflife_infinite_renderer.h"
 #include "imgui.h"

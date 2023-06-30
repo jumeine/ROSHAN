@@ -36,7 +36,8 @@ cmake-build-debug
 .idea
 
 # Dependencies
-imgui
+externals/imgui
+externals/ImGuiFileDialog
 nodejs
 
 # Server Junk

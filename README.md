@@ -3,11 +3,6 @@ Firesimulation based on cellular automata
 
 ## Dependencies
 
-#### DearImgui 
-
-https://github.com/ocornut/imgui
-
-
 #### SDL2 - min. 2.0.17 
 
 https://github.com/libsdl-org/SDL/releases/tag/release-2.26.5
@@ -32,3 +27,13 @@ GDAL and GDAL C++ headers
 sudo apt-get install libgdal-dev
 sudo apt-get install gdal-bin
 
+## These modules go under externals:
+
+#### DearImgui 
+
+https://github.com/ocornut/imgui
+
+https://github.com/aiekick/ImGuiFileDialog
+
+#### JSON
+https://github.com/nlohmann/json

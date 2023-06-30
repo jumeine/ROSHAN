@@ -6,19 +6,22 @@ set(CMAKE_CXX_STANDARD 17)
 find_package(OpenGL REQUIRED)
 
 # Add the imgui library
-file(GLOB IMGUI_SOURCES ${CMAKE_SOURCE_DIR}/imgui/*.cpp)
-add_library(imgui ${IMGUI_SOURCES}
-            imgui/backends/imgui_impl_sdl2.cpp
-            imgui/backends/imgui_impl_opengl3.cpp
-            imgui/backends/imgui_impl_opengl3.h
-            imgui/backends/imgui_impl_sdl2.h
-            imgui/backends/imgui_impl_sdlrenderer2.cpp)
+file(GLOB IMGUI_SOURCES ${CMAKE_SOURCE_DIR}/externals/imgui/*.cpp)
+add_library(imgui_external ${IMGUI_SOURCES}
+        externals/imgui/backends/imgui_impl_sdl2.cpp
+        externals/imgui/backends/imgui_impl_opengl3.cpp
+        externals/imgui/backends/imgui_impl_opengl3.h
+        externals/imgui/backends/imgui_impl_sdl2.h
+        externals/imgui/backends/imgui_impl_sdlrenderer2.cpp)
+
+#add_library(imgui_filedialog ${CMAKE_SOURCE_DIR}/externals/ImGuiFileDialog/ImGuiFileDialog.cpp)
+
+target_include_directories(imgui_external PUBLIC ${CMAKE_SOURCE_DIR}/externals/imgui ${CMAKE_SOURCE_DIR}/externals/imgui/backends/)
+#target_include_directories(imgui_filedialog PUBLIC ${CMAKE_SOURCE_DIR}/externals/ImGuiFileDialog/)
 
 # GDAL
 find_package(GDAL REQUIRED)
 include_directories(${GDAL_INCLUDE_DIRS})
-
-target_include_directories(imgui PUBLIC ${CMAKE_SOURCE_DIR}/imgui ${CMAKE_SOURCE_DIR}/imgui/backends/)
 
 list(APPEND CMAKE_PREFIX_PATH "/usr/local")
 include_directories(/usr/local/include/SDL2)
@@ -36,19 +39,43 @@ add_executable(ROSHAN
         models/gameoflife/gameoflife_infinite_renderer.cpp models/gameoflife/gameoflife_infinite_renderer.h
         models/gameoflife/gameoflife_types.h
 
+
         models/gameoflife_simple/gameoflife_fixed.cpp models/gameoflife_simple/gameoflife_fixed.h
         models/gameoflife_simple/gameoflife_fixed_renderer.cpp models/gameoflife_simple/gameoflife_fixed_renderer.h
+
 
         models/stochasticlagrangian/firemodel.cpp models/stochasticlagrangian/firemodel.h
         models/stochasticlagrangian/firemodel_gridmap.cpp models/stochasticlagrangian/firemodel_gridmap.h
         models/stochasticlagrangian/rendering/firemodel_renderer.cpp models/stochasticlagrangian/rendering/firemodel_renderer.h
+        models/stochasticlagrangian/rendering/firemodel_camera.cpp models/stochasticlagrangian/rendering/firemodel_camera.h
         models/stochasticlagrangian/firemodel_firecell.cpp models/stochasticlagrangian/firemodel_firecell.h
         models/stochasticlagrangian/virtual_particle.cpp models/stochasticlagrangian/virtual_particle.h
         models/stochasticlagrangian/radiation_particle.cpp models/stochasticlagrangian/radiation_particle.h
         models/stochasticlagrangian/wind.cpp models/stochasticlagrangian/wind.h
         models/stochasticlagrangian/utils.h
         models/stochasticlagrangian/model_parameters.h
-        CORINE/dataset_handler.cpp CORINE/dataset_handler.h models/stochasticlagrangian/firemodel_cell_interface.h models/stochasticlagrangian/cell_classes/cell_generic_unburned.cpp models/stochasticlagrangian/cell_classes/cell_sealed.cpp models/stochasticlagrangian/cell_classes/cell_woody_needle_leaved_trees.cpp models/stochasticlagrangian/cell_classes/cell_woody_breadleaved_deciduous_trees.cpp models/stochasticlagrangian/cell_classes/cell_woody_broadleaved_evergreen_trees.cpp models/stochasticlagrangian/cell_classes/cell_low_growing_woody_plants.cpp models/stochasticlagrangian/cell_classes/cell_permanent_herbaceous.cpp models/stochasticlagrangian/cell_classes/cell_periodically_herbaceous.cpp models/stochasticlagrangian/cell_classes/cell_lichens_and_mosses.cpp models/stochasticlagrangian/cell_classes/cell_non_and_sparsley_vegetated.cpp models/stochasticlagrangian/cell_classes/cell_water.cpp models/stochasticlagrangian/cell_classes/cell_snow_and_ice.cpp models/stochasticlagrangian/cell_classes/cell_generic_burning.cpp models/stochasticlagrangian/cell_classes/cell_outside_area.cpp models/stochasticlagrangian/cell_classes/cell_generic_burned.cpp models/stochasticlagrangian/rendering/firemodel_camera.cpp models/stochasticlagrangian/rendering/firemodel_camera.h)
+        CORINE/dataset_handler.cpp CORINE/dataset_handler.h
+        models/stochasticlagrangian/firemodel_cell_interface.h
+            models/stochasticlagrangian/cell_classes/cell_generic_unburned.cpp
+            models/stochasticlagrangian/cell_classes/cell_sealed.cpp
+            models/stochasticlagrangian/cell_classes/cell_woody_needle_leaved_trees.cpp
+            models/stochasticlagrangian/cell_classes/cell_woody_breadleaved_deciduous_trees.cpp
+            models/stochasticlagrangian/cell_classes/cell_woody_broadleaved_evergreen_trees.cpp
+            models/stochasticlagrangian/cell_classes/cell_low_growing_woody_plants.cpp
+            models/stochasticlagrangian/cell_classes/cell_permanent_herbaceous.cpp
+            models/stochasticlagrangian/cell_classes/cell_periodically_herbaceous.cpp
+            models/stochasticlagrangian/cell_classes/cell_lichens_and_mosses.cpp
+            models/stochasticlagrangian/cell_classes/cell_non_and_sparsley_vegetated.cpp
+            models/stochasticlagrangian/cell_classes/cell_water.cpp
+            models/stochasticlagrangian/cell_classes/cell_snow_and_ice.cpp
+            models/stochasticlagrangian/cell_classes/cell_generic_burning.cpp
+            models/stochasticlagrangian/cell_classes/cell_outside_area.cpp
+            models/stochasticlagrangian/cell_classes/cell_generic_burned.cpp
 
+            externals/ImGuiFileDialog/ImGuiFileDialog.cpp externals/ImGuiFileDialog/ImGuiFileDialog.h
+        )
+
+target_include_directories(ROSHAN PRIVATE ${CMAKE_SOURCE_DIR}/externals/nlohmann)
+target_include_directories(ROSHAN PRIVATE ${CMAKE_SOURCE_DIR})
 # Link against OpenGL, imgui, SDL2
-target_link_libraries(ROSHAN ${SDL2_LIBRARIES} ${X11_LIBRARIES} OpenGL::GL imgui ${GDAL_LIBRARIES} -ldl)
+target_link_libraries(ROSHAN ${SDL2_LIBRARIES} ${X11_LIBRARIES} OpenGL::GL imgui_external ${GDAL_LIBRARIES} -ldl)

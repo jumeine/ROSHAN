@@ -52,6 +52,7 @@ private:
     SDL_Window* window_;
     SDL_Renderer* renderer_;
     SDL_WindowFlags window_flags_;
+    SDL_Texture* back_buffer_;
 
     ImGuiIO* io_;
 
@@ -59,7 +60,6 @@ private:
     IModel* model_;
 
     // Our Simulation State
-    bool show_demo_window_ = false;
     bool update_simulation_ = false;
     bool render_simulation_ = true;
     int delay_ = 0;

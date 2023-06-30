@@ -17,9 +17,12 @@ public:
     double GetX() const { return x_; }
     double GetY() const { return y_; }
     double GetZoom() const { return zoom_; }
-    void SetCellSize(int rows, int cols, int screen_width, int screen_height);
+    void SetCellSize(int rows, int cols);
     double GetCellSize() const { return cell_size_; }
-    void SetOffset(int rows, int cols, int screen_width, int screen_height);
+    void SetOffset(int rows, int cols);
+    void SetViewport(int screen_width, int screen_height);
+    double GetViewportWidth() const { return viewport_width_; }
+    double GetViewportHeight() const { return viewport_height_; }
     double GetOffsetX() const { return offset_x_; }
     double GetOffsetY() const { return offset_y_; }
 
@@ -33,6 +36,8 @@ private:
     double cell_size_;
     double offset_x_;
     double offset_y_;
+    double viewport_width_;
+    double viewport_height_;
 };
 
 

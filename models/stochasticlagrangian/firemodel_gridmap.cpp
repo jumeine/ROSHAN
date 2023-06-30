@@ -6,13 +6,8 @@
 
 GridMap::GridMap(Wind* wind, FireModelParameters &parameters,
                  std::vector<std::vector<int>>* rasterData) : parameters_(parameters) {
-    if (rasterData != nullptr) {
-        cols_ = rasterData->size();
-        rows_ = (rasterData->empty()) ? 0 : (*rasterData)[0].size();
-    } else {
-        rows_ = parameters_.GetGridNx(); //in cells
-        cols_ = parameters_.GetGridNy(); //in cells
-    }
+    cols_ = rasterData->size();
+    rows_ = (rasterData->empty()) ? 0 : (*rasterData)[0].size();
     wind_ = wind;
 
     // Generate a normally-distributed random number for phi_r
@@ -21,11 +16,7 @@ GridMap::GridMap(Wind* wind, FireModelParameters &parameters,
     cells_ = std::vector<std::vector<FireCell*>>(cols_, std::vector<FireCell*>(rows_, nullptr));
     for (int x = 0; x < cols_; ++x) {
         for (int y = 0; y < rows_; ++y) {
-            if (rasterData) {
-                cells_[x][y] = new FireCell(x, y, gen_, parameters_, (*rasterData)[x][y]);
-            } else {
-                cells_[x][y] = new FireCell(x, y, gen_, parameters_);
-            }
+            cells_[x][y] = new FireCell(x, y, gen_, parameters_, (*rasterData)[x][y]);
         }
     }
 }

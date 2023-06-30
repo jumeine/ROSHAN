@@ -5,7 +5,7 @@
 #ifndef ROSHAN_GAMEOFLIFESIMPLE_H
 #define ROSHAN_GAMEOFLIFESIMPLE_H
 
-#include "../../model_interface.h"
+#include "model_interface.h"
 #include "gameoflife_fixed_renderer.h"
 #include "imgui.h"
 #include <SDL.h>

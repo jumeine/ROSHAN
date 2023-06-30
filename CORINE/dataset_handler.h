@@ -7,7 +7,7 @@
 
 #include <iostream>
 #include <gdal_priv.h>
-#include "../nlohmann/json.hpp"
+#include "json.hpp"
 #include <fstream>
 
 using json = nlohmann::json;
@@ -26,21 +26,25 @@ struct GeoRectangle {
 class DatasetHandler {
 public:
     DatasetHandler(std::string path);
-//    ~DatasetHandler();
+    ~DatasetHandler();
 
     bool NewDataPointExists();
-    void LoadRasterDataFromFile(std::vector<std::vector<int>> &rasterData);
-    void SaveRaster();
+    void LoadRasterDataFromJSON(std::vector<std::vector<int>> &rasterData);
+    void LoadMapDataset(std::vector<std::vector<int>> &rasterData);
+    void LoadMap(std::string filePath);
+    void SaveRaster(std::string filePath);
 
     void ShowInfo();
 
 private:
     GDALDataset *dataset_;
+    GDALDataset *small_dataset_;
     std::string datafilepath_;
     GeoRectangle rectangle_;
     GeoCoordinate* coords_[4];
     void TransformCoordinates(double lng, double lat, double &lng_transformed, double &lat_transformed);
     void GetCoordinatesFromFile();
+    void GetCoordinatesFromDataset();
     void DeleteDataFile();
 };
 

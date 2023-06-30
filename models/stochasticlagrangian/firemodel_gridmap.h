@@ -7,8 +7,8 @@
 
 #include <vector>
 #include <unordered_set>
-#include "../../point.h"
-#include "../../point_hash.h"
+#include "point.h"
+#include "point_hash.h"
 #include "firemodel_firecell.h"
 #include "model_parameters.h"
 #include "wind.h"

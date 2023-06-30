@@ -7,11 +7,18 @@
 DatasetHandler::DatasetHandler(std::string path) {
     GDALAllRegister();
     dataset_ = (GDALDataset *) GDALOpen(path.c_str(), GA_ReadOnly);
-    if (dataset_ == NULL) {
+    if (dataset_ == nullptr) {
         std::cout << "DatasetHandler: Could not open file: " << path << std::endl;
         exit(1);
     }
+    small_dataset_ = nullptr;
     datafilepath_ = "../openstreetmap/data.json";
+
+    // Create an array of pointers to your GeoCoordinates
+    coords_[0] = &(rectangle_.lower_left);
+    coords_[1] = &(rectangle_.upper_left);
+    coords_[2] = &(rectangle_.upper_right);
+    coords_[3] = &(rectangle_.lower_right);
 }
 
 void DatasetHandler::TransformCoordinates(double lng, double lat, double &lng_transformed, double &lat_transformed) {
@@ -42,6 +49,40 @@ void DatasetHandler::TransformCoordinates(double lng, double lat, double &lng_tr
     OGRCoordinateTransformation::DestroyCT(poCT);
 }
 
+void DatasetHandler::GetCoordinatesFromDataset() {
+    double adfGeoTransform[6] = {0};
+    CPLErr err = small_dataset_->GetGeoTransform(adfGeoTransform);
+    if (err != CE_None) {
+        // Handle the error
+    }
+
+    double upper_left_x = adfGeoTransform[0];
+    double upper_left_y = adfGeoTransform[3];
+    coords_[1]->coordinate[0] = upper_left_x;
+    coords_[1]->coordinate[1] = upper_left_y;
+
+    double pixelWidth = adfGeoTransform[1];
+    double pixelHeight = adfGeoTransform[5];
+
+    int xsize = small_dataset_->GetRasterXSize();
+    int ysize = small_dataset_->GetRasterYSize();
+
+    double upper_right_x = upper_left_x + xsize * pixelWidth;
+    double upper_right_y = upper_left_y;
+    coords_[2]->coordinate[0] = upper_right_x;
+    coords_[2]->coordinate[1] = upper_right_y;
+
+    double lower_left_x = upper_left_x;
+    double lower_left_y = upper_left_y + ysize * pixelHeight;
+    coords_[0]->coordinate[0] = lower_left_x;
+    coords_[0]->coordinate[1] = lower_left_y;
+
+    double lower_right_x = upper_left_x + xsize * pixelWidth;
+    double lower_right_y = upper_left_y + ysize * pixelHeight;
+    coords_[3]->coordinate[0] = lower_right_x;
+    coords_[3]->coordinate[1] = lower_right_y;
+}
+
 void DatasetHandler::GetCoordinatesFromFile() {
     //Open the file
     std::ifstream i(datafilepath_);
@@ -49,13 +90,6 @@ void DatasetHandler::GetCoordinatesFromFile() {
     //Parse the file
     json j;
     i >> j;
-
-    // Create an array of pointers to your GeoCoordinates
-    coords_[0] = &(rectangle_.lower_left);
-    coords_[1] = &(rectangle_.upper_left);
-    coords_[2] = &(rectangle_.upper_right);
-    coords_[3] = &(rectangle_.lower_right);
-
 
     int k = 0;
     for (json& element : j) {
@@ -92,7 +126,7 @@ void DatasetHandler::DeleteDataFile() {
     }
 }
 
-void DatasetHandler::SaveRaster() {
+void DatasetHandler::SaveRaster(std::string filePath) {
 
     double minX = std::min({rectangle_.lower_left.coordinate[0], rectangle_.lower_right.coordinate[0], rectangle_.upper_left.coordinate[0], rectangle_.upper_right.coordinate[0]});
     double minY = std::min({rectangle_.lower_left.coordinate[1], rectangle_.lower_right.coordinate[1], rectangle_.upper_left.coordinate[1], rectangle_.upper_right.coordinate[1]});
@@ -102,7 +136,7 @@ void DatasetHandler::SaveRaster() {
     double adfGeoTransform[6];
     dataset_->GetGeoTransform(adfGeoTransform);
     double pixelWidth = adfGeoTransform[1];
-    double pixelHeight = adfGeoTransform[5];
+    double pixelHeight = -adfGeoTransform[5];
 
     int startX = (int)((minX - adfGeoTransform[0]) / adfGeoTransform[1]);
     int startY = (int)((maxY - adfGeoTransform[3]) / adfGeoTransform[5]);
@@ -111,7 +145,7 @@ void DatasetHandler::SaveRaster() {
 
     // Create a new dataset for the rectangle
     GDALDriver* poDriver = GetGDALDriverManager()->GetDriverByName("GTiff");
-    GDALDataset* poDstDS = poDriver->Create("NewMap.tif", width, height, 1, GDT_Float32, NULL);
+    GDALDataset* poDstDS = poDriver->Create(filePath.c_str(), width, height, 1, GDT_Float32, NULL);
 
     // Set the geotransform and projection on the new dataset
     double adfNewGeoTransform[6] = { minX, pixelWidth, 0, maxY, 0, -pixelHeight };
@@ -120,20 +154,54 @@ void DatasetHandler::SaveRaster() {
 
     // Read data from the source dataset into the new dataset
     float* pafScanline = new float[width * height];
-    dataset_->GetRasterBand(1)->RasterIO(GF_Read, startX, startY, width, height,
+    CPLErr err = dataset_->GetRasterBand(1)->RasterIO(GF_Read, startX, startY, width, height,
                                          pafScanline, width, height, GDT_Float32,
                                          0, 0);
-    poDstDS->GetRasterBand(1)->RasterIO(GF_Write, 0, 0, width, height,
+    if (err != CE_None) {
+        std::cout << "DatasetHandler: Could not read raster data" << std::endl;
+        exit(1);
+    }
+    err = poDstDS->GetRasterBand(1)->RasterIO(GF_Write, 0, 0, width, height,
                                         pafScanline, width, height, GDT_Float32,
                                         0, 0);
+    if (err != CE_None) {
+        std::cout << "DatasetHandler: Could not write raster data" << std::endl;
+        exit(1);
+    }
 
     // Clean up
     delete[] pafScanline;
     GDALClose(poDstDS);
-
 }
 
-void DatasetHandler::LoadRasterDataFromFile(std::vector<std::vector<int>> &rasterData) {
+void DatasetHandler::LoadMapDataset(std::vector<std::vector<int>> &rasterData) {
+
+    // Define the region of the raster to read
+    double adfGeoTransform[6];
+    small_dataset_->GetGeoTransform(adfGeoTransform);
+
+    int startX = 0; // starting from the beginning of the small map
+    int startY = 0; // starting from the beginning of the small map
+    int width = small_dataset_->GetRasterXSize(); // the width of the small map
+    int height = small_dataset_->GetRasterYSize(); // the height of the small map
+
+    // Create a 2D vector to store the raster data
+    rasterData.resize(width, std::vector<int>(height));
+
+    // Read the data from the input dataset directly into the 2D vector
+    for (int i = 0; i < height; ++i) {
+        for (int j = 0; j < width; ++j) {
+            int pixelValue;
+            CPLErr err = small_dataset_->GetRasterBand(1)->RasterIO(GF_Read, startX + j, startY + i, 1, 1, &pixelValue, 1, 1, GDT_Int32, 0, 0);
+            if (err != CE_None) {
+                std::cerr << "Error reading raster data" << std::endl;
+            }
+            rasterData[j][i] = pixelValue;
+        }
+    }
+}
+
+void DatasetHandler::LoadRasterDataFromJSON(std::vector<std::vector<int>> &rasterData) {
 
     GetCoordinatesFromFile();
 
@@ -157,8 +225,26 @@ void DatasetHandler::LoadRasterDataFromFile(std::vector<std::vector<int>> &raste
     for (int i = 0; i < height; ++i) {
         for (int j = 0; j < width; ++j) {
             int pixelValue;
-            dataset_->GetRasterBand(1)->RasterIO(GF_Read, startX + j, startY + i, 1, 1, &pixelValue, 1, 1, GDT_Int32, 0, 0);
+            CPLErr err = dataset_->GetRasterBand(1)->RasterIO(GF_Read, startX + j, startY + i, 1, 1, &pixelValue, 1, 1, GDT_Int32, 0, 0);
+            if (err != CE_None) {
+                std::cerr << "Error reading raster data" << std::endl;
+            }
             rasterData[j][i] = pixelValue;
         }
     }
+}
+
+void DatasetHandler::LoadMap(std::string filePath) {
+    delete small_dataset_;
+    small_dataset_ = (GDALDataset *) GDALOpen(filePath.c_str(), GA_ReadOnly);
+    if (dataset_ == nullptr) {
+        std::cout << "DatasetHandler: Could not open file: " << filePath << std::endl;
+        exit(1);
+    }
+    GetCoordinatesFromDataset();
+}
+
+DatasetHandler::~DatasetHandler() {
+    delete dataset_;
+    delete small_dataset_;
 }

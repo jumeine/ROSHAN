@@ -5,7 +5,7 @@
 #ifndef ROSHAN_FIREMODEL_FIRECELL_H
 #define ROSHAN_FIREMODEL_FIRECELL_H
 
-#include "../../point.h"
+#include "point.h"
 #include "virtual_particle.h"
 #include "radiation_particle.h"
 #include "model_parameters.h"
@@ -46,7 +46,7 @@ public:
     void Ignite();
     VirtualParticle EmitVirtualParticle();
     RadiationParticle EmitRadiationParticle();
-    void Render(SDL_Renderer *renderer, SDL_Rect rectangle);
+    void Render(SDL_Surface* surface, SDL_Rect rectangle);
 
     void Tick();
     void burn();
@@ -61,6 +61,7 @@ private:
     double tau_ign;
     int x_; // Start of the x coordinate in meters (m)
     int y_; // Start of the y coordinate in meters (m)
+    SDL_Surface* surface_;
     ICell* cell_;
     CellState cell_state_;
     CellState cell_initial_state_;

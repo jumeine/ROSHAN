@@ -14,17 +14,17 @@ FireModel::FireModel(SDL_Renderer *renderer) {
     running_time_ = 0;
 }
 
-void FireModel::Initialize() {
-    gridmap_ = new GridMap(wind_, parameters_);
-    model_renderer_->SetGridMap(gridmap_);
-    running_time_ = 0;
-}
-
 void FireModel::ResetGridMap(std::vector<std::vector<int>>* rasterData) {
     delete gridmap_;
     gridmap_ = new GridMap(wind_, parameters_, rasterData);
     model_renderer_->SetGridMap(gridmap_);
     running_time_ = 0;
+}
+
+void FireModel::SetUniformRasterData() {
+    current_raster_data_.clear();
+    current_raster_data_ = std::vector<std::vector<int>>(parameters_.GetGridNx(), std::vector<int>(parameters_.GetGridNy(), WOODY_BROADLEAVED_EVERGREEN_TREES));
+    map_is_uniform_ = true;
 }
 
 
@@ -34,10 +34,6 @@ void FireModel::Update() {
         gridmap_->UpdateParticles();
         gridmap_->UpdateCells();
     }
-}
-
-void FireModel::Reset() {
-
 }
 
 void FireModel::Render() {
@@ -50,12 +46,13 @@ void FireModel::HandleEvents(SDL_Event event, ImGuiIO *io) {
         int x, y;
         SDL_GetMouseState(&x, &y);
         std::pair<int, int> gridPos = model_renderer_->ScreenToGridPosition(x, y);
-
-        if (gridPos.first >= 0 && gridPos.first < gridmap_->GetCols() && gridPos.second >= 0 && gridPos.second < gridmap_->GetRows()) {
-            if(gridmap_->GetCellState(gridPos.first, gridPos.second) != CellState::GENERIC_BURNING || gridmap_->GetCellState(gridPos.first, gridPos.second) != CellState::GENERIC_BURNED)
-                gridmap_->IgniteCell(gridPos.first, gridPos.second);
-            else if(gridmap_->GetCellState(gridPos.first, gridPos.second) == CellState::GENERIC_BURNING)
-                gridmap_->ExtinguishCell(gridPos.first, gridPos.second);
+        x = gridPos.first;
+        y = gridPos.second;
+        if (x >= 0 && x < gridmap_->GetCols() && y >= 0 && y < gridmap_->GetRows()) {
+            if(gridmap_->GetCellState(x, y) != CellState::GENERIC_BURNING && gridmap_->GetCellState(x, y) != CellState::GENERIC_BURNED)
+                gridmap_->IgniteCell(x, y);
+            else if(gridmap_->GetCellState(x, y) == CellState::GENERIC_BURNING)
+                gridmap_->ExtinguishCell(x, y);
         }
     } else if (event.type == SDL_MOUSEWHEEL && !io->WantCaptureMouse) {
         if (event.wheel.y > 0) // scroll up
@@ -87,9 +84,11 @@ void FireModel::HandleEvents(SDL_Event event, ImGuiIO *io) {
     if (dataset_handler_ != nullptr) {
         if (dataset_handler_->NewDataPointExists() && browser_selection_flag_) {
             std::vector<std::vector<int>> rasterData;
-            dataset_handler_->LoadRasterDataFromFile(rasterData);
-            ResetGridMap(&rasterData);
+            dataset_handler_->LoadRasterDataFromJSON(rasterData);
+            current_raster_data_ = rasterData;
+            ResetGridMap(&current_raster_data_);
             browser_selection_flag_ = false;
+            map_is_uniform_ = false;
         }
     }
 }
@@ -111,11 +110,19 @@ void FireModel::OpenBrowser(std::string url) {
     }
 }
 
-void FireModel::SetWidthHeight(int width, int height) {
-    // Outdated
+void FireModel::Initialize() {
+    // Outdated code
 }
 
-//** ImGui Controls **//
+void FireModel::SetWidthHeight(int width, int height) {
+    // Outdated code
+}
+
+void FireModel::Reset() {
+    // Outdated code
+}
+
+//** ImGui Stuff **//
 
 void FireModel::ShowControls(std::function<void(bool &, bool &, int &)> controls, bool &update_simulation, bool &render_simulation, int &delay) {
     if (show_controls_)
@@ -132,29 +139,41 @@ void FireModel::ImGuiModelMenu() {
     if (model_startup_) {
         if (ImGui::BeginMainMenuBar()) {
             if (ImGui::BeginMenu("File")) {
-                if (ImGui::MenuItem("Open")) {
-                    bool open = true;
-//                std::string path = FileDialog::OpenFile();
-//                if (!path.empty()) {
-//                    dataset_handler_->OpenFile(path);
-//                    ResetGridMap(dataset_handler_->GetRasterData());
-//                }
+                if (ImGui::MenuItem("Open Browser")) {
+                    std::string url = "http://localhost:3000/map.html";
+                    OpenBrowser(url);
                 }
+                if (ImGui::MenuItem("Load Map from Disk")) {
+                    // Open File Dialog
+                    open_file_dialog_ = true;
+                    // Load Map
+                    load_map_from_disk_ = true;
+                }
+                if (ImGui::MenuItem("Load Map from Browser Selection"))
+                    browser_selection_flag_ = true;
+                if (ImGui::MenuItem("Load Uniform Map")) {
+                    SetUniformRasterData();
+                    ResetGridMap(&current_raster_data_);
+                }
+                if (ImGui::MenuItem("Save Map")) {
+                    // Open File Dialog
+                    open_file_dialog_ = true;
+                    // Save Map
+                    save_map_to_disk_ = true;
+                }
+                if (ImGui::MenuItem("Reset GridMap"))
+                    ResetGridMap(&current_raster_data_);
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("View")) {
-                if (ImGui::MenuItem("Show Controls"))
-                    show_controls_ = !show_controls_;
-                if (ImGui::MenuItem("Show Analysis"))
-                    show_model_analysis_ = !show_model_analysis_;
-                if (ImGui::MenuItem("Show Parameter Config"))
-                    show_model_parameter_config_ = !show_model_parameter_config_;
+                ImGui::MenuItem("Show Controls", NULL, &show_controls_);
+                ImGui::MenuItem("Show Analysis", NULL, &show_model_analysis_);
+                ImGui::MenuItem("Show Parameter Config", NULL, &show_model_parameter_config_);
+                ImGui::MenuItem("Render Grid", NULL, &parameters_.render_grid_);
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("Help")) {
-                if (ImGui::MenuItem("ImGui Help")) {
-                    show_demo_window_ = !show_demo_window_;
-                }
+                ImGui::MenuItem("ImGui Help", NULL, &show_demo_window_);
                 ImGui::EndMenu();
             }
             ImGui::EndMainMenuBar();
@@ -182,6 +201,39 @@ void FireModel::Config() {
             ImGui::End();
         }
 
+        if (open_file_dialog_) {
+            std::string filePathName;
+            // open Dialog Simple
+            ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".tif", "../maps/");
+
+            // display
+            if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey")) {
+                // action if OK
+                if (ImGuiFileDialog::Instance()->IsOk()) {
+                    filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
+                    std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
+
+                    if (load_map_from_disk_){
+                        dataset_handler_->LoadMap(filePathName);
+                        std::vector<std::vector<int>> rasterData;
+                        dataset_handler_->LoadMapDataset(rasterData);
+                        current_raster_data_ = rasterData;
+                        ResetGridMap(&current_raster_data_);
+                        load_map_from_disk_ = false;
+                        map_is_uniform_ = false;
+                    }
+                    else if (save_map_to_disk_) {
+                        dataset_handler_->SaveRaster(filePathName);
+                        save_map_to_disk_ = false;
+                    }
+                }
+
+                // close
+                ImGuiFileDialog::Instance()->Close();
+                open_file_dialog_ = false;
+            }
+        }
+
         ImGui::PopStyleVar();
     }
 }
@@ -190,7 +242,7 @@ bool FireModel::ImGuiOnStartup() {
     if (!model_startup_) {
         int width, height;
         SDL_GetRendererOutputSize(model_renderer_->GetRenderer(), &width, &height);
-        ImVec2 window_size = ImVec2(500, 150);
+        ImVec2 window_size = ImVec2(400, 100);
         ImGui::SetNextWindowSize(window_size);
         ImVec2 appWindowPos = ImVec2((width - window_size.x) * 0.5f, (height - window_size.y) * 0.5f);
         ImGui::SetNextWindowPos(appWindowPos);
@@ -204,19 +256,20 @@ bool FireModel::ImGuiOnStartup() {
 
         bool still_no_init = true;
         if (ImGui::Button("Uniform Vegetation", ImVec2(-1, 0))) {
-            Initialize();
+            SetUniformRasterData();
+            ResetGridMap(&current_raster_data_);
             still_no_init = false;
             model_startup_ = true;
             show_controls_ = true;
             show_model_parameter_config_ = true;
         }
         ImGui::Separator();
-        if (ImGui::Button("Load from Browser", ImVec2(-1, 0))) {
-
-        }
-        ImGui::Separator();
         if (ImGui::Button("Load from File", ImVec2(-1, 0))) {
-
+            model_startup_ = true;
+            show_controls_ = true;
+            show_model_parameter_config_ = true;
+            open_file_dialog_ = true;
+            load_map_from_disk_ = true;
         }
         ImGui::PopStyleColor(3);
         ImGui::End();
@@ -258,32 +311,24 @@ void FireModel::ShowParameterConfig() {
         ImGui::Spacing();
     }
 
-    ImGui::SeparatorText("Cell (Terrain)");
-    if(ImGui::TreeNodeEx("##CellTerrain", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth)) {
-        if (ImGui::Button("Open Browser")) {
-            std::string url = "http://localhost:3000/map.html";
-            OpenBrowser(url);
+    if (map_is_uniform_) {
+        ImGui::SeparatorText("Cell (Terrain)");
+        if(ImGui::TreeNodeEx("##CellTerrain", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth)) {
+            ImGui::Spacing();
+            ImGui::Text("Cell Size");
+            //Colored Text in grey on the same line
+            ImGui::SameLine();
+            ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "(?)");
+            if(ImGui::IsItemHovered())
+                ImGui::SetTooltip("always press [Reset GridMap] manually after changing these values");
+            ImGui::SliderScalar("##Cell Size", ImGuiDataType_Double, &parameters_.cell_size_, &parameters_.min_cell_size_, &parameters_.max_cell_size_, "%.3f", 1.0f);
+            ImGui::Text("Cell Ignition Threshold");
+            ImGui::SliderScalar("##Cell Ignition Threshold", ImGuiDataType_Double, &parameters_.cell_ignition_threshold_, &parameters_.min_ignition_threshold_, &parameters_.max_ignition_threshold_, "%.3f", 1.0f);
+            ImGui::Text("Cell Burning Duration");
+            ImGui::SliderScalar("##Cell Burning Duration", ImGuiDataType_Double, &parameters_.cell_burning_duration_, &parameters_.min_burning_duration_, &parameters_.max_burning_duration_, "%.3f", 1.0f);
+            ImGui::TreePop();
+            ImGui::Spacing();
         }
-        ImGui::SameLine();
-        if (ImGui::Button("Reset GridMap"))
-            ResetGridMap();
-        ImGui::SameLine();
-        if (ImGui::Button("Load GridMap"))
-            browser_selection_flag_ = true;
-        ImGui::Spacing();
-        ImGui::Text("Cell Size");
-        //Colored Text in grey on the same line
-        ImGui::SameLine();
-        ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "(?)");
-        if(ImGui::IsItemHovered())
-            ImGui::SetTooltip("always press [Reset GridMap] manually after changing these values");
-        ImGui::SliderScalar("##Cell Size", ImGuiDataType_Double, &parameters_.cell_size_, &parameters_.min_cell_size_, &parameters_.max_cell_size_, "%.3f", 1.0f);
-        ImGui::Text("Cell Ignition Threshold");
-        ImGui::SliderScalar("##Cell Ignition Threshold", ImGuiDataType_Double, &parameters_.cell_ignition_threshold_, &parameters_.min_ignition_threshold_, &parameters_.max_ignition_threshold_, "%.3f", 1.0f);
-        ImGui::Text("Cell Burning Duration");
-        ImGui::SliderScalar("##Cell Burning Duration", ImGuiDataType_Double, &parameters_.cell_burning_duration_, &parameters_.min_burning_duration_, &parameters_.max_burning_duration_, "%.3f", 1.0f);
-        ImGui::TreePop();
-        ImGui::Spacing();
     }
 
     ImGui::SeparatorText("Wind");

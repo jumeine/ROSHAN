@@ -178,85 +178,13 @@ void EngineCore::Render() {
         model_->Render();
     }
     else {
-        SDL_SetRenderDrawColor(renderer_, 41, 49, 51, 255);
+        SDL_Color color = {41, 49, 51, 255};
+        SDL_SetRenderDrawColor(renderer_, color.r, color.g, color.b, color.a);
         SDL_RenderClear(renderer_);
     }
     ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
     SDL_RenderPresent(renderer_);
 }
-
-//void EngineCore::Render() {
-//    // Start the Dear ImGui frame
-//    ImGui_ImplSDLRenderer2_NewFrame();
-//    ImGui_ImplSDL2_NewFrame();
-//    ImGui::NewFrame();
-//
-//    if(!ImGuiModelSelection()) {
-//        ImGui::Begin("Control Window");
-//        model_->ImGuiModelMenu();
-//        if (ImGui::TreeNode("Simulation Controls")) {
-//            bool button_color = false;
-//            if (update_simulation_) {
-//                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.35f, 0.6f, 0.85f, 1.0f));
-//                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.45f, 0.7f, 0.95f, 1.0f));
-//                ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.25f, 0.5f, 0.75f, 1.0f));
-//                button_color = true;
-//            }
-//            if (ImGui::Button(update_simulation_ ? "Stop Simulation" : "Start Simulation")) {
-//                update_simulation_ = !update_simulation_;
-//            }
-//            if (ImGui::IsItemHovered())
-//                ImGui::SetTooltip("Click to %s the simulation.", update_simulation_ ? "stop" : "start");
-//            if (button_color) {
-//                ImGui::PopStyleColor(3);
-//            }
-//            ImGui::SameLine();
-//
-//            button_color = false;
-//            if (render_simulation_) {
-//                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.35f, 0.6f, 0.85f, 1.0f));
-//                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.45f, 0.7f, 0.95f, 1.0f));
-//                ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.25f, 0.5f, 0.75f, 1.0f));
-//                button_color = true;
-//            }
-//            if (ImGui::Button(render_simulation_ ? "Stop Rendering" : "Start Rendering")) {
-//                render_simulation_ = !render_simulation_;
-//            }
-//            if (ImGui::IsItemHovered())
-//                ImGui::SetTooltip("Click to %s rendering the simulation.", render_simulation_ ? "stop" : "start");
-//            if (button_color) {
-//                ImGui::PopStyleColor(3);
-//            }
-//            ImGui::SameLine();
-//
-//            ImGui::Text("Simulation Delay");
-//            ImGui::SliderInt("Delay (ms)", &delay_, 0, 500);
-//            ImGui::Spacing();
-//            model_->ImGuiSimulationSpeed();
-//            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io_->Framerate, io_->Framerate);
-//            ImGui::TreePop();
-//        }
-//        if (ImGui::TreeNode("Model Controls")) {
-//            model_->Config();
-//            ImGui::TreePop();
-//        }
-//        model_->ShowPopups();
-//        ImGui::End();
-//    }
-//    // Rendering
-//    ImGui::Render();
-//    SDL_RenderSetScale(renderer_, io_->DisplayFramebufferScale.x, io_->DisplayFramebufferScale.y);
-//    if (model_ != nullptr && render_simulation_) {
-//        model_->Render();
-//    }
-//    else {
-//        SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 255);
-//        SDL_RenderClear(renderer_);
-//    }
-//
-//    ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
-//    SDL_RenderPresent(renderer_);
-//}
 
 void EngineCore::HandleEvents() {
     // Poll and handle events (inputs, window resize, etc.)

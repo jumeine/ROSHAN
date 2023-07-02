@@ -7,12 +7,14 @@
 
 #include <SDL.h>
 #include "firemodel_camera.h"
+#include "firemodel_pixelbuffer.h"
 #include "../firemodel_gridmap.h"
 #include "../radiation_particle.h"
 #include "../virtual_particle.h"
 #include "../model_parameters.h"
 #include "imgui.h"
 #include "../utils.h"
+#include <chrono>
 
 class FireModelRenderer {
 public:
@@ -22,16 +24,21 @@ public:
     }
 
     void Render();
-    void GetScreenResolution(int& width, int& height);
-    void SetGridMap(GridMap* gridmap) { gridmap_ = gridmap; }
+    void SetScreenResolution();
+    void SetGridMap(GridMap* gridmap) { gridmap_ = gridmap; SetFullRedraw(); }
     SDL_Renderer* GetRenderer() { return renderer_; }
 
     // Converter Functions
     std::pair<int, int> ScreenToGridPosition(int x, int y);
 
     // Camera functions
-    void ChangeCameraPosition(double x, double y) { camera_.Move(x, y);}
-    void ApplyZoom(double z) { camera_.Zoom(z);}
+    void CheckCamera();
+    void ChangeCameraPosition(double x, double y) { camera_.Move(x, y); SetFullRedraw();}
+    void ApplyZoom(double z) { camera_.Zoom(z); SetFullRedraw();}
+
+    // Drawing Related
+    void SetFullRedraw() { needs_full_redraw_ = true; }
+    void ResizeEvent();
 
     ~FireModelRenderer();
 
@@ -39,24 +46,29 @@ private:
     FireModelRenderer(SDL_Renderer* renderer, FireModelParameters& parameters);
 
     void DrawCells();
-    void DrawGrid();
     void DrawCircle(int x, int y, int min_radius, double intensity);
     void DrawParticles();
 
     FireModelParameters& parameters_;
     FireModelCamera camera_;
     SDL_Renderer* renderer_;
-    SDL_Texture* back_buffer_;
-    SDL_Surface* drawing_surface_;
     SDL_Texture* texture_;
-    Uint32* pixel_buffer_;
+    PixelBuffer* pixel_buffer_;
+    SDL_PixelFormat* pixel_format_;
+
     GridMap* gridmap_ = nullptr;
     int width_;
     int height_;
-    // Camera position
-    const double camera_speed_ = 0.3;
 
     static FireModelRenderer* instance_;
+
+    bool needs_full_redraw_;
+    void DrawAllCells(int grid_left, int grid_right, int grid_top, int grid_bottom);
+    void DrawChangesCells();
+    SDL_Rect DrawCell(int x, int y);
+
+    void ResizePixelBuffer();
+    void ResizeTexture();
 };
 
 

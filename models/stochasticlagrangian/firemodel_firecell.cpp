@@ -138,7 +138,7 @@ void FireCell::SetCellState(CellState cell_state) {
 }
 
 void FireCell::ShowInfo() {
-    ImVec4 color = cell_->GetColor();
+    ImVec4 color = cell_->GetImVecColor();
     ImGui::ColorButton("MyColor##3", {color.x / 255, color.y / 255, color.z / 255, color.w / 255}, ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoPicker);
     ImGui::SameLine();
     ImGui::TextUnformatted(CellStateToString(cell_state_).c_str());
@@ -147,8 +147,8 @@ void FireCell::ShowInfo() {
     ImGui::Text("Tau ign: %f", tau_ign);
 }
 
-void FireCell::Render(SDL_Surface* surface, SDL_Rect rectangle) {
-    cell_->Render(surface,rectangle);
+Uint32 FireCell::GetMappedColor() {
+    return cell_->GetMappedColor();
 }
 
 FireCell::~FireCell() {

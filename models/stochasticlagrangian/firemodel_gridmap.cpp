@@ -125,6 +125,7 @@ void GridMap::IgniteCell(int x, int y) {
     virtual_particles_.push_back(virtual_particle);
     radiation_particles_.push_back(radiation_particle);
     burning_cells_.insert(Point(x, y));
+    changed_cells_.emplace_back(x, y);
 }
 
 void GridMap::UpdateCells() {
@@ -150,6 +151,7 @@ void GridMap::UpdateCells() {
         if (cells_[x][y]->GetIgnitionState() == CellState::GENERIC_BURNED) {
             // The cell has burned out, so it is no longer burning
             it = burning_cells_.erase(it);
+            changed_cells_.push_back(Point(x, y));
         } else {
             ++it;
         }
@@ -163,6 +165,7 @@ int GridMap::GetNumParticles() {
 
 void GridMap::ExtinguishCell(int x, int y) {
     cells_[x][y]->Extinguish();
+    changed_cells_.push_back(Point(x, y));
 }
 
 CellState GridMap::GetCellState(int x, int y) {

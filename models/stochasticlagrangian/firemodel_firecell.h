@@ -46,7 +46,7 @@ public:
     void Ignite();
     VirtualParticle EmitVirtualParticle();
     RadiationParticle EmitRadiationParticle();
-    void Render(SDL_Surface* surface, SDL_Rect rectangle);
+    Uint32 GetMappedColor();
 
     void Tick();
     void burn();

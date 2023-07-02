@@ -16,22 +16,29 @@ void FireModelCamera::Zoom(double factor) {
 std::pair<int, int> FireModelCamera::ScreenToGridPosition(int screenX, int screenY) const {
 
     // Convert screen coordinates to grid coordinates
-    int gridX = static_cast<int>(((screenX - offset_x_) / static_cast<int>(cell_size_)) - ceil(x_));
-    int gridY = static_cast<int>(((screenY - offset_y_) / static_cast<int>(cell_size_)) - ceil(y_));
+    int gridX = static_cast<int>(((screenX - offset_x_) / static_cast<int>(cell_size_)) - x_);
+    int gridY = static_cast<int>(((screenY - offset_y_) / static_cast<int>(cell_size_)) - y_);
 
     return std::make_pair(gridX, gridY);
 }
 
-std::pair<int, int> FireModelCamera::WorldToScreen(double worldX, double worldY) const {
+std::pair<int, int> FireModelCamera::GridToScreenPosition(double worldX, double worldY) const {
 
-    int screenX = static_cast<int>(((worldX + ceil(x_)) * static_cast<int>(cell_size_)) + offset_x_);
-    int screenY = static_cast<int>(((worldY + ceil(y_)) * static_cast<int>(cell_size_)) + offset_y_);
+    int screenX = static_cast<int>(((worldX + x_) * static_cast<int>(cell_size_)) + offset_x_);
+    int screenY = static_cast<int>(((worldY + y_) * static_cast<int>(cell_size_)) + offset_y_);
 
     return std::make_pair(screenX, screenY);
 }
 
+void FireModelCamera::Update(int width, int height, int rows, int cols) {
+    SetViewport(width, height);
+    SetCellSize(rows, cols);
+    SetOffset(rows, cols);
+}
+
 void FireModelCamera::SetCellSize(int rows, int cols) {
-    cell_size_ = double(std::min(GetViewportWidth(), GetViewportHeight())) / (double)std::max(rows, cols) * zoom_;
+    double cell_size = double(std::min(GetViewportWidth(), GetViewportHeight())) / (double)std::max(rows, cols) * zoom_;
+    cell_size_ = cell_size <= 1.0 ? 1.0 : cell_size >= 200.0 ? 200.0 : cell_size;
 }
 
 void FireModelCamera::SetOffset(int rows, int cols) {

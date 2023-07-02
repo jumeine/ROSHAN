@@ -13,6 +13,7 @@
 #include "model_parameters.h"
 #include "wind.h"
 #include <random>
+#include <iostream>
 
 class GridMap {
 public:
@@ -33,6 +34,8 @@ public:
     int GetNumCells() { return rows_ * cols_; }
     std::vector<VirtualParticle> GetVirtualParticles() const { return virtual_particles_; }
     std::vector<RadiationParticle> GetRadiationParticles() const { return radiation_particles_; }
+    std::vector<Point> GetChangedCells() const { return changed_cells_; }
+    void ResetChangedCells() { changed_cells_.clear(); }
 
     FireCell& At(int i, int j) {
         return *cells_[i][j];
@@ -46,6 +49,7 @@ private:
     std::vector<std::vector<FireCell*>> cells_;
     std::unordered_set<Point> ticking_cells_;
     std::unordered_set<Point> burning_cells_;
+    std::vector<Point> changed_cells_;
 
     // Random decives and Generators for the Cells
     std::random_device rd_;

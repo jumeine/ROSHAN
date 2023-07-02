@@ -25,9 +25,10 @@ public:
     double GetViewportHeight() const { return viewport_height_; }
     double GetOffsetX() const { return offset_x_; }
     double GetOffsetY() const { return offset_y_; }
+    void Update(int width, int height, int rows, int cols);
 
     std::pair<int, int> ScreenToGridPosition(int screenX, int screenY) const;
-    std::pair<int, int> WorldToScreen(double worldX, double worldY) const;
+    std::pair<int, int> GridToScreenPosition(double worldX, double worldY) const;
 private:
     double x_;
     double y_;

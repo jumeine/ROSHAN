@@ -6,7 +6,7 @@
 #define ROSHAN_MODEL_PARAMETERS_H
 
 #include <math.h>
-
+#include <SDL.h>
 class FireModelParameters {
 
 public:
@@ -14,6 +14,8 @@ public:
 
     //Render parameters
     bool render_grid_ = false;
+    SDL_Color background_color_ = {41, 49, 51, 255};
+
 
     // Simulation parameters
     double dt_ = 1; // in seconds (s)

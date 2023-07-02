@@ -18,6 +18,7 @@ void FireModel::ResetGridMap(std::vector<std::vector<int>>* rasterData) {
     delete gridmap_;
     gridmap_ = new GridMap(wind_, parameters_, rasterData);
     model_renderer_->SetGridMap(gridmap_);
+//    model_renderer_->CheckCamera();
     running_time_ = 0;
 }
 
@@ -77,6 +78,10 @@ void FireModel::HandleEvents(SDL_Event event, ImGuiIO *io) {
         if (cell_pos.first >= 0 && cell_pos.first < gridmap_->GetCols() && cell_pos.second >= 0 && cell_pos.second < gridmap_->GetRows()) {
             popups_.insert(cell_pos);
             popup_has_been_opened_.insert({cell_pos, false});
+        }
+    } else if (event.type == SDL_WINDOWEVENT) {
+        if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
+            model_renderer_->ResizeEvent();
         }
     }
     // Browser Events
@@ -169,7 +174,8 @@ void FireModel::ImGuiModelMenu() {
                 ImGui::MenuItem("Show Controls", NULL, &show_controls_);
                 ImGui::MenuItem("Show Analysis", NULL, &show_model_analysis_);
                 ImGui::MenuItem("Show Parameter Config", NULL, &show_model_parameter_config_);
-                ImGui::MenuItem("Render Grid", NULL, &parameters_.render_grid_);
+                if(ImGui::MenuItem("Render Grid", NULL, &parameters_.render_grid_))
+                    model_renderer_->SetFullRedraw();
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("Help")) {
@@ -227,13 +233,11 @@ void FireModel::Config() {
                         save_map_to_disk_ = false;
                     }
                 }
-
                 // close
                 ImGuiFileDialog::Instance()->Close();
                 open_file_dialog_ = false;
             }
         }
-
         ImGui::PopStyleVar();
     }
 }

@@ -25,7 +25,7 @@ void FireModel::ResetGridMap(std::vector<std::vector<int>>* rasterData) {
 void FireModel::SetUniformRasterData() {
     current_raster_data_.clear();
     current_raster_data_ = std::vector<std::vector<int>>(parameters_.GetGridNx(), std::vector<int>(parameters_.GetGridNy(), WOODY_BROADLEAVED_EVERGREEN_TREES));
-    map_is_uniform_ = true;
+    parameters_.map_is_uniform_ = true;
 }
 
 
@@ -50,7 +50,7 @@ void FireModel::HandleEvents(SDL_Event event, ImGuiIO *io) {
         x = gridPos.first;
         y = gridPos.second;
         if (x >= 0 && x < gridmap_->GetCols() && y >= 0 && y < gridmap_->GetRows()) {
-            if(gridmap_->GetCellState(x, y) != CellState::GENERIC_BURNING && gridmap_->GetCellState(x, y) != CellState::GENERIC_BURNED)
+            if(gridmap_->At(x, y).CanIgnite())
                 gridmap_->IgniteCell(x, y);
             else if(gridmap_->GetCellState(x, y) == CellState::GENERIC_BURNING)
                 gridmap_->ExtinguishCell(x, y);
@@ -93,7 +93,7 @@ void FireModel::HandleEvents(SDL_Event event, ImGuiIO *io) {
             current_raster_data_ = rasterData;
             ResetGridMap(&current_raster_data_);
             browser_selection_flag_ = false;
-            map_is_uniform_ = false;
+            parameters_.map_is_uniform_ = false;
         }
     }
 }
@@ -204,6 +204,7 @@ void FireModel::Config() {
             ImGui::Text("Number of virtual particles: %d", gridmap_->GetNumParticles());
             ImGui::Text("Number of cells: %d", gridmap_->GetNumCells());
             ImGui::Text("Running Time in seconds: %.3f", running_time_);
+            ImGui::Text("Höhe: %.2fm | Breite: %.2fm", gridmap_->GetRows() * parameters_.GetCellSize(), gridmap_->GetCols() * parameters_.GetCellSize());
             ImGui::End();
         }
 
@@ -226,7 +227,7 @@ void FireModel::Config() {
                         current_raster_data_ = rasterData;
                         ResetGridMap(&current_raster_data_);
                         load_map_from_disk_ = false;
-                        map_is_uniform_ = false;
+                        parameters_.map_is_uniform_ = false;
                     }
                     else if (save_map_to_disk_) {
                         dataset_handler_->SaveRaster(filePathName);
@@ -315,7 +316,7 @@ void FireModel::ShowParameterConfig() {
         ImGui::Spacing();
     }
 
-    if (map_is_uniform_) {
+    if (parameters_.map_is_uniform_) {
         ImGui::SeparatorText("Cell (Terrain)");
         if(ImGui::TreeNodeEx("##CellTerrain", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth)) {
             ImGui::Spacing();

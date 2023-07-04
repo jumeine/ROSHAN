@@ -8,7 +8,9 @@
 class CellPeriodicallyHerbaceous : public ICell {
 public:
     CellPeriodicallyHerbaceous(SDL_PixelFormat* format) {
-        color_ = {255, 255, 102, 255};
+        color_ = {240, 230, 140, 255};
         mapped_color_ = SDL_MapRGBA(format, color_.r, color_.g, color_.b, color_.a);
+        cell_burning_duration_ = 360;
+        ignition_delay_time_ = 60;
     }
 };

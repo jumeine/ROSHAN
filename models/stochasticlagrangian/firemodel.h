@@ -73,7 +73,6 @@ private:
     bool open_file_dialog_ = false;
     bool load_map_from_disk_ = false;
     bool save_map_to_disk_ = false;
-    bool map_is_uniform_;
 
     void ShowParameterConfig();
 

@@ -18,7 +18,9 @@ VirtualParticle::VirtualParticle(int x, int y, double tau_mem, double Y_st,
     C0_ = C0;
     Lt_ = Lt;
 
+    std::random_device rd;
     gen_ = gen;
+    gen_.seed(rd());
 }
 
 void VirtualParticle::UpdateState(Wind wind, double dt) {

@@ -44,7 +44,10 @@ RadiationParticle::RadiationParticle(double x, double y, double Lr, double Sf_0,
 
     phi_p_ = 0.0;
     r_p_ = 0.0;
+
+    std::random_device rd;
     gen_ = gen;
+    gen_.seed(rd());
 
     Sf_0_mean_ = Sf_0;
     Sf_0_std_ = 1;

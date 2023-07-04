@@ -43,24 +43,29 @@ public:
     CellState GetIgnitionState();
     CellState GetCellState() { return cell_state_; }
 
+    bool CanIgnite();
     void Ignite();
     VirtualParticle EmitVirtualParticle();
     RadiationParticle EmitRadiationParticle();
     Uint32 GetMappedColor();
 
     void Tick();
-    void burn();
+    bool burn();
     bool ShouldIgnite();
     void Extinguish();
     void ShowInfo();
 private:
     FireModelParameters &parameters_;
 
-    double burningDuration_;
-    double tickingDuration_;
+    double burning_duration_;
+    double ticking_duration_;
+    double burning_tick_;
+    int last_burning_duration_;
     double tau_ign;
     int x_; // Start of the x coordinate in meters (m)
     int y_; // Start of the y coordinate in meters (m)
+    int num_particles_;
+    int particle_emission_threshold_;
     SDL_Surface* surface_;
     ICell* cell_;
     CellState cell_state_;
@@ -71,7 +76,7 @@ private:
 
     ICell *GetCell();
 
-
+    bool EmitNextParticle();
     void SetCellState(CellState cell_state);
 };
 

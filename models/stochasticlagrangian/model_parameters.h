@@ -15,6 +15,7 @@ public:
     //Render parameters
     bool render_grid_ = false;
     SDL_Color background_color_ = {41, 49, 51, 255};
+    bool map_is_uniform_;
 
 
     // Simulation parameters
@@ -68,10 +69,10 @@ public:
 
     // Parameter for the Grid
     // Number of cells in the x direction (rows)
-    int grid_nx_ = 1102;
+    int grid_nx_ = 400;
     int GetGridNx() const {return grid_nx_;}
     // Number of cells in the y direction (cols)
-    int grid_ny_ = 852;
+    int grid_ny_ = 400;
     int GetGridNy() const {return grid_ny_;}
 
 
@@ -87,7 +88,7 @@ public:
     double cell_burning_duration_ = 60; // in seconds (s)
     double GetCellBurningDuration() const {return cell_burning_duration_;}
     // We assume quadratic cells and this is the length of the side of the cell
-    double cell_size_ = 2.0; // in meters (m)
+    double cell_size_ = 10.0; // in meters (m)
     double GetCellSize() const {return cell_size_;} // in meters (m)
     // Minimum and maximum values for the ImGui Sliders for the cells
     double min_burning_duration_ = 1.0;

@@ -8,7 +8,9 @@
 class CellPermanentHerbaceous : public ICell {
 public:
     CellPermanentHerbaceous(SDL_PixelFormat* format) {
-        color_ = {173, 255, 47, 255};
+        color_ = {250, 218, 94, 255};
         mapped_color_ = SDL_MapRGBA(format, color_.r, color_.g, color_.b, color_.a);
+        cell_burning_duration_ = 360;
+        ignition_delay_time_ = 60;
     }
 };

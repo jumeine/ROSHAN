@@ -2,22 +2,39 @@
 // Created by nex on 10.06.23.
 //
 
+#include <iostream>
 #include "firemodel_firecell.h"
 
 FireCell::FireCell(int x, int y, std::mt19937 gen, FireModelParameters &parameters, int raster_value) : parameters_(parameters) {
-    burningDuration_ = parameters_.GetCellBurningDuration();
-    tau_ign = parameters_.GetIgnitionDelayTime();
-    tickingDuration_ = 0;
     surface_ = SDL_CreateRGBSurfaceWithFormat(0, 1, 1, 32, SDL_PIXELFORMAT_ARGB8888);
+
+    //Cell State
     cell_initial_state_ = CellState(raster_value);
     cell_state_ = CellState(raster_value);
     cell_ = GetCell();
+
+    // Cell Parameters
     x_ = x * parameters_.GetCellSize();
     y_ = y * parameters_.GetCellSize();
+    ticking_duration_ = 0;
+
+    num_particles_ = 60;
+
+    if (parameters_.map_is_uniform_) {
+        burning_duration_ = parameters_.GetCellBurningDuration();
+        tau_ign = parameters_.GetIgnitionDelayTime();
+    } else {
+        burning_duration_ = cell_->GetCellBurningDuration();
+        tau_ign = cell_->GetIgnitionDelayTime();
+    }
+
+    particle_emission_threshold_ = burning_duration_ / num_particles_;
 
     // TODO Auslagern der Zufallszahlen in eine eigene Klasse?
     // Initialize random number generator
+    std::random_device rd;
     gen_ = gen;
+    gen_.seed(rd());
     std::uniform_real_distribution<> dis(0.1, 0.2);
     std::uniform_int_distribution<> sign_dis(-1, 1);
     tau_ign += sign_dis(gen_) * tau_ign * dis(gen_);
@@ -90,7 +107,12 @@ void FireCell::Ignite() {
 }
 
 VirtualParticle FireCell::EmitVirtualParticle() {
-    VirtualParticle particle(x_ + (parameters_.GetCellSize() * 0.5), y_ + (parameters_.GetCellSize() * 0.5), parameters_.GetTauMemVirt(), parameters_.GetYStVirt(),
+    std::random_device rd;
+    gen_.seed(rd());
+    std::uniform_real_distribution<> dis(0.0, 1.0);
+    double x_pos_rnd = dis(gen_);
+    double y_pos_rnd = dis(gen_);
+    VirtualParticle particle(x_ + (parameters_.GetCellSize() * x_pos_rnd), y_ + (parameters_.GetCellSize() * y_pos_rnd), parameters_.GetTauMemVirt(), parameters_.GetYStVirt(),
                              parameters_.GetYLimVirt(), parameters_.GetFlVirt(), parameters_.GetC0Virt(),
                              parameters_.GetLt(), gen_);
 
@@ -98,7 +120,12 @@ VirtualParticle FireCell::EmitVirtualParticle() {
 }
 
 RadiationParticle FireCell::EmitRadiationParticle() {
-    RadiationParticle radiation_particle(x_ + (parameters_.GetCellSize() * 0.5), y_ + (parameters_.GetCellSize() * 0.5), parameters_.GetLr(), parameters_.GetSf0(),
+    std::random_device rd;
+    gen_.seed(rd());
+    std::uniform_real_distribution<> dis(0.0, 1.0);
+    double x_pos_rnd = dis(gen_);
+    double y_pos_rnd = dis(gen_);
+    RadiationParticle radiation_particle(x_ + (parameters_.GetCellSize() * x_pos_rnd), y_ + (parameters_.GetCellSize() * y_pos_rnd), parameters_.GetLr(), parameters_.GetSf0(),
                                          parameters_.GetYStRad(),parameters_.GetYLimRad(), gen_);
 
     return radiation_particle;
@@ -109,19 +136,42 @@ void FireCell::Tick() {
     if (cell_state_ == GENERIC_BURNING || cell_state_ == GENERIC_BURNED) {
         throw std::runtime_error("FireCell::Tick() called on a cell that is not unburned");
     }
-    tickingDuration_ += parameters_.GetDt();
-}
-
-void FireCell::burn() {
-    burningDuration_ -= parameters_.GetDt();
-    if (burningDuration_ <= 0) {
-        SetCellState(GENERIC_BURNED);
+    if (tau_ign != -1) {
+        ticking_duration_ += parameters_.GetDt();
     }
 }
 
+bool FireCell::EmitNextParticle() {
+    if (ceil(last_burning_duration_) != floor(burning_tick_)) {
+        return (int(burning_tick_) % particle_emission_threshold_ == 0);
+    } else {
+        return false;
+    }
+};
+
+bool FireCell::burn() {
+    last_burning_duration_ = burning_tick_;
+    burning_duration_ -= parameters_.GetDt();
+    burning_tick_ += parameters_.GetDt();
+    if (burning_duration_ <= 0) {
+        SetCellState(GENERIC_BURNED);
+        return false;
+    } else {
+        return EmitNextParticle();
+    }
+}
+
+bool FireCell::CanIgnite() {
+    if (cell_state_ == GENERIC_BURNING || cell_state_ == GENERIC_BURNED  ||
+        cell_state_ == SNOW_AND_ICE || cell_state_ == OUTSIDE_AREA || cell_state_ == WATER) {
+        return false;
+    }
+    return true;
+}
+
 bool FireCell::ShouldIgnite() {
-    if (tickingDuration_ >= tau_ign) {
-        tickingDuration_ = 0;
+    if (ticking_duration_ >= tau_ign) {
+        ticking_duration_ = 0;
         return true;
     }
     return false;
@@ -142,9 +192,10 @@ void FireCell::ShowInfo() {
     ImGui::ColorButton("MyColor##3", {color.x / 255, color.y / 255, color.z / 255, color.w / 255}, ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoPicker);
     ImGui::SameLine();
     ImGui::TextUnformatted(CellStateToString(cell_state_).c_str());
-    ImGui::Text("Burning duration: %f", burningDuration_);
-    ImGui::Text("Ticking duration: %f", tickingDuration_);
-    ImGui::Text("Tau ign: %f", tau_ign);
+    ImGui::Text("%0.f m x %0.f m", parameters_.GetCellSize(), parameters_.GetCellSize());
+    ImGui::Text("Burning duration: %.2f", burning_duration_);
+    ImGui::Text("Ticking duration: %.2f", ticking_duration_);
+    ImGui::Text("Tau ign: %.2f", tau_ign);
 }
 
 Uint32 FireCell::GetMappedColor() {

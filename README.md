@@ -7,6 +7,7 @@ Firesimulation based on cellular automata
 
 https://github.com/libsdl-org/SDL/releases/tag/release-2.26.5
 
+https://github.com/libsdl-org/SDL_image/releases/tag/release-2.6.3
 
 #### NodeJS
 
@@ -26,6 +27,7 @@ GDAL and GDAL C++ headers
 
 sudo apt-get install libgdal-dev
 sudo apt-get install gdal-bin
+sudo apt-get install libsdl2-image-dev
 
 ## These modules go under externals:
 

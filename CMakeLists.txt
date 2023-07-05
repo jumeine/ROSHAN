@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.25)
 project(ROSHAN)
 set(CMAKE_CXX_STANDARD 17)
 
+# set cmake module path
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
+
 # Find and link against OpenGL
 find_package(OpenGL REQUIRED)
 
@@ -23,9 +26,19 @@ target_include_directories(imgui_external PUBLIC ${CMAKE_SOURCE_DIR}/externals/i
 find_package(GDAL REQUIRED)
 include_directories(${GDAL_INCLUDE_DIRS})
 
+# SDL2_images
+#find_package(SDL2 REQUIRED)
+#find_package(SDL2_image REQUIRED)
+#include_directories(${SDL2_INCLUDE_DIRS} ${SDL2_IMAGE_INCLUDE_DIRS})
+set(SDL2_IMAGE_LIBRARIES "/usr/local/lib/libSDL2_image.so")
+
+# SDL2
 list(APPEND CMAKE_PREFIX_PATH "/usr/local")
+
 include_directories(/usr/local/include/SDL2)
 set(SDL2_LIBRARIES /usr/local/lib/libSDL2.so)
+
+
 
 add_executable(ROSHAN
         main.cpp
@@ -78,4 +91,4 @@ add_executable(ROSHAN
 target_include_directories(ROSHAN PRIVATE ${CMAKE_SOURCE_DIR}/externals/nlohmann)
 target_include_directories(ROSHAN PRIVATE ${CMAKE_SOURCE_DIR})
 # Link against OpenGL, imgui, SDL2
-target_link_libraries(ROSHAN ${SDL2_LIBRARIES} ${X11_LIBRARIES} OpenGL::GL imgui_external ${GDAL_LIBRARIES} -ldl)
+target_link_libraries(ROSHAN ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARIES} ${X11_LIBRARIES} OpenGL::GL imgui_external ${GDAL_LIBRARIES} -ldl)

@@ -39,6 +39,7 @@ void FireModel::Update() {
 
 void FireModel::Render() {
     model_renderer_->Render();
+    model_renderer_->DrawArrow(wind_->GetCurrentAngle() * 180 / M_PI + 45);
 }
 
 void FireModel::HandleEvents(SDL_Event event, ImGuiIO *io) {

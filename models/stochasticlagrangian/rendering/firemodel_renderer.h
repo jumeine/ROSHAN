@@ -15,6 +15,7 @@
 #include "imgui.h"
 #include "../utils.h"
 #include <chrono>
+#include <SDL_image.h>
 
 class FireModelRenderer {
 public:
@@ -39,6 +40,7 @@ public:
     // Drawing Related
     void SetFullRedraw() { needs_full_redraw_ = true; }
     void ResizeEvent();
+    void DrawArrow(double angle);
 
     ~FireModelRenderer();
 
@@ -55,6 +57,7 @@ private:
     SDL_Texture* texture_;
     PixelBuffer* pixel_buffer_;
     SDL_PixelFormat* pixel_format_;
+    SDL_Texture* arrow_texture_;
 
     GridMap* gridmap_ = nullptr;
     int width_;

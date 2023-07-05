@@ -14,6 +14,26 @@ FireModelRenderer::FireModelRenderer(SDL_Renderer *renderer, FireModelParameters
 
     texture_ = SDL_CreateTexture(renderer_,SDL_PIXELFORMAT_ARGB8888,SDL_TEXTUREACCESS_STREAMING,width_,height_);
 
+    // Load the arrow texture
+    SDL_Surface *arrow_surface = IMG_Load("../assets/arrow.png");
+    if (arrow_surface == NULL) {
+        SDL_Log("Unable to load image: %s", SDL_GetError());
+        return;
+    }
+    arrow_texture_ = SDL_CreateTextureFromSurface(renderer_, arrow_surface);
+    SDL_FreeSurface(arrow_surface);
+
+    // Set blend mode to the texture for transparency
+    if(SDL_SetTextureBlendMode(arrow_texture_, SDL_BLENDMODE_BLEND) < 0) {
+        printf("Set blend mode error: %s\n", SDL_GetError());
+    }
+
+    // Set the transparency for the texture
+    if(SDL_SetTextureAlphaMod(arrow_texture_, 127) < 0) { // 127 for semi transparency, can be changed according to the needs
+        printf("Set texture alpha error: %s\n", SDL_GetError());
+        // Handle the error
+    }
+
     // This whole overhead just to get the format...
     Uint32 format;
     int access, w, h;
@@ -181,6 +201,12 @@ void FireModelRenderer::DrawParticles() {
     }
 }
 
+void FireModelRenderer::DrawArrow(double angle) {
+    // Render the arrow
+    SDL_Rect destRect = {width_ - 100, height_ - 100, 50, 50}; // x, y, width and height of the arrow
+    SDL_RenderCopyEx(renderer_, arrow_texture_, NULL, &destRect, angle, NULL, SDL_FLIP_NONE);
+}
+
 std::pair<int, int> FireModelRenderer::ScreenToGridPosition(int x, int y) {
     auto [screenX, screenY] = camera_.ScreenToGridPosition(x, y);
 
@@ -190,6 +216,7 @@ std::pair<int, int> FireModelRenderer::ScreenToGridPosition(int x, int y) {
 FireModelRenderer::~FireModelRenderer() {
     //Destroy Backbuffer
     delete pixel_buffer_;
+    SDL_DestroyTexture(arrow_texture_);
     SDL_FreeFormat(pixel_format_);
     SDL_DestroyTexture(texture_);
 }

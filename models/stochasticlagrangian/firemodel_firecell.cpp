@@ -163,7 +163,8 @@ bool FireCell::burn() {
 
 bool FireCell::CanIgnite() {
     if (cell_state_ == GENERIC_BURNING || cell_state_ == GENERIC_BURNED  ||
-        cell_state_ == SNOW_AND_ICE || cell_state_ == OUTSIDE_AREA || cell_state_ == WATER) {
+        cell_state_ == SNOW_AND_ICE || cell_state_ == OUTSIDE_AREA || cell_state_ == WATER ||
+        cell_state_ == NON_AND_SPARSLEY_VEGETATED) {
         return false;
     }
     return true;

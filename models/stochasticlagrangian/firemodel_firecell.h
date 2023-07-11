@@ -68,6 +68,7 @@ private:
     int particle_emission_threshold_;
     SDL_Surface* surface_;
     ICell* cell_;
+    ICell* mother_cell_;
     CellState cell_state_;
     CellState cell_initial_state_;
 

@@ -172,33 +172,38 @@ void FireModelRenderer::DrawCircle(int x, int y, int min_radius, double intensit
 
 void FireModelRenderer::DrawParticles() {
 
-    const std::vector<RadiationParticle> particles = gridmap_->GetRadiationParticles();
+    int circle_radius = static_cast<int>(camera_.GetCellSize() / 6);
 
-    if (!particles.empty()) {
-        for (const auto& particle : particles) {
-            double x, y;
-            particle.GetPosition(x, y);
-            x = x / parameters_.GetCellSize();
-            y = y / parameters_.GetCellSize();
-            auto [posx, posy] = camera_.GridToScreenPosition(x, y);
+    if (circle_radius > 0) {
+        const std::vector<RadiationParticle> particles = gridmap_->GetRadiationParticles();
 
-            DrawCircle(posx, posy, static_cast<int>(camera_.GetCellSize() / 6), particle.GetIntensity());  // Scaling with zoom
+        if (!particles.empty()) {
+            for (const auto& particle : particles) {
+                double x, y;
+                particle.GetPosition(x, y);
+                x = x / parameters_.GetCellSize();
+                y = y / parameters_.GetCellSize();
+                auto [posx, posy] = camera_.GridToScreenPosition(x, y);
+
+                DrawCircle(posx, posy, circle_radius, particle.GetIntensity());  // Scaling with zoom
+            }
+        }
+
+        const std::vector<VirtualParticle> virtual_particles = gridmap_->GetVirtualParticles();
+
+        if (!virtual_particles.empty()) {
+            for (const auto& particle : virtual_particles) {
+                double x, y;
+                particle.GetPosition(x, y);
+                x = x / parameters_.GetCellSize();
+                y = y / parameters_.GetCellSize();
+                auto [posx, posy] = camera_.GridToScreenPosition(x, y);
+
+                DrawCircle(posx, posy, circle_radius, particle.GetIntensity());  // Scaling with zoom
+            }
         }
     }
 
-    const std::vector<VirtualParticle> virtual_particles = gridmap_->GetVirtualParticles();
-
-    if (!virtual_particles.empty()) {
-        for (const auto& particle : virtual_particles) {
-            double x, y;
-            particle.GetPosition(x, y);
-            x = x / parameters_.GetCellSize();
-            y = y / parameters_.GetCellSize();
-            auto [posx, posy] = camera_.GridToScreenPosition(x, y);
-
-            DrawCircle(posx, posy, static_cast<int>(camera_.GetCellSize() / 6), particle.GetIntensity());  // Scaling with zoom
-        }
-    }
 }
 
 void FireModelRenderer::DrawArrow(double angle) {

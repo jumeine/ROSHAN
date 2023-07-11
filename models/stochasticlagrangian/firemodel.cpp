@@ -32,8 +32,13 @@ void FireModel::SetUniformRasterData() {
 void FireModel::Update() {
     if (gridmap_ != nullptr) {
         running_time_ += parameters_.GetDt();
+        // Measure time
         gridmap_->UpdateParticles();
+//        auto start = std::chrono::high_resolution_clock::now();
         gridmap_->UpdateCells();
+//        auto end = std::chrono::high_resolution_clock::now();
+//        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+//        std::cout << "Update cells: " << duration.count() << " microseconds" << std::endl;
     }
 }
 
@@ -202,10 +207,11 @@ void FireModel::Config() {
         if (show_model_analysis_) {
             ImGui::Begin("Analysis");
             ImGui::Spacing();
-            ImGui::Text("Number of virtual particles: %d", gridmap_->GetNumParticles());
+            ImGui::Text("Number of particles: %d", gridmap_->GetNumParticles());
             ImGui::Text("Number of cells: %d", gridmap_->GetNumCells());
-            ImGui::Text("Running Time in seconds: %.3f", running_time_);
-            ImGui::Text("Höhe: %.2fm | Breite: %.2fm", gridmap_->GetRows() * parameters_.GetCellSize(), gridmap_->GetCols() * parameters_.GetCellSize());
+            ImGui::Text("Running Time: %s", formatTime(running_time_).c_str());
+            ImGui::Text("Höhe: %.2fkm | Breite: %.2fkm", gridmap_->GetRows() * parameters_.GetCellSize() / 1000,
+                                                              gridmap_->GetCols() * parameters_.GetCellSize() / 1000);
             ImGui::End();
         }
 

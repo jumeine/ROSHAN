@@ -11,23 +11,13 @@
 class RadiationParticle {
 
 public:
-    RadiationParticle(double x, double y, double Lr, double Sf_0, double Y_st, double Y_lim, std::mt19937 gen);
+    RadiationParticle(double x, double y, double Lr, double Sf_0_mean, double Sf_0_std, double Y_st, double Y_lim, std::mt19937 gen);
     void UpdateState(double dt);
-    void GetPosition(double &x1, double &x2) const;
+    void GetPosition(double &x1, double &x2) const { x1 = X_[0]; x2 = X_[1];}
     double GetIntensity() const { return Y_st_; }
-    void RemoveParticle();
     bool IsCapableOfIgnition() const { return Y_st_ >= Y_lim_; }
 
 private:
-
-//    double X_[2];         // Position
-//    double phi_r_;        // Angle
-//    double Y_st_;         // Burning status
-//    double Y_lim_;        // Ignition limit
-//    double tau_mem_;      // Decay timescale
-//    double Lr_; //10;      // A const Scaling factor
-//    double Sf_0_;    // A constant which represents the no-wind propagation speed
-
     double X_[2];         // Position
     double X_mc_[2];      // Position of the mother cell
     double r_p_;          // Radius
@@ -40,9 +30,13 @@ private:
     double Sf_0_std_;
     double Sf_0_;         // A normal distribution
 
+    double N_phi_;
+    double N_r_;
+    double M_PI_2_ = 2 * M_PI;
+
     // Generate a normally-distributed random number for phi_r
     std::mt19937 gen_;
-
+    std::normal_distribution<> normal_dist_;
 };
 
 

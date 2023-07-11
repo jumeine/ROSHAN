@@ -36,3 +36,29 @@ std::string CellStateToString(CellState cell_state) {
             return "UNKNOWN";
     }
 }
+
+std::string formatTime(int total_seconds) {
+    const int seconds_per_minute = 60;
+    const int minutes_per_hour = 60;
+    const int hours_per_day = 24;
+
+    int days = total_seconds / (hours_per_day * minutes_per_hour * seconds_per_minute);
+    int hours = (total_seconds / (minutes_per_hour * seconds_per_minute)) % hours_per_day;
+    int minutes = (total_seconds / seconds_per_minute) % minutes_per_hour;
+//    int seconds = total_seconds % seconds_per_minute;
+
+    std::string formatted_time = "";
+
+    if (days > 0) {
+        formatted_time += std::to_string(days) + " day(s) ";
+    }
+    if (hours > 0 || days > 0) {
+        formatted_time += std::to_string(hours) + " hour(s) ";
+    }
+    if (minutes > 0 || hours > 0 || days > 0) {
+        formatted_time += std::to_string(minutes) + " minute(s) ";
+    }
+    //formatted_time += std::to_string(seconds) + " second(s)";
+
+    return formatted_time;
+}

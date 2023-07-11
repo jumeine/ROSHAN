@@ -61,18 +61,20 @@ public:
     double GetYLimRad() const {return radiationparticle_y_lim_;}
     double radiationparticle_Lr_ = 10.0; // Characteristic radiation length in meters (m)
     double GetLr() const {return radiationparticle_Lr_;}
-    double radiationparticle_sf_0 = 0.06; // Zero Wind propagation m/s
-    double GetSf0() const {return radiationparticle_sf_0;}
+    double radiationparticle_sf_0_mean_ = 0.06; // Zero Wind propagation m/s
+    double GetSf0Mean() const {return radiationparticle_sf_0_mean_;}
+    double radiationparticle_sf_0_std_ = 0.7; // Zero Wind propagation m/s
+    double GetSf0Std() const {return radiationparticle_sf_0_std_;}
     // Minimum and maximum values for the ImGui Sliders for the radiation particles
     double min_Lr_ = 10.0;
     double max_Lr_ = 70.0;
 
     // Parameter for the Grid
     // Number of cells in the x direction (rows)
-    int grid_nx_ = 400;
+    int grid_nx_ = 200;
     int GetGridNx() const {return grid_nx_;}
     // Number of cells in the y direction (cols)
-    int grid_ny_ = 400;
+    int grid_ny_ = 200;
     int GetGridNy() const {return grid_ny_;}
 
 

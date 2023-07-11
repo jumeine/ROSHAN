@@ -7,6 +7,8 @@
 
 #include <string>
 
+std::string formatTime(int seconds);
+
 enum CellState { GENERIC_UNBURNED = 0,
                  SEALED = 1,
                  WOODY_NEEDLE_LEAVED_TREES = 2,

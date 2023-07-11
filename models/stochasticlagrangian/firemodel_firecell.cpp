@@ -12,13 +12,15 @@ FireCell::FireCell(int x, int y, std::mt19937 gen, FireModelParameters &paramete
     cell_initial_state_ = CellState(raster_value);
     cell_state_ = CellState(raster_value);
     cell_ = GetCell();
+    mother_cell_ = GetCell();
 
     // Cell Parameters
     x_ = x * parameters_.GetCellSize();
     y_ = y * parameters_.GetCellSize();
     ticking_duration_ = 0;
 
-    num_particles_ = 60;
+    num_particles_ = mother_cell_->GetNumParticles();
+//    num_particles_ = 5;
 
     if (parameters_.map_is_uniform_) {
         burning_duration_ = parameters_.GetCellBurningDuration();
@@ -28,7 +30,7 @@ FireCell::FireCell(int x, int y, std::mt19937 gen, FireModelParameters &paramete
         tau_ign = cell_->GetIgnitionDelayTime();
     }
 
-    particle_emission_threshold_ = burning_duration_ / num_particles_;
+    particle_emission_threshold_ = (burning_duration_ - 1) / num_particles_;
 
     // TODO Auslagern der Zufallszahlen in eine eigene Klasse?
     // Initialize random number generator
@@ -125,8 +127,10 @@ RadiationParticle FireCell::EmitRadiationParticle() {
     std::uniform_real_distribution<> dis(0.0, 1.0);
     double x_pos_rnd = dis(gen_);
     double y_pos_rnd = dis(gen_);
-    RadiationParticle radiation_particle(x_ + (parameters_.GetCellSize() * x_pos_rnd), y_ + (parameters_.GetCellSize() * y_pos_rnd), parameters_.GetLr(), parameters_.GetSf0(),
-                                         parameters_.GetYStRad(),parameters_.GetYLimRad(), gen_);
+    double x_pos = x_ + (parameters_.GetCellSize() * x_pos_rnd);
+    double y_pos = y_ + (parameters_.GetCellSize() * y_pos_rnd);
+    RadiationParticle radiation_particle(x_pos, y_pos, parameters_.GetLr(), mother_cell_->GetSf0Mean(), mother_cell_->GetSf0Std(),
+                                         parameters_.GetYStRad(), parameters_.GetYLimRad(), gen_);
 
     return radiation_particle;
 }
@@ -142,11 +146,16 @@ void FireCell::Tick() {
 }
 
 bool FireCell::EmitNextParticle() {
-    if (ceil(last_burning_duration_) != floor(burning_tick_)) {
-        return (int(burning_tick_) % particle_emission_threshold_ == 0);
-    } else {
-        return false;
-    }
+    // Converting the burning_tick_ to an int before the modulo operation
+    int burning_tick_int = static_cast<int>(burning_tick_);
+
+    // Check if the last burning duration is not equal to the current burning tick
+    bool is_new_burning_tick = ceil(last_burning_duration_) != floor(burning_tick_);
+
+    // It's a new burning tick & the burning tick is a multiple of the particle emission threshold
+    bool emit_condition = is_new_burning_tick && (burning_tick_int % particle_emission_threshold_ == 0);
+
+    return emit_condition;
 };
 
 bool FireCell::burn() {
@@ -189,10 +198,16 @@ void FireCell::SetCellState(CellState cell_state) {
 }
 
 void FireCell::ShowInfo() {
+    ImGui::Text("Current Cell State");
     ImVec4 color = cell_->GetImVecColor();
     ImGui::ColorButton("MyColor##3", {color.x / 255, color.y / 255, color.z / 255, color.w / 255}, ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoPicker);
     ImGui::SameLine();
     ImGui::TextUnformatted(CellStateToString(cell_state_).c_str());
+    ImGui::Text("Mother Cell State");
+    color = mother_cell_->GetImVecColor();
+    ImGui::ColorButton("MyColor##4", {color.x / 255, color.y / 255, color.z / 255, color.w / 255}, ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoPicker);
+    ImGui::SameLine();
+    ImGui::TextUnformatted(CellStateToString(cell_initial_state_).c_str());
     ImGui::Text("%0.f m x %0.f m", parameters_.GetCellSize(), parameters_.GetCellSize());
     ImGui::Text("Burning duration: %.2f", burning_duration_);
     ImGui::Text("Ticking duration: %.2f", ticking_duration_);

@@ -19,96 +19,61 @@ GridMap::GridMap(Wind* wind, FireModelParameters &parameters,
             cells_[x][y] = new FireCell(x, y, gen_, parameters_, (*rasterData)[x][y]);
         }
     }
+    virtual_particles_.reserve(100000);
+    radiation_particles_.reserve(100000);
+    ticking_cells_.reserve(100000);
+    burning_cells_.reserve(100000);
+    changed_cells_.reserve(100000);
 }
 
-int GridMap::GetRows() {
-    return rows_;
-}
+// Templated function to avoid repeating common code
+template <typename ParticleType>
+void GridMap::UpdateVirtualParticles(std::vector<ParticleType> &particles, std::vector<std::vector<bool>> &visited_cells) {
+    for (auto it = particles.begin(); it != particles.end();) {
 
-int GridMap::GetCols() {
-    return cols_;
-}
+        if constexpr (std::is_same<ParticleType, VirtualParticle>::value) {
+            it->UpdateState(*wind_, parameters_.GetDt());
+        } else {
+            it->UpdateState(parameters_.GetDt());
+        }
 
-void GridMap::UpdateVirtualParticles(std::unordered_set<Point>& visited_cells) {
-    // Update virtual particles
-    for (auto &particle : virtual_particles_) {
         double x, y;
-        particle.GetPosition(x, y);
-//        changed_cells_.emplace_back(x, y);
-        particle.UpdateState(*wind_, parameters_.GetDt());
-
-        particle.GetPosition(x, y);
+        it->GetPosition(x, y);
         int i, j;
         parameters_.ConvertRealToGridCoordinates(x, y, i, j);
+
         // check if particle is still in the grid
-        if (i < 0 || i >= cols_ || j < 0 || j >= rows_) {
+        if (!IsPointInGrid(i, j) || !it->IsCapableOfIgnition()) {
             // Particle is outside the grid, so it is no longer visited
-            particle.RemoveParticle();
+            // OR it is not capable of ignition
+            std::iter_swap(it, --particles.end());
+            particles.pop_back();
+
             continue;
         }
-//        changed_cells_.emplace_back(x, y);
-        Point p = Point(i, j);
-        // Add particle to visited cells
-        visited_cells.insert(p);
 
-        if (particle.IsCapableOfIgnition() && cells_[p.x_][p.y_]->CanIgnite()) {
+        Point p = Point(i, j);
+
+        // Add particle to visited cells, if not allready visited
+        visited_cells[p.x_][p.y_] = true;
+
+        // If cell can ignite, add particle to cell, if not allready in
+        if (cells_[p.x_][p.y_]->CanIgnite()) {
             ticking_cells_.insert(p);
         }
+
+        ++it;
     }
-    // Remove particles that are not capable of burning cells
-    virtual_particles_.erase(
-            std::remove_if(virtual_particles_.begin(), virtual_particles_.end(),
-                           [](const VirtualParticle& particle) {
-                               return !particle.IsCapableOfIgnition();
-                           }),
-            virtual_particles_.end());
 }
-
-void GridMap::UpdateRadiationParticles(std::unordered_set<Point> &visited_cells) {
-    for (auto &particle : radiation_particles_) {
-        double x, y;
-        particle.GetPosition(x, y);
-//        changed_cells_.emplace_back(x, y);
-        particle.UpdateState(parameters_.GetDt());
-
-        particle.GetPosition(x, y);
-        int i, j;
-        parameters_.ConvertRealToGridCoordinates(x, y, i, j);
-        // check if particle is still in the grid
-        if (i < 0 || i >= cols_ || j < 0 || j >= rows_) {
-            // Particle is outside the grid, so it is no longer visited
-            particle.RemoveParticle();
-            continue;
-        }
-//        changed_cells_.emplace_back(x, y);
-        Point p = Point(i, j);
-        // Add particle to visited cells
-        visited_cells.insert(p);
-        if (particle.IsCapableOfIgnition() && cells_[p.x_][p.y_]->CanIgnite()) {
-            ticking_cells_.insert(p);
-        }
-    }
-    // Remove particles that are not capable of burning cells
-    radiation_particles_.erase(
-            std::remove_if(radiation_particles_.begin(), radiation_particles_.end(),
-                           [](const RadiationParticle& particle) {
-                               return !particle.IsCapableOfIgnition();
-                           }),
-            radiation_particles_.end());
-}
-
 
 void GridMap::UpdateParticles() {
-    // Track cells visited by particles
-    std::unordered_set<Point> visited_cells;
+    std::vector<std::vector<bool>> visited_cells(cols_, std::vector<bool>(rows_, false));
+    UpdateVirtualParticles(virtual_particles_, visited_cells);
+    UpdateVirtualParticles(radiation_particles_, visited_cells);
 
-    UpdateVirtualParticles(visited_cells);
-    UpdateRadiationParticles(visited_cells);
-
-    // Check each cell in ticking_cells_ if it is currently visited
     for (auto it = ticking_cells_.begin(); it != ticking_cells_.end(); ) {
-        if (visited_cells.find(*it) == visited_cells.end()) {
-            // The cell is not currently visited, so it is no longer ticking
+        // If cell is not visited, remove it from ticking cells
+        if (!visited_cells[it->x_][it->y_]) {
             it = ticking_cells_.erase(it);
         } else {
             ++it;
@@ -135,8 +100,9 @@ void GridMap::UpdateCells() {
     for (auto it = ticking_cells_.begin(); it != ticking_cells_.end(); ) {
         int x = it->x_;
         int y = it->y_;
-        cells_[x][y]->Tick();
-        if (cells_[x][y]->ShouldIgnite()) {
+        auto& cell = cells_[x][y];
+        cell->Tick();
+        if (cell->ShouldIgnite()) {
             // The cell has ignited, so it is no longer ticking
             it = ticking_cells_.erase(it);
             // Ignite the cell
@@ -149,15 +115,14 @@ void GridMap::UpdateCells() {
     for (auto it = burning_cells_.begin(); it != burning_cells_.end(); ) {
         int x = it->x_;
         int y = it->y_;
-        bool cell_emits_particle = cells_[x][y]->burn();
+        auto& cell = cells_[x][y];
+        bool cell_emits_particle = cell->burn();
         if (cell_emits_particle) {
-            VirtualParticle virtual_particle = cells_[x][y]->EmitVirtualParticle();
-            RadiationParticle radiation_particle = cells_[x][y]->EmitRadiationParticle();
-            virtual_particles_.push_back(virtual_particle);
-            radiation_particles_.push_back(radiation_particle);
+            virtual_particles_.push_back(std::move(cell->EmitVirtualParticle()));
+            radiation_particles_.push_back(std::move(cell->EmitRadiationParticle()));
             changed_cells_.emplace_back(x, y);
         }
-        if (cells_[x][y]->GetIgnitionState() == CellState::GENERIC_BURNED) {
+        if (cell->GetIgnitionState() == CellState::GENERIC_BURNED) {
             // The cell has burned out, so it is no longer burning
             it = burning_cells_.erase(it);
             changed_cells_.push_back(Point(x, y));
@@ -165,11 +130,6 @@ void GridMap::UpdateCells() {
             ++it;
         }
     }
-}
-
-int GridMap::GetNumParticles() {
-    //Get the number of virtual particles
-    return (virtual_particles_.size() + radiation_particles_.size());
 }
 
 void GridMap::ExtinguishCell(int x, int y) {
@@ -201,12 +161,4 @@ void GridMap::ExtinguishCell(int x, int y) {
             radiation_particles_.end());
 
     changed_cells_.push_back(Point(x, y));
-}
-
-CellState GridMap::GetCellState(int x, int y) {
-    return cells_[x][y]->GetIgnitionState();
-}
-
-void GridMap::ShowCellInfo(int x, int y) {
-    cells_[x][y]->ShowInfo();
 }

@@ -18,10 +18,9 @@ public:
     VirtualParticle(int x, int y, double tau_mem, double Y_st,
                     double Y_lim, double Fl, double C0, double Lt, std::mt19937 gen);
     void UpdateState(Wind wind, double dt);
-    void RemoveParticle();
-    void GetPosition(double& x1, double& x2) const;
+    void GetPosition(double& x1, double& x2) const { x1 = X_[0]; x2 = X_[1];}
     double GetIntensity() const { return Y_st_; }
-    bool IsCapableOfIgnition() const;
+    bool IsCapableOfIgnition() const { return Y_st_ >= Y_lim_; }
 
 private:
     double X_[2]{};      //Position
@@ -32,8 +31,14 @@ private:
     double Fl_;          // Scaling factor for new position
     double C0_;          // A constant close to 2
     double Lt_;          // I dont really know what this is
+    std::vector<double> Uw_i_; // Wind velocity
+    double u_prime_{};
+    double N_i_{};
+    double fac1{};
+    double fac2{};
 
     std::mt19937 gen_;
+    std::normal_distribution<> normal_dist_;
 };
 
 

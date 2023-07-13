@@ -14,10 +14,11 @@
 #include "wind.h"
 #include <random>
 #include <iostream>
+#include <memory>
 
 class GridMap {
 public:
-    GridMap(Wind* wind, FireModelParameters &parameters, std::vector<std::vector<int>>* rasterData = nullptr);
+    GridMap(std::shared_ptr<Wind> wind, FireModelParameters &parameters, std::vector<std::vector<int>>* rasterData = nullptr);
     ~GridMap();
 
     int GetRows() const { return rows_; }
@@ -41,10 +42,10 @@ public:
 
 private:
     FireModelParameters &parameters_;
-    Wind* wind_;
+    std::shared_ptr<Wind> wind_;
     int rows_; // Number of rows in the grid
     int cols_; // Number of columns in the grid
-    std::vector<std::vector<FireCell*>> cells_;
+    std::vector<std::vector<std::shared_ptr<FireCell>>> cells_;
     std::unordered_set<Point> ticking_cells_;
     std::unordered_set<Point> burning_cells_;
     std::vector<Point> changed_cells_;

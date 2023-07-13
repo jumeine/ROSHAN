@@ -45,12 +45,13 @@ public:
 
     bool CanIgnite();
     void Ignite();
-    VirtualParticle EmitVirtualParticle();
+    std::pair<bool, bool> ShouldEmitNextParticles();
+    VirtualParticle EmitConvectionParticle();
     RadiationParticle EmitRadiationParticle();
     Uint32 GetMappedColor();
 
     void Tick();
-    bool burn();
+    void burn();
     bool ShouldIgnite();
     void Extinguish();
     void ShowInfo();
@@ -64,8 +65,10 @@ private:
     double tau_ign;
     int x_; // Start of the x coordinate in meters (m)
     int y_; // Start of the y coordinate in meters (m)
-    int num_particles_;
-    int particle_emission_threshold_;
+    int num_convection_particles_;
+    int num_radiation_particles;
+    int convection_particle_emission_threshold_;
+    int radiation_particle_emission_threshold_;
     SDL_Surface* surface_;
     ICell* cell_;
     ICell* mother_cell_;
@@ -74,10 +77,10 @@ private:
 
     // Random Generator for the particles
     std::mt19937 gen_;
+    std::uniform_real_distribution<> real_dis_;
 
     ICell *GetCell();
 
-    bool EmitNextParticle();
     void SetCellState(CellState cell_state);
 };
 

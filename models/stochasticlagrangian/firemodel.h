@@ -16,6 +16,7 @@
 #include "wind.h"
 #include "CORINE/dataset_handler.h"
 #include "externals/ImGuiFileDialog/ImGuiFileDialog.h"
+#include "agent/drone.h"
 
 
 class FireModel : public IModel{
@@ -40,19 +41,19 @@ public:
 
 private:
     explicit FireModel(SDL_Renderer* renderer);
-    ~FireModel() override {delete gridmap_; delete model_renderer_; delete wind_; delete dataset_handler_;}
+    ~FireModel() override;
 
     void RandomizeCells();
 
-    GridMap* gridmap_;
-    FireModelRenderer* model_renderer_;
-    Wind* wind_;
+    std::shared_ptr<GridMap> gridmap_;
+    std::shared_ptr<FireModelRenderer> model_renderer_;
+    std::shared_ptr<Wind> wind_;
     FireModelParameters parameters_;
     static FireModel* instance_;
     double running_time_;
 
     void OpenBrowser(std::string url);
-    DatasetHandler* dataset_handler_;
+    std::shared_ptr<DatasetHandler> dataset_handler_;
     void ResetGridMap(std::vector<std::vector<int>>* rasterData = nullptr);
 
     //For the Popup of Cells
@@ -62,6 +63,8 @@ private:
 
     //current data
     std::vector<std::vector<int>> current_raster_data_;
+    //agent data
+    std::shared_ptr<std::vector<std::shared_ptr<DroneAgent>>> drones_;
 
     //Flags
     bool browser_selection_flag_ = false;  // If set to true, will load a new GridMap from a file.

@@ -11,7 +11,7 @@
 class RadiationParticle {
 
 public:
-    RadiationParticle(double x, double y, double Lr, double Sf_0_mean, double Sf_0_std, double Y_st, double Y_lim, std::mt19937 gen);
+    RadiationParticle(double x, double y, double Lr_min, double Lr_max, double Sf_0_mean, double Sf_0_std, double Y_st, double Y_lim, std::mt19937 gen);
     void UpdateState(double dt);
     void GetPosition(double &x1, double &x2) const { x1 = X_[0]; x2 = X_[1];}
     double GetIntensity() const { return Y_st_; }

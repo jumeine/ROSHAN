@@ -4,7 +4,7 @@
 
 #include "firemodel_gridmap.h"
 
-GridMap::GridMap(Wind* wind, FireModelParameters &parameters,
+GridMap::GridMap(std::shared_ptr<Wind> wind, FireModelParameters &parameters,
                  std::vector<std::vector<int>>* rasterData) : parameters_(parameters) {
     cols_ = rasterData->size();
     rows_ = (rasterData->empty()) ? 0 : (*rasterData)[0].size();
@@ -13,10 +13,10 @@ GridMap::GridMap(Wind* wind, FireModelParameters &parameters,
     // Generate a normally-distributed random number for phi_r
     gen_ = std::mt19937(rd_());
 
-    cells_ = std::vector<std::vector<FireCell*>>(cols_, std::vector<FireCell*>(rows_, nullptr));
+    cells_ = std::vector<std::vector<std::shared_ptr<FireCell>>>(cols_, std::vector<std::shared_ptr<FireCell>>(rows_));
     for (int x = 0; x < cols_; ++x) {
         for (int y = 0; y < rows_; ++y) {
-            cells_[x][y] = new FireCell(x, y, gen_, parameters_, (*rasterData)[x][y]);
+            cells_[x][y] = std::make_shared<FireCell>(x, y, gen_, parameters_, (*rasterData)[x][y]);
         }
     }
     virtual_particles_.reserve(100000);
@@ -82,11 +82,6 @@ void GridMap::UpdateParticles() {
 }
 
 GridMap::~GridMap() {
-    for (auto& row : cells_) {
-        for (auto& cell : row) {
-            delete cell;
-        }
-    }
 }
 
 void GridMap::IgniteCell(int x, int y) {
@@ -116,12 +111,20 @@ void GridMap::UpdateCells() {
         int x = it->x_;
         int y = it->y_;
         auto& cell = cells_[x][y];
-        bool cell_emits_particle = cell->burn();
-        if (cell_emits_particle) {
-            virtual_particles_.push_back(std::move(cell->EmitVirtualParticle()));
-            radiation_particles_.push_back(std::move(cell->EmitRadiationParticle()));
-            changed_cells_.emplace_back(x, y);
+        cell->burn();
+        bool cell_has_changed = false;
+        auto should_emit_particle = cell->ShouldEmitNextParticles();
+        if (parameters_.emit_convective_ && should_emit_particle.first) {
+            virtual_particles_.push_back(std::move(cell->EmitConvectionParticle()));
+            cell_has_changed = true;
         }
+        if (parameters_.emit_radiation_ && should_emit_particle.second) {
+            radiation_particles_.push_back(std::move(cell->EmitRadiationParticle()));
+            cell_has_changed = true;
+        }
+        if (cell_has_changed)
+            changed_cells_.emplace_back(x, y);
+
         if (cell->GetIgnitionState() == CellState::GENERIC_BURNED) {
             // The cell has burned out, so it is no longer burning
             it = burning_cells_.erase(it);

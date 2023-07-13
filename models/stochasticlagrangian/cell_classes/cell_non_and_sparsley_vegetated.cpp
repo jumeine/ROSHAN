@@ -15,6 +15,9 @@ public:
         ignition_delay_time_ = 0;
         radiation_sf0_[0] = 0;
         radiation_sf0_[1] = 0;
-        num_particles_ = 0;
+        num_convection_particles_ = 0;
+        radiation_length_min_ = 0;
+        radiation_length_max_ = 0;
+        num_radiation_particles_ = 0;
     }
 };

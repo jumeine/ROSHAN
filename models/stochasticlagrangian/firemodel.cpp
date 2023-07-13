@@ -7,24 +7,29 @@
 FireModel* FireModel::instance_ = nullptr;
 
 FireModel::FireModel(SDL_Renderer *renderer) {
-    dataset_handler_ = new DatasetHandler("/home/nex/Downloads/CLMS_CLCplus_RASTER_2018_010m_eu_03035_V1_1/Data/CLMS_CLCplus_RASTER_2018_010m_eu_03035_V1_1.tif");
-    model_renderer_ = FireModelRenderer::GetInstance(renderer, parameters_);
-    wind_ = new Wind(parameters_);
+    dataset_handler_ = std::make_shared<DatasetHandler>("/home/nex/Downloads/CLMS_CLCplus_RASTER_2018_010m_eu_03035_V1_1/Data/CLMS_CLCplus_RASTER_2018_010m_eu_03035_V1_1.tif");
+    drones_ = std::make_shared<std::vector<std::shared_ptr<DroneAgent>>>();
+    model_renderer_ = FireModelRenderer::GetInstance(renderer, drones_, parameters_);
+    wind_ = std::make_shared<Wind>(parameters_);
     gridmap_ = nullptr;
     running_time_ = 0;
 }
 
 void FireModel::ResetGridMap(std::vector<std::vector<int>>* rasterData) {
-    delete gridmap_;
-    gridmap_ = new GridMap(wind_, parameters_, rasterData);
+    gridmap_ = std::make_shared<GridMap>(wind_, parameters_, rasterData);
     model_renderer_->SetGridMap(gridmap_);
+    // Init drones
+    drones_->clear();
+    for (int i = 0; i < parameters_.GetNumberOfDrones(); ++i) {
+        drones_->push_back(std::make_shared<DroneAgent>(model_renderer_->GetRenderer()));
+    }
 //    model_renderer_->CheckCamera();
     running_time_ = 0;
 }
 
 void FireModel::SetUniformRasterData() {
     current_raster_data_.clear();
-    current_raster_data_ = std::vector<std::vector<int>>(parameters_.GetGridNx(), std::vector<int>(parameters_.GetGridNy(), WOODY_BROADLEAVED_EVERGREEN_TREES));
+    current_raster_data_ = std::vector<std::vector<int>>(parameters_.GetGridNx(), std::vector<int>(parameters_.GetGridNy(), GENERIC_UNBURNED));
     parameters_.map_is_uniform_ = true;
 }
 
@@ -89,6 +94,26 @@ void FireModel::HandleEvents(SDL_Event event, ImGuiIO *io) {
         if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
             model_renderer_->ResizeEvent();
         }
+    } else if (event.type == SDL_KEYDOWN && parameters_.GetNumberOfDrones() == 1) {
+        if (event.key.keysym.sym == SDLK_w) {
+            drones_->at(0)->Update(0, -0.5);
+        }
+        if (event.key.keysym.sym == SDLK_s) {
+            drones_->at(0)->Update(0, 0.5);
+        }
+        if (event.key.keysym.sym == SDLK_a) {
+            drones_->at(0)->Update(-0.5, 0);
+        }
+        if (event.key.keysym.sym == SDLK_d) {
+            drones_->at(0)->Update(0.5, 0);
+        }
+        if (event.key.keysym.sym == SDLK_SPACE) {
+            std::pair<double, double> position = drones_->at(0)->GetPosition();
+            int x = static_cast<int>(position.first);
+            int y = static_cast<int>(position.second);
+            if(gridmap_->GetCellState(x, y) == CellState::GENERIC_BURNING)
+                gridmap_->ExtinguishCell(x, y);
+        }
     }
     // Browser Events
     // TODO: Eventloop only gets executed when Application is in Focus. Fix this.
@@ -96,10 +121,11 @@ void FireModel::HandleEvents(SDL_Event event, ImGuiIO *io) {
         if (dataset_handler_->NewDataPointExists() && browser_selection_flag_) {
             std::vector<std::vector<int>> rasterData;
             dataset_handler_->LoadRasterDataFromJSON(rasterData);
+            current_raster_data_.clear();
             current_raster_data_ = rasterData;
-            ResetGridMap(&current_raster_data_);
             browser_selection_flag_ = false;
             parameters_.map_is_uniform_ = false;
+            ResetGridMap(&current_raster_data_);
         }
     }
 }
@@ -176,6 +202,11 @@ void FireModel::ImGuiModelMenu() {
                     ResetGridMap(&current_raster_data_);
                 ImGui::EndMenu();
             }
+            if (ImGui::BeginMenu("Model Controls")) {
+                ImGui::MenuItem("Emit Convective Particles", NULL, &parameters_.emit_convective_);
+                ImGui::MenuItem("Emit Radiation Particles", NULL, &parameters_.emit_radiation_);
+                ImGui::EndMenu();
+            }
             if (ImGui::BeginMenu("View")) {
                 ImGui::MenuItem("Show Controls", NULL, &show_controls_);
                 ImGui::MenuItem("Show Analysis", NULL, &show_model_analysis_);
@@ -231,10 +262,11 @@ void FireModel::Config() {
                         dataset_handler_->LoadMap(filePathName);
                         std::vector<std::vector<int>> rasterData;
                         dataset_handler_->LoadMapDataset(rasterData);
+                        current_raster_data_.clear();
                         current_raster_data_ = rasterData;
+                        parameters_.map_is_uniform_ = false;
                         ResetGridMap(&current_raster_data_);
                         load_map_from_disk_ = false;
-                        parameters_.map_is_uniform_ = false;
                     }
                     else if (save_map_to_disk_) {
                         dataset_handler_->SaveRaster(filePathName);
@@ -293,34 +325,45 @@ bool FireModel::ImGuiOnStartup() {
 
 void FireModel::ShowParameterConfig() {
     ImGui::Begin("Parameter Config");
-    ImGui::SeparatorText("Virtual Particles");
-    if(ImGui::TreeNodeEx("##Virtual Particles", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth)){
-        ImGui::Text("Particle Lifetime");
-        ImGui::SliderScalar("tau_mem", ImGuiDataType_Double, &parameters_.virtualparticle_tau_mem_, &parameters_.tau_min, &parameters_.tau_max, "%.3f", 1.0f);
-        ImGui::Text("Hotness");
-        ImGui::SliderScalar("Y_st", ImGuiDataType_Double, &parameters_.virtualparticle_y_st_, &parameters_.min_Y_st_, &parameters_.max_Y_st_, "%.3f", 1.0f);
-        ImGui::Text("Ignition Threshold");
-        ImGui::SliderScalar("Y_lim", ImGuiDataType_Double, &parameters_.virtualparticle_y_lim_, &parameters_.min_Y_lim_, &parameters_.max_Y_lim_, "%.3f", 1.0f);
-        ImGui::Text("Height of Emission");
-        ImGui::SliderScalar("Lt", ImGuiDataType_Double, &parameters_.Lt_, &parameters_.min_Lt_, &parameters_.max_Lt_, "%.3f", 1.0f);
-        ImGui::Text("Scaling Factor");
-        ImGui::SliderScalar("Fl", ImGuiDataType_Double, &parameters_.virtualparticle_fl_, &parameters_.min_Fl_, &parameters_.max_Fl_, "%.3f", 1.0f);
-        ImGui::Text("Constant");
-        ImGui::SliderScalar("C0", ImGuiDataType_Double, &parameters_.virtualparticle_c0_, &parameters_.min_C0_, &parameters_.max_C0_, "%.3f", 1.0f);
-        ImGui::TreePop();
-        ImGui::Spacing();
+    if (parameters_.emit_convective_) {
+        ImGui::SeparatorText("Virtual Particles");
+        if (ImGui::TreeNodeEx("##Virtual Particles",
+                              ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth)) {
+            ImGui::Text("Particle Lifetime");
+            ImGui::SliderScalar("tau_mem", ImGuiDataType_Double, &parameters_.virtualparticle_tau_mem_,
+                                &parameters_.tau_min, &parameters_.tau_max, "%.3f", 1.0f);
+            ImGui::Text("Hotness");
+            ImGui::SliderScalar("Y_st", ImGuiDataType_Double, &parameters_.virtualparticle_y_st_,
+                                &parameters_.min_Y_st_, &parameters_.max_Y_st_, "%.3f", 1.0f);
+            ImGui::Text("Ignition Threshold");
+            ImGui::SliderScalar("Y_lim", ImGuiDataType_Double, &parameters_.virtualparticle_y_lim_,
+                                &parameters_.min_Y_lim_, &parameters_.max_Y_lim_, "%.3f", 1.0f);
+            ImGui::Text("Height of Emission");
+            ImGui::SliderScalar("Lt", ImGuiDataType_Double, &parameters_.Lt_, &parameters_.min_Lt_,
+                                &parameters_.max_Lt_, "%.3f", 1.0f);
+            ImGui::Text("Scaling Factor");
+            ImGui::SliderScalar("Fl", ImGuiDataType_Double, &parameters_.virtualparticle_fl_, &parameters_.min_Fl_,
+                                &parameters_.max_Fl_, "%.3f", 1.0f);
+            ImGui::Text("Constant");
+            ImGui::SliderScalar("C0", ImGuiDataType_Double, &parameters_.virtualparticle_c0_, &parameters_.min_C0_,
+                                &parameters_.max_C0_, "%.3f", 1.0f);
+            ImGui::TreePop();
+            ImGui::Spacing();
+        }
     }
 
-    ImGui::SeparatorText("Radiation Particles");
-    if(ImGui::TreeNodeEx("##Radiation Particles", ImGuiTreeNodeFlags_SpanAvailWidth)){
-        ImGui::Text("Radiation Hotness");
-        ImGui::SliderScalar("Y_st_r", ImGuiDataType_Double, &parameters_.radiationparticle_y_st_, &parameters_.min_Y_st_, &parameters_.max_Y_st_, "%.3f", 1.0f);
-        ImGui::Text("Radiation Ignition Threshold");
-        ImGui::SliderScalar("Y_lim_r", ImGuiDataType_Double, &parameters_.radiationparticle_y_lim_, &parameters_.min_Y_lim_, &parameters_.max_Y_lim_, "%.3f", 1.0f);
-        ImGui::Text("Height of Emission");
-        ImGui::SliderScalar("Lr", ImGuiDataType_Double, &parameters_.radiationparticle_Lr_, &parameters_.min_Lr_, &parameters_.max_Lr_, "%.3f", 1.0f);
-        ImGui::TreePop();
-        ImGui::Spacing();
+    if (parameters_.emit_radiation_) {
+        ImGui::SeparatorText("Radiation Particles");
+        if(ImGui::TreeNodeEx("##Radiation Particles", ImGuiTreeNodeFlags_SpanAvailWidth)){
+            ImGui::Text("Radiation Hotness");
+            ImGui::SliderScalar("Y_st_r", ImGuiDataType_Double, &parameters_.radiationparticle_y_st_, &parameters_.min_Y_st_, &parameters_.max_Y_st_, "%.3f", 1.0f);
+            ImGui::Text("Radiation Ignition Threshold");
+            ImGui::SliderScalar("Y_lim_r", ImGuiDataType_Double, &parameters_.radiationparticle_y_lim_, &parameters_.min_Y_lim_, &parameters_.max_Y_lim_, "%.3f", 1.0f);
+//            ImGui::Text("Radiation Length");
+//            ImGui::SliderScalar("Lr", ImGuiDataType_Double, &parameters_.radiationparticle_Lr_, &parameters_.min_Lr_, &parameters_.max_Lr_, "%.3f", 1.0f);
+            ImGui::TreePop();
+            ImGui::Spacing();
+        }
     }
 
     if (parameters_.map_is_uniform_) {
@@ -390,4 +433,7 @@ void FireModel::ShowPopups() {
         ImGui::End();
         ++it;  // Go to the next popup in the set.
     }
+}
+
+FireModel::~FireModel() {
 }

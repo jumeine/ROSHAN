@@ -16,17 +16,21 @@
 #include "../utils.h"
 #include <chrono>
 #include <SDL_image.h>
+#include <memory>
+#include "agent/drone.h"
 
 class FireModelRenderer {
 public:
     //only one instance of this class is allowed
-    static FireModelRenderer* GetInstance(SDL_Renderer* renderer, FireModelParameters& parameters) {
-        return instance_ = (instance_ != nullptr) ? instance_ : new FireModelRenderer(renderer, parameters);
-    }
+    static std::shared_ptr<FireModelRenderer> GetInstance(SDL_Renderer* renderer,std::shared_ptr<std::vector<std::shared_ptr<DroneAgent>>> drones, FireModelParameters& parameters) {
+        if (instance_ == nullptr) {
+            instance_ = std::shared_ptr<FireModelRenderer>(new FireModelRenderer(renderer, drones, parameters));
+        }
+        return instance_;    }
 
     void Render();
     void SetScreenResolution();
-    void SetGridMap(GridMap* gridmap) { gridmap_ = gridmap; SetFullRedraw(); }
+    void SetGridMap(std::shared_ptr<GridMap> gridmap) { gridmap_ = gridmap; SetFullRedraw(); }
     SDL_Renderer* GetRenderer() { return renderer_; }
 
     // Converter Functions
@@ -45,7 +49,7 @@ public:
     ~FireModelRenderer();
 
 private:
-    FireModelRenderer(SDL_Renderer* renderer, FireModelParameters& parameters);
+    FireModelRenderer(SDL_Renderer* renderer, std::shared_ptr<std::vector<std::shared_ptr<DroneAgent>>> drones, FireModelParameters& parameters);
 
     void DrawCells();
     void DrawCircle(int x, int y, int min_radius, double intensity);
@@ -58,12 +62,13 @@ private:
     PixelBuffer* pixel_buffer_;
     SDL_PixelFormat* pixel_format_;
     SDL_Texture* arrow_texture_;
+    std::shared_ptr<std::vector<std::shared_ptr<DroneAgent>>> drones_;
 
-    GridMap* gridmap_ = nullptr;
+    std::shared_ptr<GridMap> gridmap_;
     int width_;
     int height_;
 
-    static FireModelRenderer* instance_;
+    static std::shared_ptr<FireModelRenderer> instance_;
 
     bool needs_full_redraw_;
     void DrawAllCells(int grid_left, int grid_right, int grid_top, int grid_bottom);
@@ -72,6 +77,7 @@ private:
 
     void ResizePixelBuffer();
     void ResizeTexture();
+    void DrawDrone();
 };
 
 

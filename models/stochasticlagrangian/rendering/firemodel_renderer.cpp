@@ -5,13 +5,13 @@
 #include <iostream>
 #include "firemodel_renderer.h"
 
-FireModelRenderer* FireModelRenderer::instance_ = nullptr;
+std::shared_ptr<FireModelRenderer> FireModelRenderer::instance_ = nullptr;
 
-FireModelRenderer::FireModelRenderer(SDL_Renderer *renderer, FireModelParameters& parameters) : parameters_(parameters) {
+FireModelRenderer::FireModelRenderer(SDL_Renderer *renderer, std::shared_ptr<std::vector<std::shared_ptr<DroneAgent>>> drones, FireModelParameters& parameters) : parameters_(parameters) {
     renderer_ = renderer;
     camera_ = FireModelCamera();
     SetScreenResolution();
-
+    drones_ = drones;
     texture_ = SDL_CreateTexture(renderer_,SDL_PIXELFORMAT_ARGB8888,SDL_TEXTUREACCESS_STREAMING,width_,height_);
 
     // Load the arrow texture
@@ -59,6 +59,7 @@ void FireModelRenderer::Render() {
 //        std::cout << "Cellsize: " << camera_.GetCellSize() << std::endl;
         DrawCells();
         DrawParticles();
+        DrawDrone();
     }
 }
 
@@ -154,7 +155,8 @@ SDL_Rect FireModelRenderer::DrawCell(int x, int y) {
 
 void FireModelRenderer::DrawCircle(int x, int y, int min_radius, double intensity) {
     int max_radius = 3 * min_radius;
-    int radius = min_radius + static_cast<int>((max_radius - min_radius) * ((intensity - 0.2) / (1.0 - 0.2)));
+    // (intensity - 0.2) / (1.0 - 0.2)
+    int radius = min_radius + static_cast<int>((max_radius - min_radius) * ((intensity - 0.2) / 0.8));
     unsigned char g = static_cast<int>(255 * ((intensity - 0.2) / (1.0 - 0.2)));
     SDL_Color color = {255, g, 0, 255};
 
@@ -224,5 +226,15 @@ FireModelRenderer::~FireModelRenderer() {
     SDL_DestroyTexture(arrow_texture_);
     SDL_FreeFormat(pixel_format_);
     SDL_DestroyTexture(texture_);
+}
+
+void FireModelRenderer::DrawDrone() {
+    double size = static_cast<int>(camera_.GetCellSize());
+
+    for (auto &agent : *drones_) {
+        std::pair<double, double> agent_position = agent->GetPosition();
+        std::pair<int, int> screen_position = camera_.GridToScreenPosition(agent_position.first, agent_position.second);
+        agent->Render(screen_position, size);
+    }
 }
 

@@ -19,8 +19,8 @@ FireCell::FireCell(int x, int y, std::mt19937 gen, FireModelParameters &paramete
     y_ = y * parameters_.GetCellSize();
     ticking_duration_ = 0;
 
-    num_particles_ = mother_cell_->GetNumParticles();
-//    num_particles_ = 5;
+    num_convection_particles_ = mother_cell_->GetNumConvectionParticles();
+    num_radiation_particles = mother_cell_->GetNumRadiationParticles();
 
     if (parameters_.map_is_uniform_) {
         burning_duration_ = parameters_.GetCellBurningDuration();
@@ -30,13 +30,20 @@ FireCell::FireCell(int x, int y, std::mt19937 gen, FireModelParameters &paramete
         tau_ign = cell_->GetIgnitionDelayTime();
     }
 
-    particle_emission_threshold_ = (burning_duration_ - 1) / num_particles_;
+    convection_particle_emission_threshold_ = (burning_duration_ - 1) / num_convection_particles_;
+    if (convection_particle_emission_threshold_ < 1)
+        convection_particle_emission_threshold_ = 1;
+
+    radiation_particle_emission_threshold_ = (burning_duration_ - 1) / num_radiation_particles;
+    if (radiation_particle_emission_threshold_ < 1)
+        radiation_particle_emission_threshold_ = 1;
 
     // TODO Auslagern der Zufallszahlen in eine eigene Klasse?
     // Initialize random number generator
     std::random_device rd;
     gen_ = gen;
     gen_.seed(rd());
+    real_dis_ = std::uniform_real_distribution<>(0.0, 1.0);
     std::uniform_real_distribution<> dis(0.1, 0.2);
     std::uniform_int_distribution<> sign_dis(-1, 1);
     tau_ign += sign_dis(gen_) * tau_ign * dis(gen_);
@@ -108,13 +115,13 @@ void FireCell::Ignite() {
     SetCellState(GENERIC_BURNING);
 }
 
-VirtualParticle FireCell::EmitVirtualParticle() {
-    std::random_device rd;
-    gen_.seed(rd());
-    std::uniform_real_distribution<> dis(0.0, 1.0);
-    double x_pos_rnd = dis(gen_);
-    double y_pos_rnd = dis(gen_);
-    VirtualParticle particle(x_ + (parameters_.GetCellSize() * x_pos_rnd), y_ + (parameters_.GetCellSize() * y_pos_rnd), parameters_.GetTauMemVirt(), parameters_.GetYStVirt(),
+VirtualParticle FireCell::EmitConvectionParticle() {
+    double x_pos_rnd = real_dis_(gen_);
+    double y_pos_rnd = real_dis_(gen_);
+    double cell_size = (parameters_.GetCellSize());
+    double x_pos = x_ + (cell_size * x_pos_rnd);
+    double y_pos = y_ + (cell_size * y_pos_rnd);
+    VirtualParticle particle(x_pos, y_pos, parameters_.GetTauMemVirt(), parameters_.GetYStVirt(),
                              parameters_.GetYLimVirt(), parameters_.GetFlVirt(), parameters_.GetC0Virt(),
                              parameters_.GetLt(), gen_);
 
@@ -122,14 +129,13 @@ VirtualParticle FireCell::EmitVirtualParticle() {
 }
 
 RadiationParticle FireCell::EmitRadiationParticle() {
-    std::random_device rd;
-    gen_.seed(rd());
-    std::uniform_real_distribution<> dis(0.0, 1.0);
-    double x_pos_rnd = dis(gen_);
-    double y_pos_rnd = dis(gen_);
-    double x_pos = x_ + (parameters_.GetCellSize() * x_pos_rnd);
-    double y_pos = y_ + (parameters_.GetCellSize() * y_pos_rnd);
-    RadiationParticle radiation_particle(x_pos, y_pos, parameters_.GetLr(), mother_cell_->GetSf0Mean(), mother_cell_->GetSf0Std(),
+    double x_pos_rnd = real_dis_(gen_);
+    double y_pos_rnd = real_dis_(gen_);
+    double cell_size = (parameters_.GetCellSize());
+    double x_pos = x_ + (cell_size * x_pos_rnd);
+    double y_pos = y_ + (cell_size * y_pos_rnd);
+    auto radiation_length = mother_cell_->GetRadiationLength();
+    RadiationParticle radiation_particle(x_pos, y_pos, radiation_length.first, radiation_length.second, mother_cell_->GetSf0Mean(), mother_cell_->GetSf0Std(),
                                          parameters_.GetYStRad(), parameters_.GetYLimRad(), gen_);
 
     return radiation_particle;
@@ -145,7 +151,7 @@ void FireCell::Tick() {
     }
 }
 
-bool FireCell::EmitNextParticle() {
+std::pair<bool, bool> FireCell::ShouldEmitNextParticles() {
     // Converting the burning_tick_ to an int before the modulo operation
     int burning_tick_int = static_cast<int>(burning_tick_);
 
@@ -153,21 +159,19 @@ bool FireCell::EmitNextParticle() {
     bool is_new_burning_tick = ceil(last_burning_duration_) != floor(burning_tick_);
 
     // It's a new burning tick & the burning tick is a multiple of the particle emission threshold
-    bool emit_condition = is_new_burning_tick && (burning_tick_int % particle_emission_threshold_ == 0);
+    bool emit_condition_convection = is_new_burning_tick && (burning_tick_int % convection_particle_emission_threshold_ == 0);
+    bool emit_condition_radiation = is_new_burning_tick && (burning_tick_int % radiation_particle_emission_threshold_ == 0);
 
-    return emit_condition;
-};
+    // First is for the convection particles, second is for the radiation particles
+    return std::make_pair(emit_condition_convection, emit_condition_radiation);
+}
 
-bool FireCell::burn() {
+void FireCell::burn() {
     last_burning_duration_ = burning_tick_;
     burning_duration_ -= parameters_.GetDt();
     burning_tick_ += parameters_.GetDt();
-    if (burning_duration_ <= 0) {
+    if (burning_duration_ <= 0)
         SetCellState(GENERIC_BURNED);
-        return false;
-    } else {
-        return EmitNextParticle();
-    }
 }
 
 bool FireCell::CanIgnite() {
@@ -215,6 +219,29 @@ void FireCell::ShowInfo() {
 }
 
 Uint32 FireCell::GetMappedColor() {
+    if (cell_state_ == GENERIC_BURNED) {
+        Uint32 mapped_cell_color = cell_->GetMappedColor();
+        Uint32 mapped_mother_cell_color = mother_cell_->GetMappedColor();
+
+        Uint8 burned_r, burned_g, burned_b, burned_a;
+        SDL_GetRGBA(mapped_cell_color, surface_->format, &burned_r, &burned_g, &burned_b, &burned_a);
+
+        Uint8 mother_r, mother_g, mother_b, mother_a;
+        SDL_GetRGBA(mapped_mother_cell_color, surface_->format, &mother_r, &mother_g, &mother_b, &mother_a);
+
+        //blend them
+        int burned_weight = 20;
+        int mother_weight = 1;
+        int total_weight = burned_weight + mother_weight;
+
+        Uint8 blended_r = (burned_r * burned_weight + mother_r * mother_weight) / total_weight;
+        Uint8 blended_g = (burned_g * burned_weight + mother_g * mother_weight) / total_weight;
+        Uint8 blended_b = (burned_b * burned_weight + mother_b * mother_weight) / total_weight;
+        Uint8 blended_a = 255;
+
+        Uint32 blended_mapped_color = SDL_MapRGBA(surface_->format, blended_r, blended_g, blended_b, blended_a);
+        return blended_mapped_color;
+    }
     return cell_->GetMappedColor();
 }
 

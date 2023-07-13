@@ -15,7 +15,7 @@ add_library(imgui_external ${IMGUI_SOURCES}
         externals/imgui/backends/imgui_impl_opengl3.cpp
         externals/imgui/backends/imgui_impl_opengl3.h
         externals/imgui/backends/imgui_impl_sdl2.h
-        externals/imgui/backends/imgui_impl_sdlrenderer2.cpp)
+        externals/imgui/backends/imgui_impl_sdlrenderer2.cpp agent/drone.cpp agent/drone.h)
 
 #add_library(imgui_filedialog ${CMAKE_SOURCE_DIR}/externals/ImGuiFileDialog/ImGuiFileDialog.cpp)
 
@@ -86,7 +86,7 @@ add_executable(ROSHAN
             models/stochasticlagrangian/cell_classes/cell_generic_burned.cpp
 
             externals/ImGuiFileDialog/ImGuiFileDialog.cpp externals/ImGuiFileDialog/ImGuiFileDialog.h
-        models/stochasticlagrangian/rendering/firemodel_pixelbuffer.cpp models/stochasticlagrangian/rendering/firemodel_pixelbuffer.cpp models/stochasticlagrangian/rendering/firemodel_pixelbuffer.h)
+        models/stochasticlagrangian/rendering/firemodel_pixelbuffer.cpp models/stochasticlagrangian/rendering/firemodel_pixelbuffer.cpp models/stochasticlagrangian/rendering/firemodel_pixelbuffer.h agent/rendering/DroneRenderer.cpp agent/rendering/DroneRenderer.h)
 
 target_include_directories(ROSHAN PRIVATE ${CMAKE_SOURCE_DIR}/externals/nlohmann)
 target_include_directories(ROSHAN PRIVATE ${CMAKE_SOURCE_DIR})

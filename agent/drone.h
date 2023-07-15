@@ -7,19 +7,24 @@
 
 #include <utility>
 #include <SDL.h>
+#include <deque>
 #include "rendering/DroneRenderer.h"
+#include "drone_state.h"
 
 class DroneAgent {
 public:
     DroneAgent() = default;
-    DroneAgent(SDL_Renderer* renderer);
+    explicit DroneAgent(SDL_Renderer* renderer);
     ~DroneAgent() = default;
-    void Update(double x, double y);
+    void Update(double angular, double linear);
     std::pair<double, double> GetPosition() { return position_; }
     void Render(std::pair<int, int> position, int size);
     void Initialize();
 private:
-    std::pair<double, double> position_;
+    void UpdateStates(double angular, double linear);
+    std::deque<DroneState> drone_states_;
+    std::pair<double, double> position_; // x, y
+    std::pair<double, double> velocity_; // angular & linear
     DroneRenderer renderer_;
 };
 

@@ -96,10 +96,10 @@ void FireModel::HandleEvents(SDL_Event event, ImGuiIO *io) {
         }
     } else if (event.type == SDL_KEYDOWN && parameters_.GetNumberOfDrones() == 1) {
         if (event.key.keysym.sym == SDLK_w) {
-            drones_->at(0)->Update(0, -0.5);
+            drones_->at(0)->Update(0, 0.5);
         }
         if (event.key.keysym.sym == SDLK_s) {
-            drones_->at(0)->Update(0, 0.5);
+            drones_->at(0)->Update(0, -0.5);
         }
         if (event.key.keysym.sym == SDLK_a) {
             drones_->at(0)->Update(-0.5, 0);

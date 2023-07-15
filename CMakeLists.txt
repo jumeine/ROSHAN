@@ -86,7 +86,7 @@ add_executable(ROSHAN
             models/stochasticlagrangian/cell_classes/cell_generic_burned.cpp
 
             externals/ImGuiFileDialog/ImGuiFileDialog.cpp externals/ImGuiFileDialog/ImGuiFileDialog.h
-        models/stochasticlagrangian/rendering/firemodel_pixelbuffer.cpp models/stochasticlagrangian/rendering/firemodel_pixelbuffer.cpp models/stochasticlagrangian/rendering/firemodel_pixelbuffer.h agent/rendering/DroneRenderer.cpp agent/rendering/DroneRenderer.h)
+        models/stochasticlagrangian/rendering/firemodel_pixelbuffer.cpp models/stochasticlagrangian/rendering/firemodel_pixelbuffer.cpp models/stochasticlagrangian/rendering/firemodel_pixelbuffer.h agent/rendering/DroneRenderer.cpp agent/rendering/DroneRenderer.h agent/drone_state.cpp agent/drone_state.h)
 
 target_include_directories(ROSHAN PRIVATE ${CMAKE_SOURCE_DIR}/externals/nlohmann)
 target_include_directories(ROSHAN PRIVATE ${CMAKE_SOURCE_DIR})

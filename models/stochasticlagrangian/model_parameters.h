@@ -113,6 +113,11 @@ public:
     // Parameters for the agent
     int number_of_drones_ = 1;
     int GetNumberOfDrones() const {return number_of_drones_;}
+    // To get m/s we need to divide the speed by the cell size and multiply by the dt
+    double GetDroneLinearVelocity(double speed) {
+       return (speed / GetCellSize()) * GetDt();
+    }
+    double GetDroneAngularVelocity(double angular) {return angular * GetDt();}
 
 };
 

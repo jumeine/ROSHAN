@@ -9,6 +9,8 @@
 #include <iostream>
 #include <set>
 #include <map>
+#include <chrono>
+#include <thread>
 #include "model_interface.h"
 #include "firemodel_gridmap.h"
 #include "rendering/firemodel_renderer.h"
@@ -27,7 +29,7 @@ public:
     }
 
     void Initialize() override;
-    void Update() override;
+    std::vector<std::deque<std::shared_ptr<State>>> Update() override;
     void Reset() override;
     void Config() override;
     void Render() override;
@@ -65,6 +67,7 @@ private:
     std::vector<std::vector<int>> current_raster_data_;
     //agent data
     std::shared_ptr<std::vector<std::shared_ptr<DroneAgent>>> drones_;
+    std::vector<std::deque<DroneState>> observations_;
 
     //Flags
     bool browser_selection_flag_ = false;  // If set to true, will load a new GridMap from a file.
@@ -76,6 +79,7 @@ private:
     bool open_file_dialog_ = false;
     bool load_map_from_disk_ = false;
     bool save_map_to_disk_ = false;
+    bool init_gridmap_ = false;
 
     void ShowParameterConfig();
 

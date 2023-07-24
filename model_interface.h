@@ -9,13 +9,16 @@
 #include "imgui.h"
 #include <SDL.h>
 #include <functional>
+#include <deque>
+#include "state.h"
+#include <memory>
 
 class IModel {
 public:
     virtual ~IModel() = default;
 
     virtual void Initialize() = 0;
-    virtual void Update() = 0;
+    virtual std::vector<std::deque<std::shared_ptr<State>>> Update() = 0;
     virtual void Config() = 0;
     virtual void Reset() = 0;
     virtual void Render() = 0;

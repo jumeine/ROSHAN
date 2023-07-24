@@ -22,7 +22,7 @@ public:
     }
 
     void Initialize() override;
-    void Update() override;
+    std::vector<std::deque<std::shared_ptr<State>>> Update() override;
     void Reset() override;
     void Config() override;
     void Render() override;

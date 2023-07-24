@@ -20,7 +20,7 @@ void GameOfLifeFixed::Initialize() {
     current_state_ = 0;
 }
 
-void GameOfLifeFixed::Update() {
+std::vector<std::deque<std::shared_ptr<State>>> GameOfLifeFixed::Update() {
     std::vector<std::vector<bool>>& current_state = state_[current_state_];
     std::vector<std::vector<bool>>& new_state = state_[1 - current_state_];
 
@@ -51,6 +51,7 @@ void GameOfLifeFixed::Update() {
     }
 
     current_state_ = 1 - current_state_;
+    return {};
 }
 
 void GameOfLifeFixed::Reset() {

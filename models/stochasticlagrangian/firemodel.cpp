@@ -23,6 +23,10 @@ void FireModel::ResetGridMap(std::vector<std::vector<int>>* rasterData) {
     for (int i = 0; i < parameters_.GetNumberOfDrones(); ++i) {
         drones_->push_back(std::make_shared<DroneAgent>(model_renderer_->GetRenderer()));
     }
+    for(auto &drone : *drones_) {
+        std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> drone_view = gridmap_->GetDroneView(drone);
+        drone->Initialize(drone_view.first, drone_view.second);
+    }
 //    model_renderer_->CheckCamera();
     running_time_ = 0;
 }
@@ -34,17 +38,33 @@ void FireModel::SetUniformRasterData() {
 }
 
 
-void FireModel::Update() {
+std::vector<std::deque<std::shared_ptr<State>>> FireModel::Update() {
+    std::vector<std::deque<std::shared_ptr<State>>> all_drone_states;
     if (gridmap_ != nullptr) {
         running_time_ += parameters_.GetDt();
         // Measure time
         gridmap_->UpdateParticles();
 //        auto start = std::chrono::high_resolution_clock::now();
         gridmap_->UpdateCells();
+
+        //Move drones and get observations
+        for (auto &drone : *drones_) {
+            std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> drone_view = gridmap_->GetDroneView(drone);
+            std::deque<DroneState> drone_states = drone->GetStates();
+            drone->Move(drone_view.first, drone_view.second);
+            std::deque<std::shared_ptr<State>> shared_states;
+            for (auto &state : drone_states) {
+                shared_states.push_back(std::make_shared<DroneState>(state));
+            }
+            all_drone_states.push_back(shared_states);
+        }
+
+        return all_drone_states;
 //        auto end = std::chrono::high_resolution_clock::now();
 //        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 //        std::cout << "Update cells: " << duration.count() << " microseconds" << std::endl;
     }
+    return {};
 }
 
 void FireModel::Render() {
@@ -95,17 +115,19 @@ void FireModel::HandleEvents(SDL_Event event, ImGuiIO *io) {
             model_renderer_->ResizeEvent();
         }
     } else if (event.type == SDL_KEYDOWN && parameters_.GetNumberOfDrones() == 1) {
+        std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> drone_view = gridmap_->GetDroneView(drones_->at(0));
+
         if (event.key.keysym.sym == SDLK_w) {
-            drones_->at(0)->Update(0, 0.5);
+            drones_->at(0)->Update(0, parameters_.GetDroneLinearVelocity(0.1), drone_view.first, drone_view.second);
         }
         if (event.key.keysym.sym == SDLK_s) {
-            drones_->at(0)->Update(0, -0.5);
+            drones_->at(0)->Update(0, -parameters_.GetDroneLinearVelocity(0.1), drone_view.first, drone_view.second);
         }
         if (event.key.keysym.sym == SDLK_a) {
-            drones_->at(0)->Update(-0.5, 0);
+            drones_->at(0)->Update(-parameters_.GetDroneAngularVelocity(0.5), 0, drone_view.first, drone_view.second);
         }
         if (event.key.keysym.sym == SDLK_d) {
-            drones_->at(0)->Update(0.5, 0);
+            drones_->at(0)->Update(parameters_.GetDroneAngularVelocity(0.5), 0, drone_view.first, drone_view.second);
         }
         if (event.key.keysym.sym == SDLK_SPACE) {
             std::pair<double, double> position = drones_->at(0)->GetPosition();
@@ -257,7 +279,6 @@ void FireModel::Config() {
                 if (ImGuiFileDialog::Instance()->IsOk()) {
                     filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
                     std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
-
                     if (load_map_from_disk_){
                         dataset_handler_->LoadMap(filePathName);
                         std::vector<std::vector<int>> rasterData;
@@ -265,8 +286,8 @@ void FireModel::Config() {
                         current_raster_data_.clear();
                         current_raster_data_ = rasterData;
                         parameters_.map_is_uniform_ = false;
-                        ResetGridMap(&current_raster_data_);
                         load_map_from_disk_ = false;
+                        init_gridmap_ = true;
                     }
                     else if (save_map_to_disk_) {
                         dataset_handler_->SaveRaster(filePathName);
@@ -432,6 +453,10 @@ void FireModel::ShowPopups() {
         }
         ImGui::End();
         ++it;  // Go to the next popup in the set.
+    }
+    if(init_gridmap_) {
+        init_gridmap_ = false;
+        ResetGridMap(&current_raster_data_);
     }
 }
 

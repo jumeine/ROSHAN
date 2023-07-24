@@ -16,14 +16,18 @@ public:
     DroneAgent() = default;
     explicit DroneAgent(SDL_Renderer* renderer);
     ~DroneAgent() = default;
-    void Update(double angular, double linear);
+    std::deque<DroneState> GetStates() { return drone_states_; }
+    void Update(double angular, double linear, std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status);
+    void Move(std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status);
     std::pair<double, double> GetPosition() { return position_; }
+    int GetViewRange() { return view_range_; }
     void Render(std::pair<int, int> position, int size);
-    void Initialize();
+    void Initialize(std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status);
 private:
-    void UpdateStates(double angular, double linear);
+    void UpdateStates(double angular, double linear, std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status);
     std::deque<DroneState> drone_states_;
     std::pair<double, double> position_; // x, y
+    int view_range_;
     std::pair<double, double> velocity_; // angular & linear
     DroneRenderer renderer_;
 };

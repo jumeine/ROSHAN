@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.25)
 project(ROSHAN)
 set(CMAKE_CXX_STANDARD 17)
 
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+#set(CMAKE_CXX_FLAGS_DEBUG "-g")
+#set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+
 # set cmake module path
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 
@@ -86,7 +90,7 @@ add_executable(ROSHAN
             models/stochasticlagrangian/cell_classes/cell_generic_burned.cpp
 
             externals/ImGuiFileDialog/ImGuiFileDialog.cpp externals/ImGuiFileDialog/ImGuiFileDialog.h
-        models/stochasticlagrangian/rendering/firemodel_pixelbuffer.cpp models/stochasticlagrangian/rendering/firemodel_pixelbuffer.cpp models/stochasticlagrangian/rendering/firemodel_pixelbuffer.h agent/rendering/DroneRenderer.cpp agent/rendering/DroneRenderer.h agent/drone_state.cpp agent/drone_state.h)
+        models/stochasticlagrangian/rendering/firemodel_pixelbuffer.cpp models/stochasticlagrangian/rendering/firemodel_pixelbuffer.cpp models/stochasticlagrangian/rendering/firemodel_pixelbuffer.h agent/rendering/DroneRenderer.cpp agent/rendering/DroneRenderer.h agent/drone_state.cpp agent/drone_state.h agent/memory.cpp agent/memory.h state.h)
 
 target_include_directories(ROSHAN PRIVATE ${CMAKE_SOURCE_DIR}/externals/nlohmann)
 target_include_directories(ROSHAN PRIVATE ${CMAKE_SOURCE_DIR})

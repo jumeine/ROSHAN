@@ -20,6 +20,7 @@
 #include "models/gameoflife_simple/gameoflife_fixed.h"
 #include "models/stochasticlagrangian/firemodel.h"
 #include "CORINE/dataset_handler.h"
+#include "agent/memory.h"
 
 #if !SDL_VERSION_ATLEAST(2,0,17)
 #error This backend requires SDL 2.0.17+ because of SDL_RenderGeometry() function
@@ -76,6 +77,10 @@ private:
 
     // ImGui Stuff
     bool ImGuiModelSelection();
+
+    // AI Stuff
+    Memory agent_memory_;
+    void TrainLoop();
 
 };
 

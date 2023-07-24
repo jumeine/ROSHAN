@@ -20,7 +20,7 @@ void GameOfLifeInfinite::Initialize() {
     }
 }
 
-void GameOfLifeInfinite::Update() {
+std::vector<std::deque<std::shared_ptr<State>>> GameOfLifeInfinite::Update() {
     CellStateGOF new_state;
 
     // Find all cells that need to be updated
@@ -40,6 +40,8 @@ void GameOfLifeInfinite::Update() {
     }
 
     state_ = std::move(new_state);
+
+    return {};
 }
 
 void GameOfLifeInfinite::Reset() {

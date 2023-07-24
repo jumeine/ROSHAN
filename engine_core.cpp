@@ -64,7 +64,9 @@ bool EngineCore::Init(){
         return false;
     }
 
+    agent_memory_ = Memory(5000);
     StartServer();
+
     return is_running_ = true;
 }
 
@@ -72,7 +74,8 @@ void EngineCore::Update() {
     if (update_simulation_) {
         SDL_GetRendererOutputSize(renderer_, &width_, &height_);
         model_->SetWidthHeight(width_, height_);
-        model_->Update();
+        std::vector<std::deque<std::shared_ptr<State>>> observations = model_->Update();
+        agent_memory_.InsertState(observations);
         SDL_Delay(delay_);
     }
 }
@@ -244,6 +247,16 @@ void EngineCore::StopServer() {
     std::string kill_command = "kill " + std::to_string(pid);
     std::cout << kill_command << std::endl;
     std::system(kill_command.c_str());
+}
+
+void EngineCore::TrainLoop() {
+    int i_episode = 1;
+
+    while (i_episode <= 1000) {
+        std::cout << "Episode " << i_episode << std::endl;
+//        model_->Train();
+        i_episode++;
+    }
 }
 
 

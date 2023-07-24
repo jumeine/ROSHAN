@@ -32,8 +32,8 @@ public:
 private:
     double x_;
     double y_;
-    double camera_speed_;
     double zoom_;
+    double camera_speed_;
     double cell_size_;
     double offset_x_;
     double offset_y_;

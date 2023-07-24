@@ -15,6 +15,7 @@
 #include <random>
 #include <iostream>
 #include <memory>
+#include "agent/drone.h"
 
 class GridMap {
 public:
@@ -26,6 +27,7 @@ public:
     void IgniteCell(int x, int y);
     void ExtinguishCell(int x, int y);
     CellState GetCellState(int x, int y) { return cells_[x][y]->GetIgnitionState(); }
+
     void UpdateParticles();
     void UpdateCells();
     int GetNumParticles() { return virtual_particles_.size() + radiation_particles_.size();}
@@ -35,6 +37,7 @@ public:
     std::vector<RadiationParticle> GetRadiationParticles() const { return radiation_particles_; }
     std::vector<Point> GetChangedCells() const { return changed_cells_; }
     void ResetChangedCells() { changed_cells_.clear(); }
+    std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> GetDroneView(std::shared_ptr<DroneAgent> drone);
 
     FireCell& At(int i, int j) {
         return *cells_[i][j];

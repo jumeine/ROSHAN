@@ -18,8 +18,11 @@ DroneRenderer::DroneRenderer(SDL_Renderer *renderer) {
     SDL_FreeSurface(drone_surface);
 }
 
-void DroneRenderer::Render(std::pair<int, int> position, int size) {
+void DroneRenderer::Render(std::pair<int, int> position, int size, int view_range, double angle) {
     // Render the arrow
     SDL_Rect destRect = {position.first, position.second, size, size}; // x, y, width and height of the arrow
-    SDL_RenderCopyEx(renderer_, drone_texture_, NULL, &destRect, 0, NULL, SDL_FLIP_NONE);
+    SDL_RenderCopyEx(renderer_, drone_texture_, NULL, &destRect, angle * 180 / M_PI, NULL, SDL_FLIP_NONE);
+    SDL_Rect view_range_rect = {position.first - (view_range * size) / 2, position.second - (view_range * size) / 2, view_range * size, view_range * size};
+    SDL_SetRenderDrawColor(renderer_, 255, 0, 0, 255);
+    SDL_RenderDrawRect(renderer_, &view_range_rect);
 }

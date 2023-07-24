@@ -12,7 +12,7 @@ public:
     DroneRenderer() = default;
     DroneRenderer(SDL_Renderer* renderer);
     ~DroneRenderer() = default;
-    void Render(std::pair<int, int> position, int size);
+    void Render(std::pair<int, int> position, int size, int view_range, double angle);
     void init();
 private:
     SDL_Texture* drone_texture_;

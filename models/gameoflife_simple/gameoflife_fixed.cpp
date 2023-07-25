@@ -20,7 +20,7 @@ void GameOfLifeFixed::Initialize() {
     current_state_ = 0;
 }
 
-std::vector<std::deque<std::shared_ptr<State>>> GameOfLifeFixed::Update() {
+std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>, std::vector<bool>> GameOfLifeFixed::Step(std::vector<std::shared_ptr<Action>> actions) {
     std::vector<std::vector<bool>>& current_state = state_[current_state_];
     std::vector<std::vector<bool>>& new_state = state_[1 - current_state_];
 
@@ -118,4 +118,8 @@ void GameOfLifeFixed::ImGuiModelMenu() {
 
 void GameOfLifeFixed::ShowControls(std::function<void(bool &, bool &, int &)> controls, bool &update_simulation, bool &render_simulation, int &delay) {
     controls(update_simulation, render_simulation, delay);
+}
+
+std::vector<std::deque<std::shared_ptr<State>>> GameOfLifeFixed::GetObservations() {
+    return std::vector<std::deque<std::shared_ptr<State>>>();
 }

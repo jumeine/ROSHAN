@@ -16,13 +16,11 @@ void DroneAgent::Render(std::pair<int, int> position, int size) {
 }
 
 
-
-void DroneAgent::Move(std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status) {
-    std::pair<double, double> orientation_vector = drone_states_[0].GetOrientation();
-    std::pair<double, double> velocity_vector = drone_states_[0].GetVelocity();
+void DroneAgent::Move(double angular, double linear) {
+    std::pair<double, double> orientation_vector = drone_states_[0].GetNewOrientation(angular);
+    std::pair<double, double> velocity_vector = drone_states_[0].GetNewVelocity(angular, linear);
     position_.first += velocity_vector.second * orientation_vector.first;
     position_.second += velocity_vector.second * orientation_vector.second;
-    UpdateStates(0, 0, terrain, fire_status);
 }
 
 void DroneAgent::Update(double angular, double linear, std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status) {
@@ -31,8 +29,8 @@ void DroneAgent::Update(double angular, double linear, std::vector<std::vector<i
 
 void DroneAgent::Initialize(std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status) {
     for(int i = 0; i < 4; ++i) {
-//        DroneState new_state = drone_states_[0].GetNewState(0, 0, terrain, fire_status);
-//        drone_states_.push_front(new_state);
+        DroneState new_state = drone_states_[0].GetNewState(0, 0, terrain, fire_status);
+        drone_states_.push_front(new_state);
     }
 }
 

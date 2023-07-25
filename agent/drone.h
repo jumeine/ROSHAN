@@ -18,7 +18,7 @@ public:
     ~DroneAgent() = default;
     std::deque<DroneState> GetStates() { return drone_states_; }
     void Update(double angular, double linear, std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status);
-    void Move(std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status);
+    void Move(double angular, double linear);
     std::pair<double, double> GetPosition() { return position_; }
     int GetViewRange() { return view_range_; }
     void Render(std::pair<int, int> position, int size);

@@ -8,8 +8,8 @@
 #include <cmath>
 #include <vector>
 #include <random>
-#include "wind.h"
-#include "model_parameters.h"
+#include "models/stochasticlagrangian/wind.h"
+#include "models/stochasticlagrangian/model_parameters.h"
 
 class VirtualParticle {
 

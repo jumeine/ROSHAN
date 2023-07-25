@@ -6,7 +6,6 @@ Firesimulation based on cellular automata
 #### SDL2 - min. 2.0.17 
 
 https://github.com/libsdl-org/SDL/releases/tag/release-2.26.5
-
 https://github.com/libsdl-org/SDL_image/releases/tag/release-2.6.3
 
 #### NodeJS
@@ -39,3 +38,13 @@ https://github.com/aiekick/ImGuiFileDialog
 
 #### JSON
 https://github.com/nlohmann/json
+
+#### pybind11
+
+sudo apt install libpython3.9-dev
+
+##### Conda install
+
+conda create --name firesim python=3.9
+
+

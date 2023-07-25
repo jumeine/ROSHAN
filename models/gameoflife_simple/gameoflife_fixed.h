@@ -22,7 +22,8 @@ public:
     }
 
     void Initialize() override;
-    std::vector<std::deque<std::shared_ptr<State>>> Update() override;
+    std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>, std::vector<bool>> Step(std::vector<std::shared_ptr<Action>> actions) override;
+    std::vector<std::deque<std::shared_ptr<State>>> GetObservations() override;
     void Reset() override;
     void Config() override;
     void Render() override;

@@ -6,6 +6,9 @@ set(CMAKE_CXX_STANDARD 17)
 #set(CMAKE_CXX_FLAGS_DEBUG "-g")
 #set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
+add_subdirectory(externals/pybind11)
+set(PYTHON_EXECUTABLE "$ENV{CONDA_PREFIX}/bin/python")
+
 # set cmake module path
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 
@@ -40,6 +43,7 @@ set(SDL2_IMAGE_LIBRARIES "/usr/local/lib/libSDL2_image.so")
 list(APPEND CMAKE_PREFIX_PATH "/usr/local")
 
 include_directories(/usr/local/include/SDL2)
+include_directories(/usr/include/python3.9)
 set(SDL2_LIBRARIES /usr/local/lib/libSDL2.so)
 
 
@@ -66,8 +70,8 @@ add_executable(ROSHAN
         models/stochasticlagrangian/rendering/firemodel_renderer.cpp models/stochasticlagrangian/rendering/firemodel_renderer.h
         models/stochasticlagrangian/rendering/firemodel_camera.cpp models/stochasticlagrangian/rendering/firemodel_camera.h
         models/stochasticlagrangian/firemodel_firecell.cpp models/stochasticlagrangian/firemodel_firecell.h
-        models/stochasticlagrangian/virtual_particle.cpp models/stochasticlagrangian/virtual_particle.h
-        models/stochasticlagrangian/radiation_particle.cpp models/stochasticlagrangian/radiation_particle.h
+        models/stochasticlagrangian/particles/virtual_particle.cpp models/stochasticlagrangian/particles/virtual_particle.h
+        models/stochasticlagrangian/particles/radiation_particle.cpp models/stochasticlagrangian/particles/radiation_particle.h
         models/stochasticlagrangian/wind.cpp models/stochasticlagrangian/wind.h
         models/stochasticlagrangian/utils.h
         models/stochasticlagrangian/model_parameters.h
@@ -90,9 +94,9 @@ add_executable(ROSHAN
             models/stochasticlagrangian/cell_classes/cell_generic_burned.cpp
 
             externals/ImGuiFileDialog/ImGuiFileDialog.cpp externals/ImGuiFileDialog/ImGuiFileDialog.h
-        models/stochasticlagrangian/rendering/firemodel_pixelbuffer.cpp models/stochasticlagrangian/rendering/firemodel_pixelbuffer.cpp models/stochasticlagrangian/rendering/firemodel_pixelbuffer.h agent/rendering/DroneRenderer.cpp agent/rendering/DroneRenderer.h agent/drone_state.cpp agent/drone_state.h agent/memory.cpp agent/memory.h state.h)
+        models/stochasticlagrangian/rendering/firemodel_pixelbuffer.cpp models/stochasticlagrangian/rendering/firemodel_pixelbuffer.cpp models/stochasticlagrangian/rendering/firemodel_pixelbuffer.h agent/rendering/DroneRenderer.cpp agent/rendering/DroneRenderer.h agent/drone_state.cpp agent/drone_state.h agent/memory.cpp agent/memory.h state.h action.h agent/drone_action.h agent/drone_agent.cpp agent/drone_agent.h agent.h)
 
 target_include_directories(ROSHAN PRIVATE ${CMAKE_SOURCE_DIR}/externals/nlohmann)
 target_include_directories(ROSHAN PRIVATE ${CMAKE_SOURCE_DIR})
 # Link against OpenGL, imgui, SDL2
-target_link_libraries(ROSHAN ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARIES} ${X11_LIBRARIES} OpenGL::GL imgui_external ${GDAL_LIBRARIES} -ldl)
+target_link_libraries(ROSHAN ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARIES} ${X11_LIBRARIES} OpenGL::GL imgui_external ${GDAL_LIBRARIES} -ldl -lpython3.9)

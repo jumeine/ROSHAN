@@ -65,6 +65,7 @@ bool EngineCore::Init(){
     }
 
     agent_memory_ = Memory(5000);
+    agent_ = std::make_shared<DroneNetworkAgent>();
     StartServer();
 
     return is_running_ = true;
@@ -74,8 +75,17 @@ void EngineCore::Update() {
     if (update_simulation_) {
         SDL_GetRendererOutputSize(renderer_, &width_, &height_);
         model_->SetWidthHeight(width_, height_);
-        std::vector<std::deque<std::shared_ptr<State>>> observations = model_->Update();
-        agent_memory_.InsertState(observations);
+
+        // Observe the current state of the environment
+        std::vector<std::deque<std::shared_ptr<State>>> observations = model_->GetObservations();
+
+        // Select actions from observations using policy
+        std::vector<std::shared_ptr<Action>> actions = agent_->SelectActions(observations);
+
+        // Execute actions and observe reward and next state
+        auto [next_observations, rewards, dones] = model_->Step(actions);
+
+        agent_memory_.InsertState(observations, actions, rewards, next_observations, dones);
         SDL_Delay(delay_);
     }
 }
@@ -247,16 +257,6 @@ void EngineCore::StopServer() {
     std::string kill_command = "kill " + std::to_string(pid);
     std::cout << kill_command << std::endl;
     std::system(kill_command.c_str());
-}
-
-void EngineCore::TrainLoop() {
-    int i_episode = 1;
-
-    while (i_episode <= 1000) {
-        std::cout << "Episode " << i_episode << std::endl;
-//        model_->Train();
-        i_episode++;
-    }
 }
 
 

@@ -11,6 +11,7 @@
 #include <map>
 #include <chrono>
 #include <thread>
+#include "externals/pybind11/include/pybind11/embed.h"
 #include "model_interface.h"
 #include "firemodel_gridmap.h"
 #include "rendering/firemodel_renderer.h"
@@ -19,7 +20,9 @@
 #include "CORINE/dataset_handler.h"
 #include "externals/ImGuiFileDialog/ImGuiFileDialog.h"
 #include "agent/drone.h"
+#include "agent/drone_action.h"
 
+namespace py = pybind11;
 
 class FireModel : public IModel{
 public:
@@ -29,7 +32,8 @@ public:
     }
 
     void Initialize() override;
-    std::vector<std::deque<std::shared_ptr<State>>> Update() override;
+    std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>, std::vector<bool>> Step(std::vector<std::shared_ptr<Action>> actions) override;
+    std::vector<std::deque<std::shared_ptr<State>>> GetObservations() override;
     void Reset() override;
     void Config() override;
     void Render() override;
@@ -39,7 +43,6 @@ public:
     void ImGuiSimulationSpeed() override;
     void ImGuiModelMenu() override;
     void ShowControls(std::function<void(bool&, bool&, int&)> controls, bool &update_simulation, bool &render_simulation, int &delay) override;
-
 
 private:
     explicit FireModel(SDL_Renderer* renderer);
@@ -66,6 +69,7 @@ private:
     //current data
     std::vector<std::vector<int>> current_raster_data_;
     //agent data
+    std::shared_ptr<py::object> agent_;
     std::shared_ptr<std::vector<std::shared_ptr<DroneAgent>>> drones_;
     std::vector<std::deque<DroneState>> observations_;
 
@@ -82,9 +86,7 @@ private:
     bool init_gridmap_ = false;
 
     void ShowParameterConfig();
-
     bool ImGuiOnStartup();
-
     void SetUniformRasterData();
 };
 

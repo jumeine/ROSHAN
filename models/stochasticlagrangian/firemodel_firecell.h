@@ -6,8 +6,8 @@
 #define ROSHAN_FIREMODEL_FIRECELL_H
 
 #include "point.h"
-#include "virtual_particle.h"
-#include "radiation_particle.h"
+#include "models/stochasticlagrangian/particles/virtual_particle.h"
+#include "models/stochasticlagrangian/particles/radiation_particle.h"
 #include "model_parameters.h"
 #include "firemodel_cell_interface.h"
 #include "imgui.h"

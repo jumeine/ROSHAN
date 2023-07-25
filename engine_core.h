@@ -21,6 +21,9 @@
 #include "models/stochasticlagrangian/firemodel.h"
 #include "CORINE/dataset_handler.h"
 #include "agent/memory.h"
+#include "agent/drone_agent.h"
+#include "agent.h"
+#include "action.h"
 
 #if !SDL_VERSION_ATLEAST(2,0,17)
 #error This backend requires SDL 2.0.17+ because of SDL_RenderGeometry() function
@@ -80,8 +83,7 @@ private:
 
     // AI Stuff
     Memory agent_memory_;
-    void TrainLoop();
-
+    std::shared_ptr<Agent> agent_;
 };
 
 

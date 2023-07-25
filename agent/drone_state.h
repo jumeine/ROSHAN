@@ -18,8 +18,10 @@ public:
     DroneState GetNewState(double angular, double linear, std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status);
     void SetOrientation() { orientation_vector_.first = cos(velocity_.first); orientation_vector_.second = sin(velocity_.first); }
     std::pair<double, double> GetOrientation() { return orientation_vector_; }
+    std::pair<double, double> GetNewOrientation(double angular) { return std::make_pair(cos(velocity_.first + angular), sin(velocity_.first + angular)); }
     void SetVelocity(double angular, double linear) { velocity_.first = angular; velocity_.second = linear; }
     std::pair<double, double> GetVelocity() { return velocity_; }
+    std::pair<double, double> GetNewVelocity(double angular, double linear) { return std::make_pair(velocity_.first + angular, velocity_.second + linear); }
     std::vector<std::vector<int>> GetTerrain() { return terrain_; }
     std::vector<std::vector<int>> GetFireStatus() { return fire_status_; }
 private:

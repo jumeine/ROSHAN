@@ -7,6 +7,14 @@
 FireModel* FireModel::instance_ = nullptr;
 
 FireModel::FireModel(SDL_Renderer *renderer) {
+    py::scoped_interpreter guard{}; // start the interpreter and keep it alive
+    py::module::import("sys").attr("path").attr("insert")(0, "../agent/FireSimAgent");
+    py::object Agent = py::module::import("agent").attr("Agent");
+    agent_ = std::make_shared<py::object>(Agent());
+    (*agent_).attr("act")("Start waiting");
+//    (*agent_).attr("wait")();
+    (*agent_).attr("act")("Finished waiting");
+
     dataset_handler_ = std::make_shared<DatasetHandler>("/home/nex/Downloads/CLMS_CLCplus_RASTER_2018_010m_eu_03035_V1_1/Data/CLMS_CLCplus_RASTER_2018_010m_eu_03035_V1_1.tif");
     drones_ = std::make_shared<std::vector<std::shared_ptr<DroneAgent>>>();
     model_renderer_ = FireModelRenderer::GetInstance(renderer, drones_, parameters_);
@@ -37,21 +45,12 @@ void FireModel::SetUniformRasterData() {
     parameters_.map_is_uniform_ = true;
 }
 
-
-std::vector<std::deque<std::shared_ptr<State>>> FireModel::Update() {
+std::vector<std::deque<std::shared_ptr<State>>> FireModel::GetObservations() {
     std::vector<std::deque<std::shared_ptr<State>>> all_drone_states;
     if (gridmap_ != nullptr) {
-        running_time_ += parameters_.GetDt();
-        // Measure time
-        gridmap_->UpdateParticles();
-//        auto start = std::chrono::high_resolution_clock::now();
-        gridmap_->UpdateCells();
-
-        //Move drones and get observations
+        //Get observations
         for (auto &drone : *drones_) {
-            std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> drone_view = gridmap_->GetDroneView(drone);
             std::deque<DroneState> drone_states = drone->GetStates();
-            drone->Move(drone_view.first, drone_view.second);
             std::deque<std::shared_ptr<State>> shared_states;
             for (auto &state : drone_states) {
                 shared_states.push_back(std::make_shared<DroneState>(state));
@@ -60,9 +59,42 @@ std::vector<std::deque<std::shared_ptr<State>>> FireModel::Update() {
         }
 
         return all_drone_states;
-//        auto end = std::chrono::high_resolution_clock::now();
-//        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-//        std::cout << "Update cells: " << duration.count() << " microseconds" << std::endl;
+    }
+    return {};
+}
+
+std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>, std::vector<bool>> FireModel::Step(std::vector<std::shared_ptr<Action>> actions) {
+    std::vector<std::deque<std::shared_ptr<State>>> all_drone_states;
+    std::vector<double> rewards;
+    std::vector<bool> dones;
+    if (gridmap_ != nullptr) {
+        // Simulation time step update
+        running_time_ += parameters_.GetDt();
+
+        // Update the fire particles and the cell states
+        gridmap_->UpdateParticles();
+        gridmap_->UpdateCells();
+
+        // Move the drones and get the next_observation
+        for (int i = 0; i < (*drones_).size(); ++i) {
+            double angular = std::dynamic_pointer_cast<DroneAction>(actions[i])->GetAngular();
+            double linear = std::dynamic_pointer_cast<DroneAction>(actions[i])->GetLinear();
+            drones_->at(i)->Move(angular, linear);
+            std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> drone_view = gridmap_->GetDroneView(drones_->at(i));
+            drones_->at(i)->Update(angular, linear, drone_view.first, drone_view.second);
+
+            std::deque<DroneState> drone_states = drones_->at(i)->GetStates();
+            std::deque<std::shared_ptr<State>> shared_states;
+            for (auto &state : drone_states) {
+                shared_states.push_back(std::make_shared<DroneState>(state));
+            }
+            all_drone_states.push_back(shared_states);
+            rewards.push_back(0);
+            dones.push_back(false);
+        }
+
+        return {all_drone_states, rewards, dones};
+
     }
     return {};
 }

@@ -20,7 +20,7 @@ void GameOfLifeInfinite::Initialize() {
     }
 }
 
-std::vector<std::deque<std::shared_ptr<State>>> GameOfLifeInfinite::Update() {
+std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>, std::vector<bool>> GameOfLifeInfinite::Step(std::vector<std::shared_ptr<Action>> actions) {
     CellStateGOF new_state;
 
     // Find all cells that need to be updated
@@ -123,4 +123,8 @@ void GameOfLifeInfinite::ImGuiModelMenu() {
 
 void GameOfLifeInfinite::ShowControls(std::function<void(bool&, bool&, int&)> controls, bool &update_simulation, bool &render_simulation, int &delay) {
     controls(update_simulation, render_simulation, delay);
+}
+
+std::vector<std::deque<std::shared_ptr<State>>> GameOfLifeInfinite::GetObservations() {
+    return std::vector<std::deque<std::shared_ptr<State>>>();
 }

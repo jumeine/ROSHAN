@@ -11,7 +11,6 @@
 #include <map>
 #include <chrono>
 #include <thread>
-#include "externals/pybind11/include/pybind11/embed.h"
 #include "model_interface.h"
 #include "firemodel_gridmap.h"
 #include "rendering/firemodel_renderer.h"
@@ -21,8 +20,6 @@
 #include "externals/ImGuiFileDialog/ImGuiFileDialog.h"
 #include "agent/drone.h"
 #include "agent/drone_action.h"
-
-namespace py = pybind11;
 
 class FireModel : public IModel{
 public:
@@ -69,7 +66,6 @@ private:
     //current data
     std::vector<std::vector<int>> current_raster_data_;
     //agent data
-    std::shared_ptr<py::object> agent_;
     std::shared_ptr<std::vector<std::shared_ptr<DroneAgent>>> drones_;
     std::vector<std::deque<DroneState>> observations_;
 

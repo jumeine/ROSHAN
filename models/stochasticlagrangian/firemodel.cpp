@@ -7,14 +7,6 @@
 FireModel* FireModel::instance_ = nullptr;
 
 FireModel::FireModel(SDL_Renderer *renderer) {
-    py::scoped_interpreter guard{}; // start the interpreter and keep it alive
-    py::module::import("sys").attr("path").attr("insert")(0, "../agent/FireSimAgent");
-    py::object Agent = py::module::import("agent").attr("Agent");
-    agent_ = std::make_shared<py::object>(Agent());
-    (*agent_).attr("act")("Start waiting");
-//    (*agent_).attr("wait")();
-    (*agent_).attr("act")("Finished waiting");
-
     dataset_handler_ = std::make_shared<DatasetHandler>("/home/nex/Downloads/CLMS_CLCplus_RASTER_2018_010m_eu_03035_V1_1/Data/CLMS_CLCplus_RASTER_2018_010m_eu_03035_V1_1.tif");
     drones_ = std::make_shared<std::vector<std::shared_ptr<DroneAgent>>>();
     model_renderer_ = FireModelRenderer::GetInstance(renderer, drones_, parameters_);

@@ -86,6 +86,11 @@ void EngineCore::Update() {
         auto [next_observations, rewards, dones] = model_->Step(actions);
 
         agent_memory_.InsertState(observations, actions, rewards, next_observations, dones);
+        if (agent_memory_.IsReadyToTrain()) {
+            auto [batch_states, batch_actions, batch_rewards, batch_next_states, batch_dones] = agent_memory_.SampleBatch();
+            agent_->Update(batch_states, batch_actions, batch_rewards, batch_next_states, batch_dones);
+            agent_memory_.ClearMemory();
+        }
         SDL_Delay(delay_);
     }
 }

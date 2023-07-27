@@ -1,11 +1,17 @@
 import time
+import sys
+sys.path.insert(0, '../../cmake-build-debug')
+import drone_state_module as dsm
 
 class Agent():
     def __init__(self):
+        print("Agent initialized")
+
+    def update(self, observations, actions, rewards, next_observations, dones):
         pass
 
-    def act(self, state):
-        print("Agent acting on state: ", state)
+    def act(self, action):
+        pass
 
     def wait(self):
         """

@@ -11,6 +11,7 @@
 #include <array>
 #include "../state.h"
 
+
 class DroneState : public State{
 public:
     DroneState();
@@ -30,6 +31,5 @@ private:
     std::vector<std::vector<int>> fire_status_;
     std::pair<double, double> orientation_vector_; // x, y
 };
-
 
 #endif //ROSHAN_DRONE_STATE_H

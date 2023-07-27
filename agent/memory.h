@@ -22,23 +22,25 @@ public:
                      std::vector<double> reward,
                      std::vector<std::deque<std::shared_ptr<State>>> next_observation,
                      std::vector<bool> done);
+    bool IsReadyToTrain();
+    std::tuple<
+            std::vector<std::vector<std::shared_ptr<State>>>,
+            std::vector<std::shared_ptr<Action>>,
+            std::vector<double>,
+            std::vector<std::vector<std::shared_ptr<State>>>,
+            std::vector<bool>
+    > SampleBatch();
     void ClearMemory();
     ~Memory() = default;
 
 private:
-    std::vector<std::vector<std::pair<double, double>>> velocity_;
-    std::vector<std::vector<std::pair<double, double>>> orientation_;
-    std::vector<std::vector<std::vector<std::vector<int>>>> terrain_;
-    std::vector<std::vector<std::vector<std::vector<int>>>> fire_status_;
+    int horizon_;
 
-    std::vector<std::vector<std::pair<double, double>>> velocity_next_;
-    std::vector<std::vector<std::pair<double, double>>> orientation_next_;
-    std::vector<std::vector<std::vector<std::vector<int>>>> terrain_next_;
-    std::vector<std::vector<std::vector<std::vector<int>>>> fire_status_next_;
-
-    std::vector<std::vector<DroneAction>> action_;
-    std::vector<std::vector<double>> reward_;
-    std::vector<std::vector<bool>> done_;
+    std::vector<std::deque<std::shared_ptr<State>>> observations_;
+    std::vector<std::shared_ptr<Action>> actions_;
+    std::vector<double> rewards_;
+    std::vector<std::deque<std::shared_ptr<State>>> next_observations_;
+    std::vector<bool> dones_;
 };
 
 

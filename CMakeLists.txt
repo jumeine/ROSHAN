@@ -46,8 +46,6 @@ include_directories(/usr/local/include/SDL2)
 include_directories(/usr/include/python3.9)
 set(SDL2_LIBRARIES /usr/local/lib/libSDL2.so)
 
-
-
 add_executable(ROSHAN
         main.cpp
         models/stochasticlagrangian/utils.cpp
@@ -77,26 +75,40 @@ add_executable(ROSHAN
         models/stochasticlagrangian/model_parameters.h
         CORINE/dataset_handler.cpp CORINE/dataset_handler.h
         models/stochasticlagrangian/firemodel_cell_interface.h
-            models/stochasticlagrangian/cell_classes/cell_generic_unburned.cpp
-            models/stochasticlagrangian/cell_classes/cell_sealed.cpp
-            models/stochasticlagrangian/cell_classes/cell_woody_needle_leaved_trees.cpp
-            models/stochasticlagrangian/cell_classes/cell_woody_breadleaved_deciduous_trees.cpp
-            models/stochasticlagrangian/cell_classes/cell_woody_broadleaved_evergreen_trees.cpp
-            models/stochasticlagrangian/cell_classes/cell_low_growing_woody_plants.cpp
-            models/stochasticlagrangian/cell_classes/cell_permanent_herbaceous.cpp
-            models/stochasticlagrangian/cell_classes/cell_periodically_herbaceous.cpp
-            models/stochasticlagrangian/cell_classes/cell_lichens_and_mosses.cpp
-            models/stochasticlagrangian/cell_classes/cell_non_and_sparsley_vegetated.cpp
-            models/stochasticlagrangian/cell_classes/cell_water.cpp
-            models/stochasticlagrangian/cell_classes/cell_snow_and_ice.cpp
-            models/stochasticlagrangian/cell_classes/cell_generic_burning.cpp
-            models/stochasticlagrangian/cell_classes/cell_outside_area.cpp
-            models/stochasticlagrangian/cell_classes/cell_generic_burned.cpp
+        models/stochasticlagrangian/cell_classes/cell_generic_unburned.cpp
+        models/stochasticlagrangian/cell_classes/cell_sealed.cpp
+        models/stochasticlagrangian/cell_classes/cell_woody_needle_leaved_trees.cpp
+        models/stochasticlagrangian/cell_classes/cell_woody_breadleaved_deciduous_trees.cpp
+        models/stochasticlagrangian/cell_classes/cell_woody_broadleaved_evergreen_trees.cpp
+        models/stochasticlagrangian/cell_classes/cell_low_growing_woody_plants.cpp
+        models/stochasticlagrangian/cell_classes/cell_permanent_herbaceous.cpp
+        models/stochasticlagrangian/cell_classes/cell_periodically_herbaceous.cpp
+        models/stochasticlagrangian/cell_classes/cell_lichens_and_mosses.cpp
+        models/stochasticlagrangian/cell_classes/cell_non_and_sparsley_vegetated.cpp
+        models/stochasticlagrangian/cell_classes/cell_water.cpp
+        models/stochasticlagrangian/cell_classes/cell_snow_and_ice.cpp
+        models/stochasticlagrangian/cell_classes/cell_generic_burning.cpp
+        models/stochasticlagrangian/cell_classes/cell_outside_area.cpp
+        models/stochasticlagrangian/cell_classes/cell_generic_burned.cpp
 
-            externals/ImGuiFileDialog/ImGuiFileDialog.cpp externals/ImGuiFileDialog/ImGuiFileDialog.h
-        models/stochasticlagrangian/rendering/firemodel_pixelbuffer.cpp models/stochasticlagrangian/rendering/firemodel_pixelbuffer.cpp models/stochasticlagrangian/rendering/firemodel_pixelbuffer.h agent/rendering/DroneRenderer.cpp agent/rendering/DroneRenderer.h agent/drone_state.cpp agent/drone_state.h agent/memory.cpp agent/memory.h state.h action.h agent/drone_action.h agent/drone_agent.cpp agent/drone_agent.h agent.h)
+        externals/ImGuiFileDialog/ImGuiFileDialog.cpp externals/ImGuiFileDialog/ImGuiFileDialog.h
+
+        models/stochasticlagrangian/rendering/firemodel_pixelbuffer.cpp
+        models/stochasticlagrangian/rendering/firemodel_pixelbuffer.cpp models/stochasticlagrangian/rendering/firemodel_pixelbuffer.h
+        agent/rendering/DroneRenderer.cpp agent/rendering/DroneRenderer.h
+        agent/drone_state.cpp agent/drone_state.h
+        agent/memory.cpp agent/memory.h
+        state.h
+        action.h
+        agent/drone_action.h
+        agent/drone_agent.cpp agent/drone_agent.h
+        agent.h
+        agent/drone_state_bindings.cpp)
+
+pybind11_add_module(drone_state_module agent/drone_state_bindings.cpp agent/drone_state.cpp agent/drone_state.h)
 
 target_include_directories(ROSHAN PRIVATE ${CMAKE_SOURCE_DIR}/externals/nlohmann)
 target_include_directories(ROSHAN PRIVATE ${CMAKE_SOURCE_DIR})
+
 # Link against OpenGL, imgui, SDL2
 target_link_libraries(ROSHAN ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARIES} ${X11_LIBRARIES} OpenGL::GL imgui_external ${GDAL_LIBRARIES} -ldl -lpython3.9)

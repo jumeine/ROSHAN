@@ -35,6 +35,9 @@
 # Folders
 cmake-build-debug
 .idea
+.vscode
+build
+
 
 # Dependencies
 externals/imgui

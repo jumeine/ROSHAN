@@ -48,6 +48,9 @@ set(SDL2_LIBRARIES /usr/local/lib/libSDL2.so)
 
 pybind11_add_module(drone_action_module agent/drone_action_bindings.cpp agent/drone_action.h)
 pybind11_add_module(drone_state_module agent/drone_state_bindings.cpp agent/drone_state.cpp agent/drone_state.h)
+pybind11_add_module(engine_core_module engine_bindings.cpp engine_core.cpp engine_core.h)
+target_include_directories(engine_core_module PRIVATE ${CMAKE_SOURCE_DIR}/externals/imgui ${CMAKE_SOURCE_DIR}/externals/imgui/backends/ /usr/local/include/SDL2)
+
 
 add_executable(ROSHAN
         main.cpp

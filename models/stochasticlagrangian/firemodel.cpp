@@ -7,8 +7,7 @@
 FireModel* FireModel::instance_ = nullptr;
 
 FireModel::FireModel(SDL_Renderer *renderer) {
-    dataset_handler_ = std::make_shared<DatasetHandler>("/home/nex/Downloads/CLMS_CLCplus_RASTER_2018_010m_eu_03035_V1_1/Data/CLMS_CLCplus_RASTER_2018_010m_eu_03035_V1_1.tif");
-    drones_ = std::make_shared<std::vector<std::shared_ptr<DroneAgent>>>();
+    dataset_handler_ = std::make_shared<DatasetHandler>("/home/windos/Pictures/CLMS_CLCplus_RASTER_2018_010m_eu_03035_V1_1/Data/CLMS_CLCplus_RASTER_2018_010m_eu_03035_V1_1.tif");    drones_ = std::make_shared<std::vector<std::shared_ptr<DroneAgent>>>();
     model_renderer_ = FireModelRenderer::GetInstance(renderer, drones_, parameters_);
     wind_ = std::make_shared<Wind>(parameters_);
     gridmap_ = nullptr;
@@ -295,7 +294,7 @@ void FireModel::Config() {
         if (open_file_dialog_) {
             std::string filePathName;
             // open Dialog Simple
-            ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".tif", "../maps/");
+            ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".tif", ".");
 
             // display
             if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey")) {

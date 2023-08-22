@@ -46,6 +46,9 @@ include_directories(/usr/local/include/SDL2)
 include_directories(/usr/include/python3.9)
 set(SDL2_LIBRARIES /usr/local/lib/libSDL2.so)
 
+pybind11_add_module(drone_action_module agent/drone_action_bindings.cpp agent/drone_action.h)
+pybind11_add_module(drone_state_module agent/drone_state_bindings.cpp agent/drone_state.cpp agent/drone_state.h)
+
 add_executable(ROSHAN
         main.cpp
         models/stochasticlagrangian/utils.cpp
@@ -103,9 +106,7 @@ add_executable(ROSHAN
         agent/drone_action.h
         agent/drone_agent.cpp agent/drone_agent.h
         agent.h
-        agent/drone_state_bindings.cpp)
-
-pybind11_add_module(drone_state_module agent/drone_state_bindings.cpp agent/drone_state.cpp agent/drone_state.h)
+        agent/drone_state_bindings.cpp agent/drone_action_bindings.cpp)
 
 target_include_directories(ROSHAN PRIVATE ${CMAKE_SOURCE_DIR}/externals/nlohmann)
 target_include_directories(ROSHAN PRIVATE ${CMAKE_SOURCE_DIR})

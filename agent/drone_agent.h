@@ -11,6 +11,7 @@
 #include "drone_action.h"
 #include "externals/pybind11/include/pybind11/embed.h"
 #include "externals/pybind11/include/pybind11/stl.h"
+#include "externals/pybind11/include/pybind11/numpy.h"
 #include <string>
 #include <deque>
 
@@ -29,6 +30,12 @@ public:
 private:
     std::shared_ptr<py::object> agent_;
     py::scoped_interpreter guard;  // Keep the interpreter alive
+    std::tuple<
+            std::vector<std::vector<std::vector<std::vector<int>>>>,
+            std::vector<std::vector<std::vector<std::vector<int>>>>,
+            std::vector<std::vector<std::pair<double, double>>>,
+            std::vector<std::vector<std::pair<double, double>>>
+    >  RestructureData(std::vector<std::deque<std::shared_ptr<State>>> states);
 };
 
 

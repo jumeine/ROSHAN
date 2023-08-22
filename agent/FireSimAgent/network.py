@@ -2,6 +2,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import MultivariateNormal
 import torch
+import pdb
 
 torch.autograd.set_detect_anomaly(True)
 
@@ -19,15 +20,15 @@ class Inputspace(nn.Module):
         super(Inputspace, self).__init__()
 
         # 2D Convolutional Layers for terrain and fire status
-        self.terrain_conv1 = nn.Conv2d(in_channels=1, out_channels=32, kernel_size=3, stride=1)
+        self.terrain_conv1 = nn.Conv2d(in_channels=4, out_channels=2, kernel_size=3, stride=1)
         initialize_hidden_weights(self.terrain_conv1)
         in_f = self.get_in_features(h_in=vision_range, kernel_size=3, stride=1)
-        features_terrain = (int(in_f)) * 32 #32 is the number of output channels
+        features_terrain = (int(in_f * in_f)) * 2 #2 is the number of output channels
 
-        self.fire_conv1 = nn.Conv2d(in_channels=1, out_channels=32, kernel_size=3, stride=1)
+        self.fire_conv1 = nn.Conv2d(in_channels=4, out_channels=2, kernel_size=3, stride=1)
         initialize_hidden_weights(self.fire_conv1)
         in_f = self.get_in_features(h_in=vision_range, kernel_size=3, stride=1)
-        features_fire = (int(in_f)) * 32 #32 is the number of output channels
+        features_fire = (int(in_f * in_f)) * 2 #32 is the number of output channels
 
         self.flatten = nn.Flatten()
 
@@ -55,7 +56,10 @@ class Inputspace(nn.Module):
         initialize_hidden_weights(self.input_dense)
 
     def get_in_features(self, h_in, padding=0, dilation=1, kernel_size=0, stride=1):
-        return (((h_in + 2 * padding - dilation * (kernel_size - 1) - 1) / stride) + 1)
+        return (h_in - kernel_size + 2*padding) // stride + 1
+
+    # def get_in_features(self, h_in, padding=0, dilation=1, kernel_size=0, stride=1):
+    #     return (((h_in + 2 * padding - dilation * (kernel_size - 1) - 1) / stride) + 1)
 
     def forward(self, terrain, fire_status, orientation, velocity):
         terrain = F.relu(self.terrain_conv1(terrain))
@@ -91,7 +95,7 @@ class Actor(nn.Module):
     """
     def __init__(self, vision_range):
         super(Actor, self).__init__()
-        self.Inputspace = self.Inputspace = Inputspace(vision_range)
+        self.Inputspace = Inputspace(vision_range)
 
         # Mu
         self.mu = nn.Linear(in_features=256, out_features=2)
@@ -155,6 +159,12 @@ class ActorCritic(nn.Module):
         :return: A tuple of the sampled action and the log probability of that action.
         """
         terrain, fire_status, orientation, velocity = state
+        terrain = torch.tensor(terrain, dtype=torch.float32)
+        fire_status = torch.tensor(fire_status, dtype=torch.float32)
+        orientation = torch.tensor(orientation, dtype=torch.float32)
+        velocity = torch.tensor(velocity, dtype=torch.float32)
+        print(orientation)
+        print(terrain)
         # TODO: check if normalization of states is necessary
         # was suggested in: Implementation_Matters in Deep RL: A Case Study on PPO and TRPO
         action_mean, action_var = self.actor(terrain.to(device), fire_status.to(device), orientation.to(device), velocity.to(device))
@@ -172,7 +182,7 @@ class ActorCritic(nn.Module):
         action = torch.clip(action, -1, 1)
         action_logprob = dist.log_prob(action)
 
-        return action, action_logprob
+        return action.detach().numpy(), action_logprob.detach().numpy()
 
     def act_certain(self, state):
         """

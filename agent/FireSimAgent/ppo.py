@@ -23,19 +23,16 @@ class PPO:
     :param ckpt: The checkpoint to restore from.
     """
 
-    def __init__(self, scan_size, action_std, input_style, lr, betas, gamma, _lambda, K_epochs, eps_clip, logger, advantages_func, restore=False, ckpt=None):
+    def __init__(self, vision_range, lr, betas, gamma, _lambda, K_epochs, eps_clip, restore=False, ckpt=None):
         self.lr = lr
         self.betas = betas
         self.gamma = gamma
         self._lambda = _lambda
-        self.logger = logger
         self.eps_clip = eps_clip
         self.K_epochs = K_epochs
 
-        self.advantages_func = advantages_func
-
         # current policy
-        self.policy = ActorCritic(action_std, scan_size, input_style, logger)
+        self.policy = ActorCritic(vision_range=vision_range)
         if restore:
             pretained_model = torch.load(ckpt, map_location=lambda storage, loc: storage)
             self.policy.load_state_dict(pretained_model)
@@ -45,7 +42,7 @@ class PPO:
         #self.optimizer = torch.optim.Adam(self.policy.ac.parameters(), lr=lr, betas=betas, eps=1e-5)
 
         # old policy: initialize old policy with current policy's parameter
-        self.old_policy = ActorCritic(action_std, scan_size, input_style, logger)
+        self.old_policy = ActorCritic(vision_range=vision_range)
         self.old_policy.load_state_dict(self.policy.state_dict())
 
         self.MSE_loss = nn.MSELoss()
@@ -148,8 +145,7 @@ class PPO:
             old_logprobs_minibatch = old_logprobs_minibatch.detach().clone().to(device)
             mask_minibatch = mask_minibatch.to(device)
             _, values_, _ = self.policy.evaluate(old_states_minibatch, old_actions_minibatch)
-            #returns, advantages = self.get_advantages(values_.detach(), mask_minibatch, rewards_minibatch)
-            returns, advantages = self.advantages_func(self.gamma, self._lambda, values_, mask_minibatch, rewards_minibatch.to(device))
+            returns, advantages = self.get_advantages(values_.detach(), mask_minibatch, rewards_minibatch)
 
             for _ in range(self.K_epochs):
                 # Evaluate old actions and values using current policy

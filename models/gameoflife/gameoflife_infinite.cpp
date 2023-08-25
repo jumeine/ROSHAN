@@ -4,9 +4,9 @@
 
 #include "gameoflife_infinite.h"
 
-GameOfLifeInfinite* GameOfLifeInfinite::instance_ = nullptr;
+std::shared_ptr<GameOfLifeInfinite> GameOfLifeInfinite::instance_ = nullptr;
 
-GameOfLifeInfinite::GameOfLifeInfinite(SDL_Renderer* renderer) {
+GameOfLifeInfinite::GameOfLifeInfinite(std::shared_ptr<SDL_Renderer> renderer) {
     model_renderer_ = GameOfLifeInfiniteRenderer::GetInstance(renderer);
     Initialize();
 }
@@ -18,6 +18,10 @@ void GameOfLifeInfinite::Initialize() {
             state_[{x, y}] = false;
         }
     }
+}
+
+void GameOfLifeInfinite::Update() {
+
 }
 
 std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>, std::vector<bool>> GameOfLifeInfinite::Step(std::vector<std::shared_ptr<Action>> actions) {

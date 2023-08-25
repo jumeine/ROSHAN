@@ -46,29 +46,30 @@ include_directories(/usr/local/include/SDL2)
 include_directories(/usr/include/python3.9)
 set(SDL2_LIBRARIES /usr/local/lib/libSDL2.so)
 
-pybind11_add_module(drone_action_module agent/drone_action_bindings.cpp agent/drone_action.h)
-pybind11_add_module(drone_state_module agent/drone_state_bindings.cpp agent/drone_state.cpp agent/drone_state.h)
-pybind11_add_module(engine_core_module engine_bindings.cpp engine_core.cpp engine_core.h)
-target_include_directories(engine_core_module PRIVATE ${CMAKE_SOURCE_DIR}/externals/imgui ${CMAKE_SOURCE_DIR}/externals/imgui/backends/ /usr/local/include/SDL2)
-
-
-add_executable(ROSHAN
+# Core sources
+set(CORE_SOURCES
         main.cpp
-        models/stochasticlagrangian/utils.cpp
+        engine_core.cpp engine_core.h
+        CORINE/dataset_handler.cpp CORINE/dataset_handler.h
+        externals/ImGuiFileDialog/ImGuiFileDialog.cpp externals/ImGuiFileDialog/ImGuiFileDialog.h
+        state.h
+        action.h
         model_interface.h
         point.h
         point_hash.h
-        engine_core.cpp engine_core.h
+)
 
-        models/gameoflife/gameoflife_infinite.cpp models/gameoflife/gameoflife_infinite.h
-        models/gameoflife/gameoflife_infinite_renderer.cpp models/gameoflife/gameoflife_infinite_renderer.h
-        models/gameoflife/gameoflife_types.h
+set(AGENT_SOURCES
+        agent/drone.cpp agent/drone.h
+        agent/rendering/DroneRenderer.cpp agent/rendering/DroneRenderer.h
+        agent/drone_state.cpp agent/drone_state.h
+        agent/drone_action.h
+        agent/drone_agent.cpp agent/drone_agent.h
+        agent.h
+        agent/memory.cpp agent/memory.h
+)
 
-
-        models/gameoflife_simple/gameoflife_fixed.cpp models/gameoflife_simple/gameoflife_fixed.h
-        models/gameoflife_simple/gameoflife_fixed_renderer.cpp models/gameoflife_simple/gameoflife_fixed_renderer.h
-
-
+set(FIREMODEL_SOURCES
         models/stochasticlagrangian/firemodel.cpp models/stochasticlagrangian/firemodel.h
         models/stochasticlagrangian/firemodel_gridmap.cpp models/stochasticlagrangian/firemodel_gridmap.h
         models/stochasticlagrangian/rendering/firemodel_renderer.cpp models/stochasticlagrangian/rendering/firemodel_renderer.h
@@ -79,7 +80,6 @@ add_executable(ROSHAN
         models/stochasticlagrangian/wind.cpp models/stochasticlagrangian/wind.h
         models/stochasticlagrangian/utils.h
         models/stochasticlagrangian/model_parameters.h
-        CORINE/dataset_handler.cpp CORINE/dataset_handler.h
         models/stochasticlagrangian/firemodel_cell_interface.h
         models/stochasticlagrangian/cell_classes/cell_generic_unburned.cpp
         models/stochasticlagrangian/cell_classes/cell_sealed.cpp
@@ -96,20 +96,38 @@ add_executable(ROSHAN
         models/stochasticlagrangian/cell_classes/cell_generic_burning.cpp
         models/stochasticlagrangian/cell_classes/cell_outside_area.cpp
         models/stochasticlagrangian/cell_classes/cell_generic_burned.cpp
-
-        externals/ImGuiFileDialog/ImGuiFileDialog.cpp externals/ImGuiFileDialog/ImGuiFileDialog.h
-
         models/stochasticlagrangian/rendering/firemodel_pixelbuffer.cpp
         models/stochasticlagrangian/rendering/firemodel_pixelbuffer.cpp models/stochasticlagrangian/rendering/firemodel_pixelbuffer.h
-        agent/rendering/DroneRenderer.cpp agent/rendering/DroneRenderer.h
-        agent/drone_state.cpp agent/drone_state.h
-        agent/memory.cpp agent/memory.h
-        state.h
-        action.h
-        agent/drone_action.h
-        agent/drone_agent.cpp agent/drone_agent.h
-        agent.h
-        agent/drone_state_bindings.cpp agent/drone_action_bindings.cpp)
+        models/stochasticlagrangian/utils.cpp
+)
+
+set(GAMEOFLIFE_SOURCES
+        models/gameoflife/gameoflife_infinite.cpp models/gameoflife/gameoflife_infinite.h
+        models/gameoflife/gameoflife_infinite_renderer.cpp models/gameoflife/gameoflife_infinite_renderer.h
+        models/gameoflife/gameoflife_types.h
+        models/gameoflife_simple/gameoflife_fixed.cpp models/gameoflife_simple/gameoflife_fixed.h
+        models/gameoflife_simple/gameoflife_fixed_renderer.cpp models/gameoflife_simple/gameoflife_fixed_renderer.h
+)
+
+# Python bindings
+pybind11_add_module(firesim python_bindings.cpp
+        ${CORE_SOURCES}
+        ${AGENT_SOURCES}
+        ${FIREMODEL_SOURCES}
+        ${GAMEOFLIFE_SOURCES}
+        ${IMGUI_SOURCES}
+)
+#set(LIBFFI_LIBRARIES "/lib/x86_64-linux-gnu/libffi.so.7" "/lib/x86_64-linux-gnu/libp11-kit.so.0")
+target_link_libraries(firesim PRIVATE ${SDL2_LIBRARIES} ${GDAL_LIBRARIES} ${SDL2_IMAGE_LIBRARIES} ${X11_LIBRARIES} OpenGL::GL imgui_external)
+target_include_directories(firesim PRIVATE ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/externals/imgui ${CMAKE_SOURCE_DIR}/externals/imgui/backends/ /usr/local/include/SDL2 ${GDAL_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/externals/nlohmann)
+
+# Main executable
+add_executable(ROSHAN
+        ${CORE_SOURCES}
+        ${AGENT_SOURCES}
+        ${FIREMODEL_SOURCES}
+        ${GAMEOFLIFE_SOURCES}
+)
 
 target_include_directories(ROSHAN PRIVATE ${CMAKE_SOURCE_DIR}/externals/nlohmann)
 target_include_directories(ROSHAN PRIVATE ${CMAKE_SOURCE_DIR})

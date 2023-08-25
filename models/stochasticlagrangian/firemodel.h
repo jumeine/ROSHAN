@@ -24,11 +24,16 @@
 class FireModel : public IModel{
 public:
     //only one instance of this class can be created
-    static FireModel* GetInstance(SDL_Renderer* renderer) {
-        return instance_ = (instance_ != nullptr) ? instance_ : new FireModel(renderer);
+    static std::shared_ptr<FireModel> GetInstance(std::shared_ptr<SDL_Renderer> renderer) {
+        if (instance_ == nullptr) {
+            instance_ = std::shared_ptr<FireModel>(new FireModel(renderer));
+        }
+        return instance_;
     }
+    ~FireModel() override;
 
     void Initialize() override;
+    void Update() override;
     std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>, std::vector<bool>> Step(std::vector<std::shared_ptr<Action>> actions) override;
     std::vector<std::deque<std::shared_ptr<State>>> GetObservations() override;
     void Reset() override;
@@ -42,8 +47,7 @@ public:
     void ShowControls(std::function<void(bool&, bool&, int&)> controls, bool &update_simulation, bool &render_simulation, int &delay) override;
 
 private:
-    explicit FireModel(SDL_Renderer* renderer);
-    ~FireModel() override;
+    explicit FireModel(std::shared_ptr<SDL_Renderer> renderer);
 
     void RandomizeCells();
 
@@ -51,7 +55,7 @@ private:
     std::shared_ptr<FireModelRenderer> model_renderer_;
     std::shared_ptr<Wind> wind_;
     FireModelParameters parameters_;
-    static FireModel* instance_;
+    static std::shared_ptr<FireModel> instance_;
     double running_time_;
 
     void OpenBrowser(std::string url);

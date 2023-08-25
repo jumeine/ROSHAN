@@ -18,11 +18,17 @@ class GameOfLifeInfinite : public IModel{
 
 public:
     //only one instance of this class can be created
-    static GameOfLifeInfinite* GetInstance(SDL_Renderer* renderer) {
-        return instance_ = (instance_ != nullptr) ? instance_ : new GameOfLifeInfinite(renderer);
+    static std::shared_ptr<GameOfLifeInfinite> GetInstance(std::shared_ptr<SDL_Renderer> renderer) {
+        if (instance_ == nullptr) {
+            instance_ = std::shared_ptr<GameOfLifeInfinite>(new GameOfLifeInfinite(renderer));
+        }
+        return instance_;
     }
 
+    ~GameOfLifeInfinite(){}
+
     void Initialize() override;
+    void Update() override;
     std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>, std::vector<bool>> Step(std::vector<std::shared_ptr<Action>> actions) override;
     std::vector<std::deque<std::shared_ptr<State>>> GetObservations() override;
     void Reset() override;
@@ -36,8 +42,7 @@ public:
     void ShowControls(std::function<void(bool&, bool&, int&)> controls, bool &update_simulation, bool &render_simulation, int &delay) override;
 
 private:
-    GameOfLifeInfinite(SDL_Renderer* renderer);
-    ~GameOfLifeInfinite(){}
+    GameOfLifeInfinite(std::shared_ptr<SDL_Renderer> renderer);
 
     void RandomizeCells();
 
@@ -45,14 +50,14 @@ private:
     Neighbors GetNeighbors(const Cell& cell) const;
     int CountLiveNeighbors(const Cell& cell) const;
 
-    GameOfLifeInfiniteRenderer* model_renderer_;
+    std::shared_ptr<GameOfLifeInfiniteRenderer> model_renderer_;
     int width_ = 0;
     int height_ = 0;
     int cell_size_ = 10;
 
 
     //std::vector<std::vector<bool>> cellState;
-    static GameOfLifeInfinite* instance_;
+    static std::shared_ptr<GameOfLifeInfinite> instance_;
 
 };
 

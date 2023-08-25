@@ -163,8 +163,7 @@ class ActorCritic(nn.Module):
         fire_status = torch.tensor(fire_status, dtype=torch.float32)
         orientation = torch.tensor(orientation, dtype=torch.float32)
         velocity = torch.tensor(velocity, dtype=torch.float32)
-        print(orientation)
-        print(terrain)
+
         # TODO: check if normalization of states is necessary
         # was suggested in: Implementation_Matters in Deep RL: A Case Study on PPO and TRPO
         action_mean, action_var = self.actor(terrain.to(device), fire_status.to(device), orientation.to(device), velocity.to(device))

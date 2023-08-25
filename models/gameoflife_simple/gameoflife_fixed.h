@@ -17,11 +17,17 @@ class GameOfLifeFixed : public IModel{
 
 public:
     //only one instance of this class can be created
-    static GameOfLifeFixed* GetInstance(SDL_Renderer* renderer) {
-        return instance_ = (instance_ != nullptr) ? instance_ : new GameOfLifeFixed(renderer);
+    static std::shared_ptr<GameOfLifeFixed> GetInstance(std::shared_ptr<SDL_Renderer> renderer) {
+        if (instance_ == nullptr) {
+            instance_ = std::shared_ptr<GameOfLifeFixed>(new GameOfLifeFixed(renderer));
+        }
+        return instance_;
     }
 
+    ~GameOfLifeFixed(){}
+
     void Initialize() override;
+    void Update() override;
     std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>, std::vector<bool>> Step(std::vector<std::shared_ptr<Action>> actions) override;
     std::vector<std::deque<std::shared_ptr<State>>> GetObservations() override;
     void Reset() override;
@@ -36,12 +42,11 @@ public:
 
 
 private:
-    GameOfLifeFixed(SDL_Renderer* renderer);
-    ~GameOfLifeFixed(){}
+    GameOfLifeFixed(std::shared_ptr<SDL_Renderer> renderer);
 
     void RandomizeCells();
 
-    GameOfLifeFixedRenderer* model_renderer_;
+    std::shared_ptr<GameOfLifeFixedRenderer> model_renderer_;
     int width_ = 0;
     int height_ = 0;
     int cell_size_ = 10;
@@ -53,7 +58,7 @@ private:
 
 
     //std::vector<std::vector<bool>> cellState;
-    static GameOfLifeFixed* instance_;
+    static std::shared_ptr<GameOfLifeFixed> instance_;
 
 };
 

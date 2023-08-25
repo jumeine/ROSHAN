@@ -4,7 +4,7 @@
 
 #include "gameoflife_fixed_renderer.h"
 
-GameOfLifeFixedRenderer* GameOfLifeFixedRenderer::instance_ = nullptr;
+std::shared_ptr<GameOfLifeFixedRenderer> GameOfLifeFixedRenderer::instance_ = nullptr;
 
 void GameOfLifeFixedRenderer::Render(std::vector<std::vector<bool>> state, int cell_size, int rows, int cols) {
     SDL_SetRenderDrawColor(renderer_, (Uint8)(background_color_.x * 255), (Uint8)(background_color_.y * 255), (Uint8)(background_color_.z * 255), (Uint8)(background_color_.w * 255));

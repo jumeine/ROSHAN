@@ -4,7 +4,7 @@
 
 #include "drone.h"
 
-DroneAgent::DroneAgent(SDL_Renderer *renderer) {
+DroneAgent::DroneAgent(std::shared_ptr<SDL_Renderer> renderer) {
     renderer_ = DroneRenderer(renderer);
     position_ = std::make_pair(30.0, 30.0);
     view_range_ = 20;

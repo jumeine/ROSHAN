@@ -25,6 +25,11 @@ public:
     std::pair<double, double> GetNewVelocity(double angular, double linear) { return std::make_pair(velocity_.first + angular, velocity_.second + linear); }
     std::vector<std::vector<int>> GetTerrain() { return terrain_; }
     std::vector<std::vector<int>> GetFireStatus() { return fire_status_; }
+    // For python visibility
+    std::pair<double, double> get_velocity() const { return velocity_; }
+    std::vector<std::vector<int>> get_terrain() const { return terrain_; }
+    std::vector<std::vector<int>> get_fire_status() const { return fire_status_; }
+    std::pair<double, double> get_orientation_vector() const { return orientation_vector_; }
 private:
     std::pair<double, double> velocity_; // angular & linear
     std::vector<std::vector<int>> terrain_;

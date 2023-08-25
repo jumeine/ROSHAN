@@ -45,6 +45,6 @@ sudo apt install libpython3.9-dev
 
 ##### Conda install
 
-conda create --name firesim python=3.9
+conda create --name firesim python=3.9 libffi==3.3
 
 

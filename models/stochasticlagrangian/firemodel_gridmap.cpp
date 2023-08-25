@@ -169,16 +169,17 @@ void GridMap::ExtinguishCell(int x, int y) {
 std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> GridMap::GetDroneView(std::shared_ptr<DroneAgent> drone) {
     int drone_view_radius = drone->GetViewRange();
     std::pair<int, int> drone_position = drone->GetPosition();
-    std::vector<std::vector<int>> cell_status(drone_view_radius * 2 + 1, std::vector<int>(drone_view_radius * 2 + 1, 0));
-    std::vector<std::vector<int>> fire_status(drone_view_radius * 2 + 1, std::vector<int>(drone_view_radius * 2 + 1, 0));
-    for (int i = drone_position.first - drone_view_radius; i <= drone_position.first + drone_view_radius; ++i) {
-        for (int j = drone_position.second - drone_view_radius; j <= drone_position.second + drone_view_radius; ++j) {
+    std::vector<std::vector<int>> cell_status(drone_view_radius + 1, std::vector<int>(drone_view_radius + 1, 0));
+    std::vector<std::vector<int>> fire_status(drone_view_radius + 1, std::vector<int>(drone_view_radius + 1, 0));
+    int drone_view_radius_2 = drone_view_radius / 2;
+    for (int j = drone_position.second - drone_view_radius_2; j <= drone_position.second + drone_view_radius_2; ++j) {
+        for (int i = drone_position.first - drone_view_radius_2; i <= drone_position.first + drone_view_radius_2; ++i) {
             if (IsPointInGrid(i, j)) {
-                cell_status[i - drone_position.first + drone_view_radius][j - drone_position.second + drone_view_radius] = cells_[i][j]->GetCellInitialState();
+                cell_status[i - drone_position.first + drone_view_radius_2][j - drone_position.second + drone_view_radius_2] = cells_[i][j]->GetCellInitialState();
                 if (cells_[i][j]->IsBurning())
-                    fire_status[i - drone_position.first + drone_view_radius][j - drone_position.second + drone_view_radius] = 1;
+                    fire_status[i - drone_position.first + drone_view_radius_2][j - drone_position.second + drone_view_radius_2] = 1;
             } else {
-                cell_status[i - drone_position.first + drone_view_radius][j - drone_position.second + drone_view_radius] = CellState::OUTSIDE_GRID;
+                cell_status[i - drone_position.first + drone_view_radius_2][j - drone_position.second + drone_view_radius_2] = CellState::OUTSIDE_GRID;
             }
         }
     }

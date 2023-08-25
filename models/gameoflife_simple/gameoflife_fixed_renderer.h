@@ -9,13 +9,17 @@
 #include <vector>
 #include <SDL.h>
 #include <unordered_map>
+#include <memory>
 
 class GameOfLifeFixedRenderer{
 
 public:
     //only one instance of this class can be created
-    static GameOfLifeFixedRenderer* GetInstance(SDL_Renderer* renderer) {
-        return instance_ = (instance_ != nullptr) ? instance_ : new GameOfLifeFixedRenderer(renderer);
+    static std::shared_ptr<GameOfLifeFixedRenderer> GetInstance(std::shared_ptr<SDL_Renderer> renderer) {
+        if (instance_ == nullptr) {
+            instance_ = std::shared_ptr<GameOfLifeFixedRenderer>(new GameOfLifeFixedRenderer(renderer.get()));
+        }
+        return instance_;
     }
     void Render(std::vector<std::vector<bool>> state, int cell_size, int rows, int cols);
     ImVec4 background_color_ = ImVec4(0.0f, 0.0f, 0.0f, 1.00f);
@@ -23,7 +27,7 @@ public:
 private:
     explicit GameOfLifeFixedRenderer(SDL_Renderer* renderer);
     //~GameOfLifeInfiniteRenderer(){}
-    static GameOfLifeFixedRenderer* instance_;
+    static std::shared_ptr<GameOfLifeFixedRenderer> instance_;
     void DrawCells(std::vector<std::vector<bool>> state, int cell_size, int rows, int cols);
     void DrawGrid(int cell_size, int rows, int cols);
 

@@ -9,6 +9,9 @@
 #include <iostream>
 #include <fstream>
 #include <chrono>
+#include <unistd.h>
+#include <limits.h>
+#include <filesystem>
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_sdlrenderer2.h"
@@ -32,9 +35,14 @@
 class EngineCore {
 
 public:
-    static EngineCore* GetInstance() {
-        return instance_ = (instance_ != nullptr) ? instance_ : new EngineCore();
+    static std::shared_ptr<EngineCore> GetInstance() {
+        if (instance_ == nullptr) {
+            instance_ = std::shared_ptr<EngineCore>(new EngineCore());
+        }
+        return instance_;
     }
+    EngineCore(){}
+    ~EngineCore(){}
 
     bool Init();
     void Clean();
@@ -43,25 +51,28 @@ public:
     void Render();
     void HandleEvents();
 
+    // RL-Related
+    // Observe the current state of the environment
+    bool AgentIsRunning();
+    std::vector<std::deque<std::shared_ptr<State>>> GetObservations();
+    std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>, std::vector<bool>>
+    Step(std::vector<std::shared_ptr<Action>> actions);
+
     inline bool IsRunning() { return is_running_; }
-    inline SDL_Renderer* GetRenderer() { return renderer_; }
     void ImGuiSimulationControls(bool &update_simulation, bool &render_simulation, int &delay);
 
 private:
-    EngineCore(){}
-    ~EngineCore(){}
 
     bool is_running_;
 
-    SDL_Window* window_;
-    SDL_Renderer* renderer_;
+    std::shared_ptr<SDL_Window> window_;
+    std::shared_ptr<SDL_Renderer> renderer_;
     SDL_WindowFlags window_flags_;
-    SDL_Texture* back_buffer_;
 
-    ImGuiIO* io_;
+    std::shared_ptr<ImGuiIO> io_;
 
     // Our model
-    IModel* model_;
+    std::shared_ptr<IModel> model_;
 
     // Our Simulation State
     bool update_simulation_ = false;
@@ -76,7 +87,7 @@ private:
     void StartServer();
     void StopServer();
 
-    static EngineCore* instance_;
+    static std::shared_ptr<EngineCore> instance_;
 
     // ImGui Stuff
     bool ImGuiModelSelection();

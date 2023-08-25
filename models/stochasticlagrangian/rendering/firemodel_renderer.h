@@ -22,7 +22,7 @@
 class FireModelRenderer {
 public:
     //only one instance of this class is allowed
-    static std::shared_ptr<FireModelRenderer> GetInstance(SDL_Renderer* renderer,std::shared_ptr<std::vector<std::shared_ptr<DroneAgent>>> drones, FireModelParameters& parameters) {
+    static std::shared_ptr<FireModelRenderer> GetInstance(std::shared_ptr<SDL_Renderer> renderer,std::shared_ptr<std::vector<std::shared_ptr<DroneAgent>>> drones, FireModelParameters& parameters) {
         if (instance_ == nullptr) {
             instance_ = std::shared_ptr<FireModelRenderer>(new FireModelRenderer(renderer, drones, parameters));
         }
@@ -31,7 +31,7 @@ public:
     void Render();
     void SetScreenResolution();
     void SetGridMap(std::shared_ptr<GridMap> gridmap) { gridmap_ = gridmap; SetFullRedraw(); }
-    SDL_Renderer* GetRenderer() { return renderer_; }
+    std::shared_ptr<SDL_Renderer> GetRenderer() { return renderer_; }
 
     // Converter Functions
     std::pair<int, int> ScreenToGridPosition(int x, int y);
@@ -49,7 +49,7 @@ public:
     ~FireModelRenderer();
 
 private:
-    FireModelRenderer(SDL_Renderer* renderer, std::shared_ptr<std::vector<std::shared_ptr<DroneAgent>>> drones, FireModelParameters& parameters);
+    FireModelRenderer(std::shared_ptr<SDL_Renderer> renderer, std::shared_ptr<std::vector<std::shared_ptr<DroneAgent>>> drones, FireModelParameters& parameters);
 
     void DrawCells();
     void DrawCircle(int x, int y, int min_radius, double intensity);
@@ -57,7 +57,7 @@ private:
 
     FireModelParameters& parameters_;
     FireModelCamera camera_;
-    SDL_Renderer* renderer_;
+    std::shared_ptr<SDL_Renderer> renderer_;
     SDL_Texture* texture_;
     PixelBuffer* pixel_buffer_;
     SDL_PixelFormat* pixel_format_;

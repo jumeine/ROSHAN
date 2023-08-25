@@ -4,11 +4,11 @@
 
 #include "gameoflife_fixed.h"
 
-GameOfLifeFixed* GameOfLifeFixed::instance_ = nullptr;
+std::shared_ptr<GameOfLifeFixed> GameOfLifeFixed::instance_ = nullptr;
 
-GameOfLifeFixed::GameOfLifeFixed(SDL_Renderer* renderer) {
+GameOfLifeFixed::GameOfLifeFixed(std::shared_ptr<SDL_Renderer> renderer) {
     model_renderer_ = GameOfLifeFixedRenderer::GetInstance(renderer);
-    SDL_GetRendererOutputSize(renderer, &width_, &height_);
+    SDL_GetRendererOutputSize(renderer.get(), &width_, &height_);
     Initialize();
 }
 
@@ -18,6 +18,10 @@ void GameOfLifeFixed::Initialize() {
     state_[0] = std::vector<std::vector<bool>>(rows_, std::vector<bool>(cols_, false));
     state_[1] = std::vector<std::vector<bool>>(rows_, std::vector<bool>(cols_, false));
     current_state_ = 0;
+}
+
+void GameOfLifeFixed::Update() {
+
 }
 
 std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>, std::vector<bool>> GameOfLifeFixed::Step(std::vector<std::shared_ptr<Action>> actions) {

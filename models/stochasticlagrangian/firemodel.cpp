@@ -4,10 +4,11 @@
 
 #include "firemodel.h"
 
-FireModel* FireModel::instance_ = nullptr;
+std::shared_ptr<FireModel> FireModel::instance_ = nullptr;
 
-FireModel::FireModel(SDL_Renderer *renderer) {
-    dataset_handler_ = std::make_shared<DatasetHandler>("/home/windos/Pictures/CLMS_CLCplus_RASTER_2018_010m_eu_03035_V1_1/Data/CLMS_CLCplus_RASTER_2018_010m_eu_03035_V1_1.tif");    drones_ = std::make_shared<std::vector<std::shared_ptr<DroneAgent>>>();
+FireModel::FireModel(std::shared_ptr<SDL_Renderer> renderer) {
+    dataset_handler_ = std::make_shared<DatasetHandler>("../CORINE/dataset/CLMS_CLCplus_RASTER_2018_010m_eu_03035_V1_1.tif");
+    drones_ = std::make_shared<std::vector<std::shared_ptr<DroneAgent>>>();
     model_renderer_ = FireModelRenderer::GetInstance(renderer, drones_, parameters_);
     wind_ = std::make_shared<Wind>(parameters_);
     gridmap_ = nullptr;
@@ -54,22 +55,26 @@ std::vector<std::deque<std::shared_ptr<State>>> FireModel::GetObservations() {
     return {};
 }
 
-std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>, std::vector<bool>> FireModel::Step(std::vector<std::shared_ptr<Action>> actions) {
-    std::vector<std::deque<std::shared_ptr<State>>> all_drone_states;
-    std::vector<double> rewards;
-    std::vector<bool> dones;
-    if (gridmap_ != nullptr) {
-        // Simulation time step update
-        running_time_ += parameters_.GetDt();
+void FireModel::Update() {
+    // Simulation time step update
+    running_time_ += parameters_.GetDt();
+    std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> drone_view = gridmap_->GetDroneView(drones_->at(0));
+    // Update the fire particles and the cell states
+    gridmap_->UpdateParticles();
+    gridmap_->UpdateCells();
+}
 
-        // Update the fire particles and the cell states
-        gridmap_->UpdateParticles();
-        gridmap_->UpdateCells();
+std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>, std::vector<bool>> FireModel::Step(std::vector<std::shared_ptr<Action>> actions) {
+
+    if (gridmap_ != nullptr) {
+        std::vector<std::deque<std::shared_ptr<State>>> all_drone_states;
+        std::vector<double> rewards;
+        std::vector<bool> dones;
 
         // Move the drones and get the next_observation
         for (int i = 0; i < (*drones_).size(); ++i) {
-            double angular = std::dynamic_pointer_cast<DroneAction>(actions[i])->GetAngular();
-            double linear = std::dynamic_pointer_cast<DroneAction>(actions[i])->GetLinear();
+            double angular = std::dynamic_pointer_cast<DroneAction>(actions[i])->GetAngular() * parameters_.GetDt();
+            double linear = std::dynamic_pointer_cast<DroneAction>(actions[i])->GetLinear() * parameters_.GetDt();
             drones_->at(i)->Move(angular, linear);
             std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> drone_view = gridmap_->GetDroneView(drones_->at(i));
             drones_->at(i)->Update(angular, linear, drone_view.first, drone_view.second);
@@ -294,7 +299,7 @@ void FireModel::Config() {
         if (open_file_dialog_) {
             std::string filePathName;
             // open Dialog Simple
-            ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".tif", ".");
+            ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".tif", "../maps/");
 
             // display
             if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey")) {
@@ -329,7 +334,7 @@ void FireModel::Config() {
 bool FireModel::ImGuiOnStartup() {
     if (!model_startup_) {
         int width, height;
-        SDL_GetRendererOutputSize(model_renderer_->GetRenderer(), &width, &height);
+        SDL_GetRendererOutputSize(model_renderer_->GetRenderer().get(), &width, &height);
         ImVec2 window_size = ImVec2(400, 100);
         ImGui::SetNextWindowSize(window_size);
         ImVec2 appWindowPos = ImVec2((width - window_size.x) * 0.5f, (height - window_size.y) * 0.5f);

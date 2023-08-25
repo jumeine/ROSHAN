@@ -7,12 +7,10 @@
 
 std::shared_ptr<FireModelRenderer> FireModelRenderer::instance_ = nullptr;
 
-FireModelRenderer::FireModelRenderer(SDL_Renderer *renderer, std::shared_ptr<std::vector<std::shared_ptr<DroneAgent>>> drones, FireModelParameters& parameters) : parameters_(parameters) {
-    renderer_ = renderer;
-    camera_ = FireModelCamera();
+FireModelRenderer::FireModelRenderer(std::shared_ptr<SDL_Renderer> renderer, std::shared_ptr<std::vector<std::shared_ptr<DroneAgent>>> drones, FireModelParameters& parameters)
+    : parameters_(parameters), renderer_(renderer), camera_(FireModelCamera()), drones_(drones) {
     SetScreenResolution();
-    drones_ = drones;
-    texture_ = SDL_CreateTexture(renderer_,SDL_PIXELFORMAT_ARGB8888,SDL_TEXTUREACCESS_STREAMING,width_,height_);
+    texture_ = SDL_CreateTexture(renderer_.get(),SDL_PIXELFORMAT_ARGB8888,SDL_TEXTUREACCESS_STREAMING,width_,height_);
 
     // Load the arrow texture
     SDL_Surface *arrow_surface = IMG_Load("../assets/arrow.png");
@@ -20,7 +18,7 @@ FireModelRenderer::FireModelRenderer(SDL_Renderer *renderer, std::shared_ptr<std
         SDL_Log("Unable to load image: %s", SDL_GetError());
         return;
     }
-    arrow_texture_ = SDL_CreateTextureFromSurface(renderer_, arrow_surface);
+    arrow_texture_ = SDL_CreateTextureFromSurface(renderer_.get(), arrow_surface);
     SDL_FreeSurface(arrow_surface);
 
     // Set blend mode to the texture for transparency
@@ -53,7 +51,7 @@ void FireModelRenderer::CheckCamera() {
 }
 
 void FireModelRenderer::Render() {
-    SDL_RenderClear(renderer_);
+    SDL_RenderClear(renderer_.get());
     if (gridmap_ != nullptr) {
         camera_.Update(width_, height_, gridmap_->GetRows(), gridmap_->GetCols());
 //        std::cout << "Cellsize: " << camera_.GetCellSize() << std::endl;
@@ -71,7 +69,7 @@ void FireModelRenderer::ResizePixelBuffer() {
 void FireModelRenderer::ResizeTexture() {
     if (texture_ != nullptr)
         SDL_DestroyTexture(texture_);
-    texture_ = SDL_CreateTexture(renderer_,SDL_PIXELFORMAT_ARGB8888,SDL_TEXTUREACCESS_STREAMING,width_,height_);
+    texture_ = SDL_CreateTexture(renderer_.get(),SDL_PIXELFORMAT_ARGB8888,SDL_TEXTUREACCESS_STREAMING,width_,height_);
 }
 
 void FireModelRenderer::ResizeEvent() {
@@ -82,7 +80,7 @@ void FireModelRenderer::ResizeEvent() {
 }
 
 void FireModelRenderer::SetScreenResolution() {
-    SDL_GetRendererOutputSize(renderer_, &width_, &height_);
+    SDL_GetRendererOutputSize(renderer_.get(), &width_, &height_);
     camera_.SetViewport(width_, height_);
 }
 
@@ -108,7 +106,7 @@ void FireModelRenderer::DrawCells() {
     }
 
     // Render the texture to the screen
-    SDL_RenderCopy(renderer_, texture_, NULL, NULL);
+    SDL_RenderCopy(renderer_.get(), texture_, NULL, NULL);
 }
 
 void FireModelRenderer::DrawAllCells(int grid_left, int grid_right, int grid_top, int grid_bottom) {
@@ -160,13 +158,13 @@ void FireModelRenderer::DrawCircle(int x, int y, int min_radius, double intensit
     unsigned char g = static_cast<int>(255 * ((intensity - 0.2) / (1.0 - 0.2)));
     SDL_Color color = {255, g, 0, 255};
 
-    SDL_SetRenderDrawColor(renderer_, color.r, color.g, color.b, color.a);
+    SDL_SetRenderDrawColor(renderer_.get(), color.r, color.g, color.b, color.a);
     for(int w = 0; w < radius * 2; w++) {
         for(int h = 0; h < radius * 2; h++) {
             int dx = radius - w; // horizontal offset
             int dy = radius - h; // vertical offset
             if((dx*dx + dy*dy) <= (radius * radius)) {
-                SDL_RenderDrawPoint(renderer_, x + dx, y + dy);
+                SDL_RenderDrawPoint(renderer_.get(), x + dx, y + dy);
             }
         }
     }
@@ -211,7 +209,7 @@ void FireModelRenderer::DrawParticles() {
 void FireModelRenderer::DrawArrow(double angle) {
     // Render the arrow
     SDL_Rect destRect = {width_ - 100, height_ - 100, 50, 50}; // x, y, width and height of the arrow
-    SDL_RenderCopyEx(renderer_, arrow_texture_, NULL, &destRect, angle, NULL, SDL_FLIP_NONE);
+    SDL_RenderCopyEx(renderer_.get(), arrow_texture_, NULL, &destRect, angle, NULL, SDL_FLIP_NONE);
 }
 
 std::pair<int, int> FireModelRenderer::ScreenToGridPosition(int x, int y) {

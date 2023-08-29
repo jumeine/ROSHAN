@@ -174,12 +174,14 @@ std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> GridMap:
     int drone_view_radius_2 = drone_view_radius / 2;
     for (int j = drone_position.second - drone_view_radius_2; j <= drone_position.second + drone_view_radius_2; ++j) {
         for (int i = drone_position.first - drone_view_radius_2; i <= drone_position.first + drone_view_radius_2; ++i) {
+            int new_i = j - drone_position.second + drone_view_radius_2;
+            int new_j = i - drone_position.first + drone_view_radius_2;
             if (IsPointInGrid(i, j)) {
-                cell_status[i - drone_position.first + drone_view_radius_2][j - drone_position.second + drone_view_radius_2] = cells_[i][j]->GetCellInitialState();
+                cell_status[new_i][new_j] = cells_[i][j]->GetCellInitialState();
                 if (cells_[i][j]->IsBurning())
-                    fire_status[i - drone_position.first + drone_view_radius_2][j - drone_position.second + drone_view_radius_2] = 1;
+                    fire_status[new_i][new_j] = 1;
             } else {
-                cell_status[i - drone_position.first + drone_view_radius_2][j - drone_position.second + drone_view_radius_2] = CellState::OUTSIDE_GRID;
+                cell_status[new_i][new_j] = CellState::OUTSIDE_GRID;
             }
         }
     }

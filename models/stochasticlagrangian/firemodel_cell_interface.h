@@ -12,6 +12,7 @@
 class ICell {
 public:
     virtual ~ICell() = default;
+    SDL_Color color_;
     ImVec4 GetImVecColor() {
         return ImVec4(color_.r, color_.g, color_.b, color_.a);
     }
@@ -26,7 +27,6 @@ public:
     void SetCellBurningDuration(double cell_burning_duration) { cell_burning_duration_ = cell_burning_duration; }
 
 protected:
-    SDL_Color color_;
     Uint32 mapped_color_;
     double cell_burning_duration_;
     double ignition_delay_time_;

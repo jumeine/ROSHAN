@@ -2,6 +2,7 @@
 // Created by nex on 15.07.23.
 //
 
+#include <iostream>
 #include "drone_state.h"
 
 DroneState::DroneState() {
@@ -31,6 +32,7 @@ DroneState::DroneState(double angular, double linear, std::vector<std::vector<in
 }
 
 DroneState DroneState::GetNewState(double angular, double linear, std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status) {
+//    std::cout << linear;
     double new_angular = velocity_.first + angular;
     double new_linear = velocity_.second + linear;
     return DroneState(new_angular, new_linear, terrain, fire_status);

@@ -24,9 +24,9 @@
 class FireModel : public IModel{
 public:
     //only one instance of this class can be created
-    static std::shared_ptr<FireModel> GetInstance(std::shared_ptr<SDL_Renderer> renderer) {
+    static std::shared_ptr<FireModel> GetInstance(std::shared_ptr<SDL_Renderer> renderer, int mode) {
         if (instance_ == nullptr) {
-            instance_ = std::shared_ptr<FireModel>(new FireModel(renderer));
+            instance_ = std::shared_ptr<FireModel>(new FireModel(renderer, mode));
         }
         return instance_;
     }
@@ -47,7 +47,7 @@ public:
     void ShowControls(std::function<void(bool&, bool&, int&)> controls, bool &update_simulation, bool &render_simulation, int &delay) override;
 
 private:
-    explicit FireModel(std::shared_ptr<SDL_Renderer> renderer);
+    explicit FireModel(std::shared_ptr<SDL_Renderer> renderer, int mode);
 
     void RandomizeCells();
 
@@ -78,6 +78,7 @@ private:
     bool show_demo_window_ = false;
     bool show_controls_ = false;
     bool show_model_analysis_ = false;
+    bool show_drone_analysis_ = false;
     bool show_model_parameter_config_ = false;
     bool model_startup_ = false;
     bool open_file_dialog_ = false;

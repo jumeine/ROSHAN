@@ -44,7 +44,7 @@ public:
     EngineCore(){}
     ~EngineCore(){}
 
-    bool Init();
+    bool Init(int mode);
     void Clean();
 
     void Update();
@@ -93,6 +93,7 @@ private:
     bool ImGuiModelSelection();
 
     // AI Stuff
+    int mode_;
     Memory agent_memory_;
     std::shared_ptr<Agent> agent_;
 };

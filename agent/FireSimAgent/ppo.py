@@ -6,6 +6,7 @@ from utils import RunningMeanStd
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
+
 class PPO:
     """
     This class represents the PPO Algorithm. It is used to train an actor-critic network.

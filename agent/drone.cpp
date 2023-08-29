@@ -2,11 +2,12 @@
 // Created by nex on 13.07.23.
 //
 
+#include <iostream>
 #include "drone.h"
 
-DroneAgent::DroneAgent(std::shared_ptr<SDL_Renderer> renderer) {
+DroneAgent::DroneAgent(std::shared_ptr<SDL_Renderer> renderer, int id) : id_(id) {
     renderer_ = DroneRenderer(renderer);
-    position_ = std::make_pair(30.0, 30.0);
+    position_ = std::make_pair(20.0, 20.0);
     view_range_ = 20;
 }
 
@@ -29,7 +30,7 @@ void DroneAgent::Update(double angular, double linear, std::vector<std::vector<i
 
 void DroneAgent::Initialize(std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status) {
     for(int i = 0; i < 4; ++i) {
-        DroneState new_state = drone_states_[0].GetNewState(0, 0, terrain, fire_status);
+        DroneState new_state = DroneState(0, 0, terrain, fire_status);
         drone_states_.push_front(new_state);
     }
 }
@@ -44,3 +45,8 @@ void DroneAgent::UpdateStates(double angular, double linear, std::vector<std::ve
         drone_states_.pop_back();
     }
 }
+
+//DroneAgent::~DroneAgent() {
+//    drone_states_.clear();
+//
+//}

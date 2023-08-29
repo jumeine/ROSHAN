@@ -7,8 +7,8 @@
 
 std::shared_ptr<FireModelRenderer> FireModelRenderer::instance_ = nullptr;
 
-FireModelRenderer::FireModelRenderer(std::shared_ptr<SDL_Renderer> renderer, std::shared_ptr<std::vector<std::shared_ptr<DroneAgent>>> drones, FireModelParameters& parameters)
-    : parameters_(parameters), renderer_(renderer), camera_(FireModelCamera()), drones_(drones) {
+FireModelRenderer::FireModelRenderer(std::shared_ptr<SDL_Renderer> renderer, FireModelParameters& parameters)
+    : parameters_(parameters), renderer_(renderer), camera_(FireModelCamera()) {
     SetScreenResolution();
     texture_ = SDL_CreateTexture(renderer_.get(),SDL_PIXELFORMAT_ARGB8888,SDL_TEXTUREACCESS_STREAMING,width_,height_);
 
@@ -50,14 +50,14 @@ void FireModelRenderer::CheckCamera() {
     camera_.Update(width_, height_, gridmap_->GetRows(), gridmap_->GetCols());
 }
 
-void FireModelRenderer::Render() {
+void FireModelRenderer::Render(std::shared_ptr<std::vector<std::shared_ptr<DroneAgent>>> drones) {
     SDL_RenderClear(renderer_.get());
     if (gridmap_ != nullptr) {
         camera_.Update(width_, height_, gridmap_->GetRows(), gridmap_->GetCols());
 //        std::cout << "Cellsize: " << camera_.GetCellSize() << std::endl;
         DrawCells();
         DrawParticles();
-        DrawDrone();
+        DrawDrones(drones);
     }
 }
 
@@ -223,16 +223,55 @@ FireModelRenderer::~FireModelRenderer() {
     delete pixel_buffer_;
     SDL_DestroyTexture(arrow_texture_);
     SDL_FreeFormat(pixel_format_);
-    SDL_DestroyTexture(texture_);
 }
 
-void FireModelRenderer::DrawDrone() {
+void FireModelRenderer::DrawDrones(std::shared_ptr<std::vector<std::shared_ptr<DroneAgent>>> drones) {
     double size = static_cast<int>(camera_.GetCellSize());
 
-    for (auto &agent : *drones_) {
+    for (auto &agent : *drones) {
         std::pair<double, double> agent_position = agent->GetPosition();
         std::pair<int, int> screen_position = camera_.GridToScreenPosition(agent_position.first, agent_position.second);
         agent->Render(screen_position, size);
     }
+}
+
+ImVec4 FireModelRenderer::GetMappedColor(int cell_type) {
+    SDL_Color color;
+    // Create switch statement for each cell type
+    switch (static_cast<CellState>(cell_type)) {
+        case CellState::GENERIC_UNBURNED:
+            color = {50, 190, 75, 255}; break;
+        case CellState::SEALED:
+            color = {100, 100, 100, 255}; break;
+        case CellState::WOODY_NEEDLE_LEAVED_TREES:
+            color = {0, 230, 0, 255}; break;
+        case CellState::WOODY_BROADLEAVED_DECIDUOUS_TREES:
+            color = {0, 150, 0, 255}; break;
+        case CellState::WOODY_BROADLEAVED_EVERGREEN_TREES:
+            color = {0, 255, 0, 255}; break;
+        case CellState::LOW_GROWING_WOODY_PLANTS:
+            color = {105, 76, 51, 255}; break;
+        case CellState::PERMANENT_HERBACEOUS:
+            color = {250, 218, 94, 255}; break;
+        case CellState::PERIODICALLY_HERBACEOUS:
+            color = {240, 230, 140, 255}; break;
+        case CellState::LICHENS_AND_MOSSES:
+            color = {255, 153, 204, 255}; break;
+        case CellState::NON_AND_SPARSLEY_VEGETATED:
+            color = {194, 178, 128, 255}; break;
+        case CellState::WATER:
+            color = {0, 0, 255, 255}; break;
+        case CellState::SNOW_AND_ICE:
+            color = {0, 255, 255, 255}; break;
+        case CellState::OUTSIDE_AREA:
+            color = {25, 25, 25, 255}; break;
+        case CellState::GENERIC_BURNING:
+            color = {255, 0, 0, 255}; break;
+        case CellState::GENERIC_BURNED:
+            color = { 42, 42, 42, 255 }; break;
+        default:
+            color = { 80, 80, 80, 255 }; break;
+    }
+    return ImVec4(color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, 1.0f);
 }
 

@@ -5,6 +5,7 @@
 #include <iostream>
 #include "firemodel_firecell.h"
 
+
 FireCell::FireCell(int x, int y, std::mt19937 gen, FireModelParameters &parameters, int raster_value) : parameters_(parameters) {
     surface_ = SDL_CreateRGBSurfaceWithFormat(0, 1, 1, 32, SDL_PIXELFORMAT_ARGB8888);
 

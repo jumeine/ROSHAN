@@ -7,7 +7,7 @@
 std::shared_ptr<EngineCore> EngineCore::instance_ = nullptr;
 
 
-bool EngineCore::Init(){
+bool EngineCore::Init(int mode){
     // Setup SDL
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)
     {
@@ -80,6 +80,7 @@ bool EngineCore::Init(){
     //agent_memory_ = Memory(5000);
     //agent_ = std::make_shared<DroneNetworkAgent>();
     //StartServer();
+    mode_ = mode;
     model_ = nullptr;
     return is_running_ = true;
 }
@@ -130,7 +131,7 @@ bool EngineCore::ImGuiModelSelection(){
         }
         ImGui::Separator();
         if (ImGui::Button("Firemodel", ImVec2(-1, 0))) {
-            model_ = FireModel::GetInstance(renderer_);
+            model_ = FireModel::GetInstance(renderer_, mode_);
 //            model_->Initialize();
         }
 

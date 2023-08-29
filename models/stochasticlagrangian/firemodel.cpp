@@ -6,10 +6,12 @@
 
 std::shared_ptr<FireModel> FireModel::instance_ = nullptr;
 
-FireModel::FireModel(std::shared_ptr<SDL_Renderer> renderer) {
+FireModel::FireModel(std::shared_ptr<SDL_Renderer> renderer, int mode) {
     dataset_handler_ = std::make_shared<DatasetHandler>("../CORINE/dataset/CLMS_CLCplus_RASTER_2018_010m_eu_03035_V1_1.tif");
     drones_ = std::make_shared<std::vector<std::shared_ptr<DroneAgent>>>();
-    model_renderer_ = FireModelRenderer::GetInstance(renderer, drones_, parameters_);
+    if (mode == 1)
+        parameters_.SetNumberOfDrones(0);
+    model_renderer_ = FireModelRenderer::GetInstance(renderer, parameters_);
     wind_ = std::make_shared<Wind>(parameters_);
     gridmap_ = nullptr;
     running_time_ = 0;
@@ -18,14 +20,14 @@ FireModel::FireModel(std::shared_ptr<SDL_Renderer> renderer) {
 void FireModel::ResetGridMap(std::vector<std::vector<int>>* rasterData) {
     gridmap_ = std::make_shared<GridMap>(wind_, parameters_, rasterData);
     model_renderer_->SetGridMap(gridmap_);
+
     // Init drones
     drones_->clear();
     for (int i = 0; i < parameters_.GetNumberOfDrones(); ++i) {
-        drones_->push_back(std::make_shared<DroneAgent>(model_renderer_->GetRenderer()));
-    }
-    for(auto &drone : *drones_) {
-        std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> drone_view = gridmap_->GetDroneView(drone);
-        drone->Initialize(drone_view.first, drone_view.second);
+        auto newDrone = std::make_shared<DroneAgent>(model_renderer_->GetRenderer(), i);
+        std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> drone_view = gridmap_->GetDroneView(newDrone);
+        newDrone->Initialize(drone_view.first, drone_view.second);
+        drones_->push_back(newDrone);
     }
 //    model_renderer_->CheckCamera();
     running_time_ = 0;
@@ -58,7 +60,6 @@ std::vector<std::deque<std::shared_ptr<State>>> FireModel::GetObservations() {
 void FireModel::Update() {
     // Simulation time step update
     running_time_ += parameters_.GetDt();
-    std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> drone_view = gridmap_->GetDroneView(drones_->at(0));
     // Update the fire particles and the cell states
     gridmap_->UpdateParticles();
     gridmap_->UpdateCells();
@@ -67,9 +68,9 @@ void FireModel::Update() {
 std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>, std::vector<bool>> FireModel::Step(std::vector<std::shared_ptr<Action>> actions) {
 
     if (gridmap_ != nullptr) {
-        std::vector<std::deque<std::shared_ptr<State>>> all_drone_states;
+        std::vector<std::deque<std::shared_ptr<State>>> next_observations;
         std::vector<double> rewards;
-        std::vector<bool> dones;
+        std::vector<bool> terminals;
 
         // Move the drones and get the next_observation
         for (int i = 0; i < (*drones_).size(); ++i) {
@@ -84,19 +85,19 @@ std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>,
             for (auto &state : drone_states) {
                 shared_states.push_back(std::make_shared<DroneState>(state));
             }
-            all_drone_states.push_back(shared_states);
+            next_observations.push_back(shared_states);
             rewards.push_back(0);
-            dones.push_back(false);
+            terminals.push_back(false);
         }
 
-        return {all_drone_states, rewards, dones};
+        return {next_observations, rewards, terminals};
 
     }
     return {};
 }
 
 void FireModel::Render() {
-    model_renderer_->Render();
+    model_renderer_->Render(drones_);
     model_renderer_->DrawArrow(wind_->GetCurrentAngle() * 180 / M_PI + 45);
 }
 
@@ -259,7 +260,8 @@ void FireModel::ImGuiModelMenu() {
             }
             if (ImGui::BeginMenu("View")) {
                 ImGui::MenuItem("Show Controls", NULL, &show_controls_);
-                ImGui::MenuItem("Show Analysis", NULL, &show_model_analysis_);
+                ImGui::MenuItem("Show Simulation Analysis", NULL, &show_model_analysis_);
+                ImGui::MenuItem("Show Drone Analysis", NULL, &show_drone_analysis_);
                 ImGui::MenuItem("Show Parameter Config", NULL, &show_model_parameter_config_);
                 if(ImGui::MenuItem("Render Grid", NULL, &parameters_.render_grid_))
                     model_renderer_->SetFullRedraw();
@@ -286,13 +288,73 @@ void FireModel::Config() {
             ShowParameterConfig();
 
         if (show_model_analysis_) {
-            ImGui::Begin("Analysis");
+            ImGui::Begin("Simulation Analysis");
             ImGui::Spacing();
             ImGui::Text("Number of particles: %d", gridmap_->GetNumParticles());
             ImGui::Text("Number of cells: %d", gridmap_->GetNumCells());
             ImGui::Text("Running Time: %s", formatTime(running_time_).c_str());
-            ImGui::Text("Höhe: %.2fkm | Breite: %.2fkm", gridmap_->GetRows() * parameters_.GetCellSize() / 1000,
+            ImGui::Text("Height: %.2fkm | Width: %.2fkm", gridmap_->GetRows() * parameters_.GetCellSize() / 1000,
                                                               gridmap_->GetCols() * parameters_.GetCellSize() / 1000);
+            ImGui::End();
+        }
+
+        if (show_drone_analysis_) {
+            ImGui::Begin("Drone Analysis");
+            ImGui::Spacing();
+
+            static int current_drone_index = 0;
+            if (drones_->size() > 0) {
+                // Create an array of drone names
+                std::vector<const char*> drone_names;
+                for (int i = 0; i < drones_->size(); ++i) {
+                    drone_names.push_back(std::to_string((*drones_)[i]->GetId()).c_str());
+                }
+
+                // Create a combo box for selecting a drone
+                ImGui::Combo("Select Drone", &current_drone_index, &drone_names[0], drones_->size());
+
+                // Get the currently selected drone
+                auto& selected_drone = (*drones_)[current_drone_index];
+
+                ImGui::Text("Drone %d", selected_drone->GetId());
+                ImGui::Text("Position: (%.2f, %.2f)", selected_drone->GetPosition().first, selected_drone->GetPosition().second);
+                ImGui::Text("Angular Velocity: %.2f", selected_drone->GetLastState().GetVelocity().first);
+                ImGui::Text("Linear Velocity: %.2f", selected_drone->GetLastState().GetVelocity().second);
+                ImGui::Text("Orientation: (%.2f, %.2f)", selected_drone->GetLastState().GetOrientation().first,
+                            selected_drone->GetLastState().GetOrientation().second);
+                ImGui::Text("Terrain");
+                // Calculate the size and position of each cell
+                float cell_size = 15.0f;
+                ImVec2 cursor_pos = ImGui::GetCursorScreenPos();
+                std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> drone_view = gridmap_->GetDroneView(selected_drone);
+                // Draw each cell
+                for (int y = 0; y < drone_view.first.size(); ++y) {
+                    for (int x = 0; x < drone_view.first[y].size(); ++x) {
+                        ImVec4 color = model_renderer_->GetMappedColor(drone_view.first[y][x]);
+                        ImVec2 p_min = ImVec2(cursor_pos.x + x * cell_size, cursor_pos.y + y * cell_size);
+                        ImVec2 p_max = ImVec2(cursor_pos.x + (x + 1) * cell_size, cursor_pos.y + (y + 1) * cell_size);
+                        ImGui::GetWindowDrawList()->AddRectFilled(p_min, p_max, IM_COL32(color.x * 255, color.y * 255, color.z * 255, color.w * 255));
+                    }
+                }
+
+                // Optionally set cursor position to after the grid
+                ImGui::SetCursorScreenPos(ImVec2(cursor_pos.x, cursor_pos.y + drone_view.first.size() * cell_size));
+
+                ImGui::Text("FireStatus");
+                cursor_pos = ImGui::GetCursorScreenPos();
+                for (int y = 0; y < drone_view.second.size(); ++y) {
+                    for (int x = 0; x < drone_view.second[y].size(); ++x) {
+                        ImVec4 color = drone_view.second[y][x] == 1 ? ImVec4(255 / 255.f, 0, 0, 255 / 255.f) : ImVec4(0, 0, 0, 255 / 255.f);
+                        ImVec2 p_min = ImVec2(cursor_pos.x + x * cell_size, cursor_pos.y + y * cell_size);
+                        ImVec2 p_max = ImVec2(cursor_pos.x + (x + 1) * cell_size, cursor_pos.y + (y + 1) * cell_size);
+                        ImGui::GetWindowDrawList()->AddRectFilled(p_min, p_max, IM_COL32(color.x * 255, color.y * 255, color.z * 255, color.w * 255));
+                    }
+                }
+            } else {
+                ImGui::Text("No drones available.");
+            }
+
+            ImGui::Spacing();
             ImGui::End();
         }
 

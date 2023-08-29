@@ -10,7 +10,7 @@
 
 int main(int argc, char** argv)
 {
-    EngineCore::GetInstance()->Init();
+    EngineCore::GetInstance()->Init(1);
 
     while(EngineCore::GetInstance()->IsRunning()) {
         EngineCore::GetInstance()->HandleEvents();

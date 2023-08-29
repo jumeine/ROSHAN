@@ -1,3 +1,4 @@
+import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import MultivariateNormal
@@ -100,6 +101,7 @@ class Actor(nn.Module):
         # Mu
         self.mu = nn.Linear(in_features=256, out_features=2)
         initialize_output_weights(self.mu, 'actor')
+
         # Logstd
         self.log_std = nn.Parameter(torch.zeros(2, ))
 
@@ -167,7 +169,6 @@ class ActorCritic(nn.Module):
         # TODO: check if normalization of states is necessary
         # was suggested in: Implementation_Matters in Deep RL: A Case Study on PPO and TRPO
         action_mean, action_var = self.actor(terrain.to(device), fire_status.to(device), orientation.to(device), velocity.to(device))
-        #_, action_mean, action_var = self.ac(laser, orientation, distance, velocity)
 
         action_mean = action_mean.to('cpu')
         action_var = action_var.to('cpu')

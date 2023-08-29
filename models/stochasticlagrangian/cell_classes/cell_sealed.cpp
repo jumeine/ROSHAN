@@ -2,6 +2,9 @@
 // Created by nex on 27.06.23.
 //
 
+#ifndef ROSHAN_FIREMODEL_SEALED_
+#define ROSHAN_FIREMODEL_SEALED_
+
 #include "../firemodel_cell_interface.h"
 #include <SDL.h>
 
@@ -20,3 +23,5 @@ public:
         num_radiation_particles_ = 55;
     }
 };
+
+#endif //ROSHAN_FIREMODEL_SEALED_

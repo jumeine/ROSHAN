@@ -2,6 +2,9 @@
 // Created by nex on 27.06.23.
 //
 
+#ifndef ROSHAN_FIREMODEL_LOW_GROWING_WOODY_PLANTS_
+#define ROSHAN_FIREMODEL_LOW_GROWING_WOODY_PLANTS_
+
 #include "../firemodel_cell_interface.h"
 #include <SDL.h>
 
@@ -20,3 +23,5 @@ public:
         num_radiation_particles_ = 4;
     }
 };
+
+#endif //ROSHAN_FIREMODEL_LOW_GROWING_WOODY_PLANTS_

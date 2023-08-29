@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 
+
 def initialize_output_weights(m, out_type):
     """
     Initialize the weights of the output layer of the actor and critic networks
@@ -15,6 +16,7 @@ def initialize_output_weights(m, out_type):
         torch.nn.init.orthogonal_(m.weight.data, gain=1)
         if m.bias is not None:
             torch.nn.init.constant_(m.bias.data, 0)
+
 
 def initialize_hidden_weights(m):
     """
@@ -34,14 +36,17 @@ def initialize_hidden_weights(m):
         if m.bias is not None:
             torch.nn.init.constant_(m.bias.data, 0)
 
+
 def normalize(tensor):
     """
     Normalizes a tensor to mean zero and standard deviation one
     """
     return (tensor - tensor.mean()) / (tensor.std() + 1e-8)
 
+
 def torchToNumpy(tensor: torch.Tensor) -> np.ndarray:
     return tensor.detach().cpu().numpy()
+
 
 class RunningMeanStd(object):
     """

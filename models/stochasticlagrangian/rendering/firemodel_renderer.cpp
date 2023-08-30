@@ -229,8 +229,9 @@ void FireModelRenderer::DrawDrones(std::shared_ptr<std::vector<std::shared_ptr<D
     double size = static_cast<int>(camera_.GetCellSize());
 
     for (auto &agent : *drones) {
-        std::pair<double, double> agent_position = agent->GetPosition();
-        std::pair<int, int> screen_position = camera_.GridToScreenPosition(agent_position.first, agent_position.second);
+        std::pair<double, double> agent_position = agent->GetGridPositionDouble();
+        std::pair<int, int> screen_position = camera_.GridToScreenPosition(agent_position.first,
+                                                                           agent_position.second);
         agent->Render(screen_position, size);
     }
 }

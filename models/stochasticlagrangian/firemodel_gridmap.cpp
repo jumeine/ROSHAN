@@ -24,6 +24,7 @@ GridMap::GridMap(std::shared_ptr<Wind> wind, FireModelParameters &parameters,
     ticking_cells_.reserve(100000);
     burning_cells_.reserve(100000);
     changed_cells_.reserve(100000);
+    flooded_cells_.reserve(1000);
 }
 
 // Templated function to avoid repeating common code
@@ -128,11 +129,40 @@ void GridMap::UpdateCells() {
         if (cell->GetIgnitionState() == CellState::GENERIC_BURNED) {
             // The cell has burned out, so it is no longer burning
             it = burning_cells_.erase(it);
-            changed_cells_.push_back(Point(x, y));
+            changed_cells_.emplace_back(x, y);
         } else {
             ++it;
         }
     }
+    // Iterate over flooded cells and extinguish them
+    for (auto it = flooded_cells_.begin(); it != flooded_cells_.end(); ) {
+        int x = it->x_;
+        int y = it->y_;
+        auto& cell = cells_[x][y];
+        // Let the water fade
+        cell->Tick();
+        if (!cell->IsFlooded()) {
+            // The cell is no longer flooded
+            it = flooded_cells_.erase(it);
+            // Extinguish the cell
+            cells_[x][y]->Extinguish();
+        } else {
+            ++it;
+        }
+        changed_cells_.emplace_back(x, y);
+    }
+}
+
+void GridMap::WaterDispension(int x, int y) {
+    if (!IsPointInGrid(x, y))
+        // Drone is outside the grid so nothing happens
+        return;
+    if (GetCellState(x, y) == CellState::GENERIC_BURNING) {
+        ExtinguishCell(x, y);
+    }
+    cells_[x][y]->Flood();
+    flooded_cells_.insert(Point(x, y));
+    changed_cells_.emplace_back(x, y);
 }
 
 void GridMap::ExtinguishCell(int x, int y) {
@@ -168,7 +198,7 @@ void GridMap::ExtinguishCell(int x, int y) {
 // Gets a view of the cells cell_type in a radius around the drone
 std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> GridMap::GetDroneView(std::shared_ptr<DroneAgent> drone) {
     int drone_view_radius = drone->GetViewRange();
-    std::pair<int, int> drone_position = drone->GetPosition();
+    std::pair<int, int> drone_position = drone->GetGridPosition();
     std::vector<std::vector<int>> cell_status(drone_view_radius + 1, std::vector<int>(drone_view_radius + 1, 0));
     std::vector<std::vector<int>> fire_status(drone_view_radius + 1, std::vector<int>(drone_view_radius + 1, 0));
     int drone_view_radius_2 = drone_view_radius / 2;

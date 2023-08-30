@@ -25,6 +25,7 @@ public:
     virtual void Config() = 0;
     virtual void Reset() = 0;
     virtual void Render() = 0;
+    virtual bool AgentIsRunning() = 0;
     virtual void SetWidthHeight(int width, int height) = 0;
     virtual void HandleEvents(SDL_Event event, ImGuiIO* io) = 0;
     virtual void ShowPopups() = 0;

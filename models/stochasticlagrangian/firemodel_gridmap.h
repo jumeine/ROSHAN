@@ -15,7 +15,10 @@
 #include <random>
 #include <iostream>
 #include <memory>
-#include "agent/drone.h"
+#include "drone_agent/drone.h"
+
+// TODO Remove circular dependency
+class DroneAgent;
 
 class GridMap {
 public:
@@ -25,6 +28,7 @@ public:
     int GetRows() const { return rows_; }
     int GetCols() const { return cols_; }
     void IgniteCell(int x, int y);
+    void WaterDispension(int x, int y);
     void ExtinguishCell(int x, int y);
     CellState GetCellState(int x, int y) { return cells_[x][y]->GetIgnitionState(); }
 
@@ -51,6 +55,7 @@ private:
     std::vector<std::vector<std::shared_ptr<FireCell>>> cells_;
     std::unordered_set<Point> ticking_cells_;
     std::unordered_set<Point> burning_cells_;
+    std::unordered_set<Point> flooded_cells_;
     std::vector<Point> changed_cells_;
 
     // Random decives and Generators for the Cells
@@ -64,6 +69,7 @@ private:
     bool IsPointInGrid(int i, int j) {
         return !(i < 0 || i >= cols_ || j < 0 || j >= rows_);
     }
+
 };
 
 

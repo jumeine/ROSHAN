@@ -18,8 +18,8 @@
 #include "wind.h"
 #include "CORINE/dataset_handler.h"
 #include "externals/ImGuiFileDialog/ImGuiFileDialog.h"
-#include "agent/drone.h"
-#include "agent/drone_action.h"
+#include "drone_agent/drone.h"
+#include "drone_agent/drone_action.h"
 
 class FireModel : public IModel{
 public:
@@ -39,6 +39,7 @@ public:
     void Reset() override;
     void Config() override;
     void Render() override;
+    bool AgentIsRunning() override;
     void SetWidthHeight(int width, int height) override;
     void HandleEvents(SDL_Event event, ImGuiIO* io) override;
     void ShowPopups() override;
@@ -69,7 +70,9 @@ private:
 
     //current data
     std::vector<std::vector<int>> current_raster_data_;
-    //agent data
+    // Agent Stuff
+    void MoveDrone(int drone_idx, double speed_x, double speed_y, int water_dispense);
+    void ResetDrones();
     std::shared_ptr<std::vector<std::shared_ptr<DroneAgent>>> drones_;
     std::vector<std::deque<DroneState>> observations_;
 
@@ -86,9 +89,15 @@ private:
     bool save_map_to_disk_ = false;
     bool init_gridmap_ = false;
 
+    // RL Flags
+    bool python_code_ = true;
+    bool agent_is_running_ = false;
+    bool show_rl_controls_ = true;
+
     void ShowParameterConfig();
     bool ImGuiOnStartup();
     void SetUniformRasterData();
+
 };
 
 

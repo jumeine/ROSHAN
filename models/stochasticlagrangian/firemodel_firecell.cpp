@@ -14,6 +14,7 @@ FireCell::FireCell(int x, int y, std::mt19937 gen, FireModelParameters &paramete
     cell_state_ = CellState(raster_value);
     cell_ = GetCell();
     mother_cell_ = GetCell();
+    has_burned_down_ = false;
 
     // Cell Parameters
     x_ = x * parameters_.GetCellSize();
@@ -25,10 +26,10 @@ FireCell::FireCell(int x, int y, std::mt19937 gen, FireModelParameters &paramete
 
     if (parameters_.map_is_uniform_) {
         burning_duration_ = parameters_.GetCellBurningDuration();
-        tau_ign = parameters_.GetIgnitionDelayTime();
+        tau_ign_ = parameters_.GetIgnitionDelayTime();
     } else {
         burning_duration_ = cell_->GetCellBurningDuration();
-        tau_ign = cell_->GetIgnitionDelayTime();
+        tau_ign_ = cell_->GetIgnitionDelayTime();
     }
 
     convection_particle_emission_threshold_ = (burning_duration_ - 1) / num_convection_particles_;
@@ -39,6 +40,10 @@ FireCell::FireCell(int x, int y, std::mt19937 gen, FireModelParameters &paramete
     if (radiation_particle_emission_threshold_ < 1)
         radiation_particle_emission_threshold_ = 1;
 
+    flood_duration_ = parameters_.GetFloodDuration();
+    flood_timer_ = flood_duration_;
+    tau_ign_tmp_ = 0;
+
     // TODO Auslagern der Zufallszahlen in eine eigene Klasse?
     // Initialize random number generator
     std::random_device rd;
@@ -47,7 +52,7 @@ FireCell::FireCell(int x, int y, std::mt19937 gen, FireModelParameters &paramete
     real_dis_ = std::uniform_real_distribution<>(0.0, 1.0);
     std::uniform_real_distribution<> dis(0.1, 0.2);
     std::uniform_int_distribution<> sign_dis(-1, 1);
-    tau_ign += sign_dis(gen_) * tau_ign * dis(gen_);
+    tau_ign_ += sign_dis(gen_) * tau_ign_ * dis(gen_);
 }
 
 CellState FireCell::GetIgnitionState() {
@@ -103,6 +108,9 @@ ICell *FireCell::GetCell() {
         case WOODY_NEEDLE_LEAVED_TREES:
             cell_ = new CellWoodyNeedleLeavedTrees(surface_->format);
             break;
+        case GENERIC_FLOODED:
+            cell_ = new CellGenericFlooded(surface_->format);
+            break;
         default:
             throw std::runtime_error("FireCell::GetCell() called on a celltype that is not defined");
     }
@@ -147,8 +155,12 @@ void FireCell::Tick() {
     if (cell_state_ == GENERIC_BURNING || cell_state_ == GENERIC_BURNED) {
         throw std::runtime_error("FireCell::Tick() called on a cell that is not unburned");
     }
-    if (tau_ign != -1) {
+    if (tau_ign_ != -1) {
+        // The cell ticks until it is ignited
         ticking_duration_ += parameters_.GetDt();
+    } else {
+        // The cell ticks until it is NO longer flooded
+        flood_timer_ += parameters_.GetDt();
     }
 }
 
@@ -171,21 +183,23 @@ void FireCell::burn() {
     last_burning_duration_ = burning_tick_;
     burning_duration_ -= parameters_.GetDt();
     burning_tick_ += parameters_.GetDt();
-    if (burning_duration_ <= 0)
+    if (burning_duration_ <= 0) {
         SetCellState(GENERIC_BURNED);
+        has_burned_down_ = true;
+    }
 }
 
 bool FireCell::CanIgnite() {
     if (cell_state_ == GENERIC_BURNING || cell_state_ == GENERIC_BURNED  ||
         cell_state_ == SNOW_AND_ICE || cell_state_ == OUTSIDE_AREA || cell_state_ == WATER ||
-        cell_state_ == NON_AND_SPARSLEY_VEGETATED) {
+        cell_state_ == NON_AND_SPARSLEY_VEGETATED || cell_state_ == GENERIC_FLOODED) {
         return false;
     }
     return true;
 }
 
 bool FireCell::ShouldIgnite() {
-    if (ticking_duration_ >= tau_ign) {
+    if (ticking_duration_ >= tau_ign_) {
         ticking_duration_ = 0;
         return true;
     }
@@ -193,7 +207,30 @@ bool FireCell::ShouldIgnite() {
 }
 
 void FireCell::Extinguish() {
-    SetCellState(cell_initial_state_);
+    if (has_burned_down_) {
+        SetCellState(GENERIC_BURNED);
+    } else {
+        SetCellState(cell_initial_state_);
+    }
+}
+
+void FireCell::Flood() {
+    if (cell_state_ != GENERIC_FLOODED) {
+        tau_ign_tmp_ = tau_ign_ * 1.5;
+        tau_ign_ = -1;
+        SetCellState(GENERIC_FLOODED);
+    }
+
+    flood_timer_ = 0;
+}
+
+bool FireCell::IsFlooded() {
+    if(flood_timer_ >= flood_duration_) {
+        tau_ign_ = tau_ign_tmp_;
+        flood_timer_ = flood_duration_;
+        return false;
+    }
+    return true;
 }
 
 void FireCell::SetCellState(CellState cell_state) {
@@ -216,11 +253,11 @@ void FireCell::ShowInfo() {
     ImGui::Text("%0.f m x %0.f m", parameters_.GetCellSize(), parameters_.GetCellSize());
     ImGui::Text("Burning duration: %.2f", burning_duration_);
     ImGui::Text("Ticking duration: %.2f", ticking_duration_);
-    ImGui::Text("Tau ign: %.2f", tau_ign);
+    ImGui::Text("Tau ign: %.2f", tau_ign_);
 }
 
 Uint32 FireCell::GetMappedColor() {
-    if (cell_state_ == GENERIC_BURNED) {
+    if (cell_state_ == GENERIC_BURNED || cell_state_ == GENERIC_FLOODED) {
         Uint32 mapped_cell_color = cell_->GetMappedColor();
         Uint32 mapped_mother_cell_color = mother_cell_->GetMappedColor();
 
@@ -231,13 +268,18 @@ Uint32 FireCell::GetMappedColor() {
         SDL_GetRGBA(mapped_mother_cell_color, surface_->format, &mother_r, &mother_g, &mother_b, &mother_a);
 
         //blend them
-        int burned_weight = 20;
-        int mother_weight = 1;
-        int total_weight = burned_weight + mother_weight;
+        int weight_a;
+        int mother_weight;
+        if (cell_state_ == GENERIC_BURNED) {
+            weight_a = 20; mother_weight = 1;
+        } else {
+            weight_a = 40; mother_weight = 1;
+        }
+        int total_weight = weight_a + mother_weight;
 
-        Uint8 blended_r = (burned_r * burned_weight + mother_r * mother_weight) / total_weight;
-        Uint8 blended_g = (burned_g * burned_weight + mother_g * mother_weight) / total_weight;
-        Uint8 blended_b = (burned_b * burned_weight + mother_b * mother_weight) / total_weight;
+        Uint8 blended_r = (burned_r * weight_a + mother_r * mother_weight) / total_weight;
+        Uint8 blended_g = (burned_g * weight_a + mother_g * mother_weight) / total_weight;
+        Uint8 blended_b = (burned_b * weight_a + mother_b * mother_weight) / total_weight;
         Uint8 blended_a = 255;
 
         Uint32 blended_mapped_color = SDL_MapRGBA(surface_->format, blended_r, blended_g, blended_b, blended_a);

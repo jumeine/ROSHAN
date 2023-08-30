@@ -306,7 +306,11 @@ std::vector<std::deque<std::shared_ptr<State>>> EngineCore::GetObservations() {
 }
 
 bool EngineCore::AgentIsRunning() {
-    return (model_ != nullptr && update_simulation_);
+    if(model_ != nullptr && update_simulation_){
+        return model_->AgentIsRunning();
+    } else {
+        return false;
+    }
 }
 
 std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>, std::vector<bool>>

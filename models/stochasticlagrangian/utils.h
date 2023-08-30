@@ -24,6 +24,7 @@ enum CellState { GENERIC_UNBURNED = 0,
                  OUTSIDE_AREA = 254,
                  GENERIC_BURNING = 60,
                  GENERIC_BURNED = 61,
+                 GENERIC_FLOODED = 62,
                  OUTSIDE_GRID = 255};
 
 std::string CellStateToString(CellState cell_state);

@@ -9,8 +9,11 @@ std::shared_ptr<FireModel> FireModel::instance_ = nullptr;
 FireModel::FireModel(std::shared_ptr<SDL_Renderer> renderer, int mode) {
     dataset_handler_ = std::make_shared<DatasetHandler>("../CORINE/dataset/CLMS_CLCplus_RASTER_2018_010m_eu_03035_V1_1.tif");
     drones_ = std::make_shared<std::vector<std::shared_ptr<DroneAgent>>>();
-    if (mode == 1)
+    if (mode == 1) {
         parameters_.SetNumberOfDrones(0);
+        python_code_ = false;
+    }
+
     model_renderer_ = FireModelRenderer::GetInstance(renderer, parameters_);
     wind_ = std::make_shared<Wind>(parameters_);
     gridmap_ = nullptr;
@@ -22,13 +25,8 @@ void FireModel::ResetGridMap(std::vector<std::vector<int>>* rasterData) {
     model_renderer_->SetGridMap(gridmap_);
 
     // Init drones
-    drones_->clear();
-    for (int i = 0; i < parameters_.GetNumberOfDrones(); ++i) {
-        auto newDrone = std::make_shared<DroneAgent>(model_renderer_->GetRenderer(), i);
-        std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> drone_view = gridmap_->GetDroneView(newDrone);
-        newDrone->Initialize(drone_view.first, drone_view.second);
-        drones_->push_back(newDrone);
-    }
+    ResetDrones();
+
 //    model_renderer_->CheckCamera();
     running_time_ = 0;
 }
@@ -37,6 +35,14 @@ void FireModel::SetUniformRasterData() {
     current_raster_data_.clear();
     current_raster_data_ = std::vector<std::vector<int>>(parameters_.GetGridNx(), std::vector<int>(parameters_.GetGridNy(), GENERIC_UNBURNED));
     parameters_.map_is_uniform_ = true;
+}
+
+void FireModel::Update() {
+    // Simulation time step update
+    running_time_ += parameters_.GetDt();
+    // Update the fire particles and the cell states
+    gridmap_->UpdateParticles();
+    gridmap_->UpdateCells();
 }
 
 std::vector<std::deque<std::shared_ptr<State>>> FireModel::GetObservations() {
@@ -57,12 +63,25 @@ std::vector<std::deque<std::shared_ptr<State>>> FireModel::GetObservations() {
     return {};
 }
 
-void FireModel::Update() {
-    // Simulation time step update
-    running_time_ += parameters_.GetDt();
-    // Update the fire particles and the cell states
-    gridmap_->UpdateParticles();
-    gridmap_->UpdateCells();
+void FireModel::MoveDrone(int drone_idx, double speed_x, double speed_y, int water_dispense) {
+    drones_->at(drone_idx)->Move(speed_x, speed_y);
+    bool dispensed = drones_->at(drone_idx)->DispenseWater(water_dispense, *gridmap_);
+    std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> drone_view = gridmap_->GetDroneView(drones_->at(drone_idx));
+    drones_->at(drone_idx)->Update(speed_x, speed_y, drone_view.first, drone_view.second);
+}
+
+bool FireModel::AgentIsRunning() {
+    return agent_is_running_;
+}
+
+void FireModel::ResetDrones() {
+    drones_->clear();
+    for (int i = 0; i < parameters_.GetNumberOfDrones(); ++i) {
+        auto newDrone = std::make_shared<DroneAgent>(model_renderer_->GetRenderer(),parameters_, i);
+        std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> drone_view = gridmap_->GetDroneView(newDrone);
+        newDrone->Initialize(drone_view.first, drone_view.second);
+        drones_->push_back(newDrone);
+    }
 }
 
 std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>, std::vector<bool>> FireModel::Step(std::vector<std::shared_ptr<Action>> actions) {
@@ -74,11 +93,10 @@ std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>,
 
         // Move the drones and get the next_observation
         for (int i = 0; i < (*drones_).size(); ++i) {
-            double angular = std::dynamic_pointer_cast<DroneAction>(actions[i])->GetAngular() * parameters_.GetDt();
-            double linear = std::dynamic_pointer_cast<DroneAction>(actions[i])->GetLinear() * parameters_.GetDt();
-            drones_->at(i)->Move(angular, linear);
-            std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> drone_view = gridmap_->GetDroneView(drones_->at(i));
-            drones_->at(i)->Update(angular, linear, drone_view.first, drone_view.second);
+            double speed_x = std::dynamic_pointer_cast<DroneAction>(actions[i])->GetSpeedX();
+            double speed_y = std::dynamic_pointer_cast<DroneAction>(actions[i])->GetSpeedY();
+            int water_dispense = std::dynamic_pointer_cast<DroneAction>(actions[i])->GetWaterDispense();
+            MoveDrone(i, speed_x, speed_y, water_dispense);
 
             std::deque<DroneState> drone_states = drones_->at(i)->GetStates();
             std::deque<std::shared_ptr<State>> shared_states;
@@ -143,28 +161,17 @@ void FireModel::HandleEvents(SDL_Event event, ImGuiIO *io) {
         if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
             model_renderer_->ResizeEvent();
         }
-    } else if (event.type == SDL_KEYDOWN && parameters_.GetNumberOfDrones() == 1) {
-        std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> drone_view = gridmap_->GetDroneView(drones_->at(0));
-
-        if (event.key.keysym.sym == SDLK_w) {
-            drones_->at(0)->Update(0, parameters_.GetDroneLinearVelocity(0.1), drone_view.first, drone_view.second);
-        }
-        if (event.key.keysym.sym == SDLK_s) {
-            drones_->at(0)->Update(0, -parameters_.GetDroneLinearVelocity(0.1), drone_view.first, drone_view.second);
-        }
-        if (event.key.keysym.sym == SDLK_a) {
-            drones_->at(0)->Update(-parameters_.GetDroneAngularVelocity(0.5), 0, drone_view.first, drone_view.second);
-        }
-        if (event.key.keysym.sym == SDLK_d) {
-            drones_->at(0)->Update(parameters_.GetDroneAngularVelocity(0.5), 0, drone_view.first, drone_view.second);
-        }
-        if (event.key.keysym.sym == SDLK_SPACE) {
-            std::pair<double, double> position = drones_->at(0)->GetPosition();
-            int x = static_cast<int>(position.first);
-            int y = static_cast<int>(position.second);
-            if(gridmap_->GetCellState(x, y) == CellState::GENERIC_BURNING)
-                gridmap_->ExtinguishCell(x, y);
-        }
+    } else if (event.type == SDL_KEYDOWN && parameters_.GetNumberOfDrones() == 1 && !agent_is_running_) {
+        if (event.key.keysym.sym == SDLK_w)
+            MoveDrone(0, 0, parameters_.GetDroneSpeed(0.1), 0);
+        if (event.key.keysym.sym == SDLK_s)
+            MoveDrone(0, 0, -parameters_.GetDroneSpeed(0.1), 0);
+        if (event.key.keysym.sym == SDLK_a)
+            MoveDrone(0, -parameters_.GetDroneSpeed(0.1), 0, 0);
+        if (event.key.keysym.sym == SDLK_d)
+            MoveDrone(0, parameters_.GetDroneSpeed(0.1), 0, 0);
+        if (event.key.keysym.sym == SDLK_SPACE)
+            MoveDrone(0, 0, 0, 1);
     }
     // Browser Events
     // TODO: Eventloop only gets executed when Application is in Focus. Fix this.
@@ -210,7 +217,10 @@ void FireModel::Reset() {
     // Outdated code
 }
 
-//** ImGui Stuff **//
+//** ########################################################################
+//                                 ImGui Stuff
+//   ######################################################################
+// **//
 
 void FireModel::ShowControls(std::function<void(bool &, bool &, int &)> controls, bool &update_simulation, bool &render_simulation, int &delay) {
     if (show_controls_)
@@ -260,6 +270,9 @@ void FireModel::ImGuiModelMenu() {
             }
             if (ImGui::BeginMenu("View")) {
                 ImGui::MenuItem("Show Controls", NULL, &show_controls_);
+                if (python_code_) {
+                    ImGui::MenuItem("Show RL Controls", NULL, &show_rl_controls_);
+                }
                 ImGui::MenuItem("Show Simulation Analysis", NULL, &show_model_analysis_);
                 ImGui::MenuItem("Show Drone Analysis", NULL, &show_drone_analysis_);
                 ImGui::MenuItem("Show Parameter Config", NULL, &show_model_parameter_config_);
@@ -298,7 +311,31 @@ void FireModel::Config() {
             ImGui::End();
         }
 
-        if (show_drone_analysis_) {
+        if (show_rl_controls_ && python_code_) {
+            ImGui::Begin("RL Controls");
+            bool button_color = false;
+            if (agent_is_running_) {
+                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.35f, 0.6f, 0.85f, 1.0f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.45f, 0.7f, 0.95f, 1.0f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.25f, 0.5f, 0.75f, 1.0f));
+                button_color = true;
+            }
+            if (ImGui::Button(agent_is_running_ ? "Stop Training" : "Start Training")) {
+                agent_is_running_ = !agent_is_running_;
+            }
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Click to %s Reinforcement Learning.", agent_is_running_ ? "stop" : "start");
+            if (button_color) {
+                ImGui::PopStyleColor(3);
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Reset Drones")) {
+                ResetDrones();
+            }
+            ImGui::End();
+        }
+
+        if (show_drone_analysis_ && python_code_) {
             ImGui::Begin("Drone Analysis");
             ImGui::Spacing();
 
@@ -317,11 +354,12 @@ void FireModel::Config() {
                 auto& selected_drone = (*drones_)[current_drone_index];
 
                 ImGui::Text("Drone %d", selected_drone->GetId());
-                ImGui::Text("Position: (%.2f, %.2f)", selected_drone->GetPosition().first, selected_drone->GetPosition().second);
-                ImGui::Text("Angular Velocity: %.2f", selected_drone->GetLastState().GetVelocity().first);
-                ImGui::Text("Linear Velocity: %.2f", selected_drone->GetLastState().GetVelocity().second);
-                ImGui::Text("Orientation: (%.2f, %.2f)", selected_drone->GetLastState().GetOrientation().first,
-                            selected_drone->GetLastState().GetOrientation().second);
+                ImGui::Text("Grid Position: (%d, %d)", selected_drone->GetGridPosition().first,
+                            selected_drone->GetGridPosition().second);
+                ImGui::Text("Real Position: (%.2f, %.2f)", selected_drone->GetRealPosition().first,
+                            selected_drone->GetRealPosition().second);
+                ImGui::Text("Velocity (x,y) m/s: %.2f, %.2f", selected_drone->GetLastState().GetVelocity().first,
+                                                                    selected_drone->GetLastState().GetVelocity().second);
                 ImGui::Text("Terrain");
                 // Calculate the size and position of each cell
                 float cell_size = 15.0f;
@@ -435,7 +473,7 @@ bool FireModel::ImGuiOnStartup() {
 }
 
 void FireModel::ShowParameterConfig() {
-    ImGui::Begin("Parameter Config");
+    ImGui::Begin("Simulation Parameters");
     if (parameters_.emit_convective_) {
         ImGui::SeparatorText("Virtual Particles");
         if (ImGui::TreeNodeEx("##Virtual Particles",

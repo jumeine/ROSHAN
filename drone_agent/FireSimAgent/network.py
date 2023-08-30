@@ -1,7 +1,7 @@
 import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.distributions import MultivariateNormal
+from torch.distributions import MultivariateNormal, Bernoulli
 import torch
 import pdb
 
@@ -33,25 +33,21 @@ class Inputspace(nn.Module):
 
         self.flatten = nn.Flatten()
 
-        ori_out_features = 32
         vel_out_features = 32
 
-        self.ori_dense = nn.Linear(in_features=2, out_features=ori_out_features)
-        initialize_hidden_weights(self.ori_dense)
         self.vel_dense = nn.Linear(in_features=2, out_features=vel_out_features)
         initialize_hidden_weights(self.vel_dense)
 
         # four is the number of timeframes TODO make this dynamic
         terrain_out_features = 192
         fire_out_features = 192
-        input_features = terrain_out_features + fire_out_features + (ori_out_features + vel_out_features) * 4
+        input_features = terrain_out_features + fire_out_features + vel_out_features * 4
 
         self.terrain_flat = nn.Linear(in_features=features_terrain, out_features=terrain_out_features)
         initialize_hidden_weights(self.terrain_flat)
 
         self.fire_flat = nn.Linear(in_features=features_fire, out_features=fire_out_features)
         initialize_hidden_weights(self.fire_flat)
-
 
         self.input_dense = nn.Linear(in_features=input_features, out_features=256)
         initialize_hidden_weights(self.input_dense)
@@ -62,7 +58,7 @@ class Inputspace(nn.Module):
     # def get_in_features(self, h_in, padding=0, dilation=1, kernel_size=0, stride=1):
     #     return (((h_in + 2 * padding - dilation * (kernel_size - 1) - 1) / stride) + 1)
 
-    def forward(self, terrain, fire_status, orientation, velocity):
+    def forward(self, terrain, fire_status, velocity):
         terrain = F.relu(self.terrain_conv1(terrain))
         terrain = self.flatten(terrain)
         terrain = F.relu(self.terrain_flat(terrain))
@@ -71,17 +67,13 @@ class Inputspace(nn.Module):
         fire_status = self.flatten(fire_status)
         fire_status = F.relu(self.fire_flat(fire_status))
 
-        orientation = F.relu(self.ori_dense(orientation))
-        orientation = self.flatten(orientation)
-
         velocity = F.relu(self.vel_dense(velocity))
         velocity = self.flatten(velocity)
 
-        concated_input = torch.cat((terrain, fire_status, orientation, velocity), dim=1)
+        concated_input = torch.cat((terrain, fire_status, velocity), dim=1)
         input_dense = F.relu(self.input_dense(concated_input))
 
         return input_dense
-
 
 
 class Actor(nn.Module):
@@ -100,18 +92,21 @@ class Actor(nn.Module):
 
         # Mu
         self.mu = nn.Linear(in_features=256, out_features=2)
+        self.water_emit = nn.Linear(in_features=256, out_features=1)
         initialize_output_weights(self.mu, 'actor')
 
         # Logstd
-        self.log_std = nn.Parameter(torch.zeros(2, ))
+        self.log_std = nn.Parameter(torch.zeros(3, ))
 
-    def forward(self, terrain, fire_status, orientation, velocity):
-        x = self.Inputspace(terrain, fire_status, orientation, velocity)
+    def forward(self, terrain, fire_status, velocity):
+        x = self.Inputspace(terrain, fire_status, velocity)
         mu = torch.tanh(self.mu(x))
+        water_emit_value = torch.sigmoid(self.water_emit(x))
+        actions = torch.cat((mu, water_emit_value), dim=1)
         std = torch.exp(self.log_std)
         var = torch.pow(std, 2)
 
-        return mu, var
+        return actions, var
 
 
 class Critic(nn.Module):
@@ -160,29 +155,37 @@ class ActorCritic(nn.Module):
         :param states: A tuple of the current lidar scan, orientation to goal, distance to goal, and velocity.
         :return: A tuple of the sampled action and the log probability of that action.
         """
-        terrain, fire_status, orientation, velocity = state
+        terrain, fire_status, velocity = state
         terrain = torch.tensor(terrain, dtype=torch.float32)
         fire_status = torch.tensor(fire_status, dtype=torch.float32)
-        orientation = torch.tensor(orientation, dtype=torch.float32)
+        # orientation = torch.tensor(orientation, dtype=torch.float32)
         velocity = torch.tensor(velocity, dtype=torch.float32)
 
         # TODO: check if normalization of states is necessary
         # was suggested in: Implementation_Matters in Deep RL: A Case Study on PPO and TRPO
-        action_mean, action_var = self.actor(terrain.to(device), fire_status.to(device), orientation.to(device), velocity.to(device))
+        action_mean, action_var = self.actor(terrain.to(device), fire_status.to(device), velocity.to(device))
 
-        action_mean = action_mean.to('cpu')
-        action_var = action_var.to('cpu')
+        action_mean_velocity = action_mean[:, :2].to('cpu')
+        action_var_velocity = action_var[:2].to('cpu')
+        action_mean_water_emit = action_mean[:, 2].to('cpu')
 
-        cov_mat = torch.diag(action_var)
-        dist = MultivariateNormal(action_mean, cov_mat)
+        cov_mat = torch.diag(action_var_velocity)
+        dist_velocity = MultivariateNormal(action_mean_velocity, cov_mat)
+        dist_water = Bernoulli(action_mean_water_emit)
         ## logging of actions
         #self.logger.add_actor_output(action_mean.mean(0)[0].item(), action_mean.mean(0)[1].item(), action_var[0].item(), action_var[1].item())
 
-        action = dist.sample()
-        action = torch.clip(action, -1, 1)
-        action_logprob = dist.log_prob(action)
+        action_velocity = dist_velocity.sample()
+        action_velocity = torch.clip(action_velocity, -1, 1)
+        action_water = dist_water.sample().view(1, -1)
 
-        return action.detach().numpy(), action_logprob.detach().numpy()
+
+        action_logprob_velocity = dist_velocity.log_prob(action_velocity)
+        action_logprob_water = dist_water.log_prob(action_water)
+        action = torch.cat([action_velocity, action_water], dim=1)
+        combined_logprob = action_logprob_velocity + action_logprob_water
+
+        return action.detach().numpy(), combined_logprob.detach().numpy()
 
     def act_certain(self, state):
         """

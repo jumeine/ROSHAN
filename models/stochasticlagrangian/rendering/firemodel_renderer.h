@@ -17,7 +17,7 @@
 #include <chrono>
 #include <SDL_image.h>
 #include <memory>
-#include "agent/drone.h"
+#include "drone_agent/drone.h"
 
 #include "../cell_classes/cell_generic_burned.cpp"
 #include "../cell_classes/cell_generic_unburned.cpp"

@@ -32,6 +32,7 @@
 #include "cell_classes/cell_woody_breadleaved_deciduous_trees.cpp"
 #include "cell_classes/cell_woody_broadleaved_evergreen_trees.cpp"
 #include "cell_classes/cell_woody_needle_leaved_trees.cpp"
+#include "cell_classes/cell_generic_flooded.cpp"
 
 
 class FireCell {
@@ -44,6 +45,7 @@ public:
     CellState GetCellState() { return cell_state_; }
     CellState GetCellInitialState() { return cell_initial_state_; }
     bool IsBurning() { return GetIgnitionState() == CellState::GENERIC_BURNING; }
+    bool IsFlooded();
 
     bool CanIgnite();
     void Ignite();
@@ -55,6 +57,7 @@ public:
     void Tick();
     void burn();
     bool ShouldIgnite();
+    void Flood();
     void Extinguish();
     void ShowInfo();
 private:
@@ -63,8 +66,12 @@ private:
     double burning_duration_;
     double ticking_duration_;
     double burning_tick_;
+    bool has_burned_down_;
     int last_burning_duration_;
-    double tau_ign;
+    double flood_duration_;
+    double flood_timer_;
+    double tau_ign_;
+    double tau_ign_tmp_;
     int x_; // Start of the x coordinate in meters (m)
     int y_; // Start of the y coordinate in meters (m)
     int num_convection_particles_;

@@ -56,7 +56,7 @@ public:
 
 
     // Parameters for the radiation particles
-    bool emit_radiation_ = false;
+    bool emit_radiation_ = true;
     double radiationparticle_y_st_ = 1.0;
     double GetYStRad() const {return radiationparticle_y_st_;}
     double radiationparticle_y_lim_ = 0.2;
@@ -82,6 +82,8 @@ public:
     // We assume quadratic cells and this is the length of the side of the cell
     double cell_size_ = 10.0; // in meters (m)
     double GetCellSize() const {return cell_size_;} // in meters (m)
+    double flood_duration_ = 5.0; // in seconds (s)
+    double GetFloodDuration() {return flood_duration_;}
     // Minimum and maximum values for the ImGui Sliders for the cells
     double min_burning_duration_ = 1.0;
     double max_burning_duration_ = 200.0;
@@ -106,19 +108,19 @@ public:
 
     void ConvertRealToGridCoordinates(double x, double y, int &i, int &j) {
         // round x and y to get the cell coordinates
-        i = int(trunc(x / GetCellSize()));
-        j = int(trunc(y / GetCellSize()));
+        i = int(round(x / GetCellSize()));
+        j = int(round(y / GetCellSize()));
     }
 
     // Parameters for the agent
     int number_of_drones_ = 1;
+    std::pair<double, double> min_velocity_ = std::make_pair(-16.0, -16.0);
+    std::pair<double, double> GetMinVelocity() const {return min_velocity_;}
+    std::pair<double, double> max_velocity_ = std::make_pair(16.0, 16.0);
+    std::pair<double, double> GetMaxVelocity() const {return max_velocity_;}
     int GetNumberOfDrones() const {return number_of_drones_;}
     void SetNumberOfDrones(int number) {number_of_drones_ = number;}
-    // To get m/s we need to divide the speed by the cell size and multiply by the dt
-    double GetDroneLinearVelocity(double speed) {
-       return (speed / GetCellSize()) * GetDt();
-    }
-    double GetDroneAngularVelocity(double angular) {return angular * GetDt();}
+    double GetDroneSpeed(double speed) { return speed * GetDt(); }
 
 };
 

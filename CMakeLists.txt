@@ -22,7 +22,7 @@ add_library(imgui_external ${IMGUI_SOURCES}
         externals/imgui/backends/imgui_impl_opengl3.cpp
         externals/imgui/backends/imgui_impl_opengl3.h
         externals/imgui/backends/imgui_impl_sdl2.h
-        externals/imgui/backends/imgui_impl_sdlrenderer2.cpp agent/drone.cpp agent/drone.h)
+        externals/imgui/backends/imgui_impl_sdlrenderer2.cpp)
 
 #add_library(imgui_filedialog ${CMAKE_SOURCE_DIR}/externals/ImGuiFileDialog/ImGuiFileDialog.cpp)
 
@@ -60,13 +60,11 @@ set(CORE_SOURCES
 )
 
 set(AGENT_SOURCES
-        agent/drone.cpp agent/drone.h
-        agent/rendering/DroneRenderer.cpp agent/rendering/DroneRenderer.h
-        agent/drone_state.cpp agent/drone_state.h
-        agent/drone_action.h
-        agent/drone_agent.cpp agent/drone_agent.h
+        drone_agent/drone.cpp drone_agent/drone.h
+        drone_agent/rendering/DroneRenderer.cpp drone_agent/rendering/DroneRenderer.h
+        drone_agent/drone_state.cpp drone_agent/drone_state.h
+        drone_agent/drone_action.h
         agent.h
-        agent/memory.cpp agent/memory.h
 )
 
 set(FIREMODEL_SOURCES
@@ -107,6 +105,7 @@ set(GAMEOFLIFE_SOURCES
         models/gameoflife/gameoflife_types.h
         models/gameoflife_simple/gameoflife_fixed.cpp models/gameoflife_simple/gameoflife_fixed.h
         models/gameoflife_simple/gameoflife_fixed_renderer.cpp models/gameoflife_simple/gameoflife_fixed_renderer.h
+        models/stochasticlagrangian/cell_classes/cell_generic_flooded.cpp
 )
 
 # Python bindings

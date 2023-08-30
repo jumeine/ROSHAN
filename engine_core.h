@@ -23,8 +23,6 @@
 #include "models/gameoflife_simple/gameoflife_fixed.h"
 #include "models/stochasticlagrangian/firemodel.h"
 #include "CORINE/dataset_handler.h"
-#include "agent/memory.h"
-#include "agent/drone_agent.h"
 #include "agent.h"
 #include "action.h"
 
@@ -94,7 +92,6 @@ private:
 
     // AI Stuff
     int mode_;
-    Memory agent_memory_;
     std::shared_ptr<Agent> agent_;
 };
 

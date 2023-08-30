@@ -9,19 +9,17 @@ PYBIND11_MODULE(firesim, m) {
 
     py::class_<DroneAction, Action, std::shared_ptr<DroneAction>>(m, "DroneAction")
             .def(py::init<>())
-            .def(py::init<double, double>())
-            .def("GetAngular", &DroneAction::GetAngular)
-            .def("GetLinear", &DroneAction::GetLinear);
+            .def(py::init<double, double, int>())
+            .def("GetSpeedX", &DroneAction::GetSpeedX)
+            .def("GetSpeedY", &DroneAction::GetSpeedY)
+            .def("GetWaterDispense", &DroneAction::GetWaterDispense);
 
     py::class_<State, std::shared_ptr<State>>(m, "State");
 
     py::class_<DroneState, State, std::shared_ptr<DroneState>>(m, "DroneState")
             .def(py::init<>())
-            .def(py::init<double, double, std::vector<std::vector<int>>, std::vector<std::vector<int>>>())
+            .def(py::init<double, double, std::pair<double, double>, std::vector<std::vector<int>>, std::vector<std::vector<int>>>())
             .def("GetNewState", &DroneState::GetNewState)
-            .def("SetOrientation", &DroneState::SetOrientation)
-            .def("GetOrientation", &DroneState::GetOrientation)
-            .def("GetNewOrientation", &DroneState::GetNewOrientation)
             .def("SetVelocity", &DroneState::SetVelocity)
             .def("GetVelocity", &DroneState::GetVelocity)
             .def("GetNewVelocity", &DroneState::GetNewVelocity)

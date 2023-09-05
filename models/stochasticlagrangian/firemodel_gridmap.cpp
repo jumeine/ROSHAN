@@ -19,6 +19,8 @@ GridMap::GridMap(std::shared_ptr<Wind> wind, FireModelParameters &parameters,
             cells_[x][y] = std::make_shared<FireCell>(x, y, gen_, parameters_, (*rasterData)[x][y]);
         }
     }
+    num_cells_ = cols_ * rows_;
+    num_burned_cells_ = 0;
     virtual_particles_.reserve(100000);
     radiation_particles_.reserve(100000);
     ticking_cells_.reserve(100000);
@@ -92,6 +94,20 @@ void GridMap::IgniteCell(int x, int y) {
 }
 
 void GridMap::UpdateCells() {
+    // Iterate over flooded cells and extinguish them
+    for (auto it = flooded_cells_.begin(); it != flooded_cells_.end(); ) {
+        int x = it->x_;
+        int y = it->y_;
+        auto& cell = cells_[x][y];
+        // Let the water fade
+        if (cell->FloodTick()) {
+            // The cell is no longer flooded
+            it = flooded_cells_.erase(it);
+        } else {
+            ++it;
+        }
+        changed_cells_.emplace_back(x, y);
+    }
     // Iterate over ticking cells and ignite them if their ignition time has come
     for (auto it = ticking_cells_.begin(); it != ticking_cells_.end(); ) {
         int x = it->x_;
@@ -128,46 +144,40 @@ void GridMap::UpdateCells() {
 
         if (cell->GetIgnitionState() == CellState::GENERIC_BURNED) {
             // The cell has burned out, so it is no longer burning
+            num_burned_cells_++;
             it = burning_cells_.erase(it);
             changed_cells_.emplace_back(x, y);
         } else {
             ++it;
         }
     }
-    // Iterate over flooded cells and extinguish them
-    for (auto it = flooded_cells_.begin(); it != flooded_cells_.end(); ) {
-        int x = it->x_;
-        int y = it->y_;
-        auto& cell = cells_[x][y];
-        // Let the water fade
-        cell->Tick();
-        if (!cell->IsFlooded()) {
-            // The cell is no longer flooded
-            it = flooded_cells_.erase(it);
-            // Extinguish the cell
-            cells_[x][y]->Extinguish();
-        } else {
-            ++it;
-        }
-        changed_cells_.emplace_back(x, y);
-    }
 }
 
-void GridMap::WaterDispension(int x, int y) {
+bool GridMap::WaterDispension(int x, int y) {
     if (!IsPointInGrid(x, y))
         // Drone is outside the grid so nothing happens
-        return;
+        return false;
     if (GetCellState(x, y) == CellState::GENERIC_BURNING) {
         ExtinguishCell(x, y);
+        flooded_cells_.insert(Point(x, y));
+        cells_[x][y]->Flood();
+        flooded_cells_.insert(Point(x, y));
+        changed_cells_.emplace_back(x, y);
+        // Drone is inside the grid and the cell is burning, so extinguish the cell and return true
+        return true;
+    } else {
+        if (!cells_[x][y]->IsFlooded()) {
+            flooded_cells_.insert(Point(x, y));
+        }
+        cells_[x][y]->Flood();
+        EraseParticles(x, y);
+        changed_cells_.emplace_back(Point(x, y));
+        // There was no fire in the cell so flood the cell and return false
+        return false;
     }
-    cells_[x][y]->Flood();
-    flooded_cells_.insert(Point(x, y));
-    changed_cells_.emplace_back(x, y);
 }
 
-void GridMap::ExtinguishCell(int x, int y) {
-    cells_[x][y]->Extinguish();
-    burning_cells_.erase(Point(x, y));
+void GridMap::EraseParticles(int x, int y) {
     ticking_cells_.erase(Point(x, y));
     //Erase all particles that are on that cell
     std::function<void(double&, double&, int&, int&)> convertr =
@@ -192,10 +202,21 @@ void GridMap::ExtinguishCell(int x, int y) {
                                return i == x && j == y;
                            }),
             radiation_particles_.end());
+}
+
+void GridMap::ExtinguishCell(int x, int y) {
+    cells_[x][y]->Extinguish();
+    burning_cells_.erase(Point(x, y));
+
+    EraseParticles(x, y);
 
     changed_cells_.push_back(Point(x, y));
 }
-// Gets a view of the cells cell_type in a radius around the drone
+
+
+// * Returns a pair of vectors, the first one containing the cell status and the second one containing the fire status
+// * @param drone
+// * @return pair of vectors
 std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> GridMap::GetDroneView(std::shared_ptr<DroneAgent> drone) {
     int drone_view_radius = drone->GetViewRange();
     std::pair<int, int> drone_position = drone->GetGridPosition();
@@ -216,4 +237,30 @@ std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> GridMap:
         }
     }
     return std::make_pair(cell_status, fire_status);
+}
+
+std::vector<std::vector<int>> GridMap::GetUpdatedMap(std::shared_ptr<DroneAgent> drone, std::vector<std::vector<int>> fire_status) {
+    std::pair<int, int> drone_position = drone->GetGridPosition();
+    std::vector<std::vector<int>> map = drone->GetLastState().get_map();
+    int drone_view_radius = drone->GetViewRange();
+    int drone_view_radius_2 = drone_view_radius / 2;
+
+    // Loop through the grid to update map
+    for (int j = drone_position.second - drone_view_radius_2; j <= drone_position.second + drone_view_radius_2; ++j) {
+        for (int i = drone_position.first - drone_view_radius_2; i <= drone_position.first + drone_view_radius_2; ++i) {
+            int new_i = j - drone_position.second + drone_view_radius_2;
+            int new_j = i - drone_position.first + drone_view_radius_2;
+            if (IsPointInGrid(i, j)) {
+                // Here, update your map_ based on fire_status.
+                map[i][j] = fire_status[new_i][new_j];
+            }
+        }
+    }
+
+    return map;
+}
+
+// Calculates the percentage of burned cells
+double GridMap::PercentageBurned() const {
+    return (double)num_burned_cells_ / (double)num_cells_;
 }

@@ -152,15 +152,12 @@ RadiationParticle FireCell::EmitRadiationParticle() {
 
 void FireCell::Tick() {
     //throw an error if cellState ignited cells do not tick
-    if (cell_state_ == GENERIC_BURNING || cell_state_ == GENERIC_BURNED) {
-        throw std::runtime_error("FireCell::Tick() called on a cell that is not unburned");
+    if (cell_state_ == GENERIC_BURNING || cell_state_ == GENERIC_BURNED || cell_state_ == GENERIC_FLOODED) {
+        throw std::runtime_error("FireCell::Tick() called on a cell that has CELL_STATE: " + CellStateToString(cell_state_));
     }
     if (tau_ign_ != -1) {
         // The cell ticks until it is ignited
         ticking_duration_ += parameters_.GetDt();
-    } else {
-        // The cell ticks until it is NO longer flooded
-        flood_timer_ += parameters_.GetDt();
     }
 }
 
@@ -200,7 +197,6 @@ bool FireCell::CanIgnite() {
 
 bool FireCell::ShouldIgnite() {
     if (ticking_duration_ >= tau_ign_) {
-        ticking_duration_ = 0;
         return true;
     }
     return false;
@@ -214,20 +210,35 @@ void FireCell::Extinguish() {
     }
 }
 
+bool FireCell::FloodTick(){
+    if (cell_state_ != GENERIC_FLOODED)
+        throw std::runtime_error("FireCell::FloodTick() called on a cell that has CELL_STATE: " + CellStateToString(cell_state_));
+    flood_timer_ += parameters_.GetDt();
+    if (!IsFlooded()) {
+        Extinguish();
+        ResetFloodedCell();
+        return true;
+    }
+    return false;
+}
+
 void FireCell::Flood() {
     if (cell_state_ != GENERIC_FLOODED) {
         tau_ign_tmp_ = tau_ign_ * 1.5;
         tau_ign_ = -1;
         SetCellState(GENERIC_FLOODED);
     }
-
     flood_timer_ = 0;
 }
 
+void FireCell::ResetFloodedCell() {
+    tau_ign_ = tau_ign_tmp_;
+    flood_timer_ = flood_duration_;
+}
+
 bool FireCell::IsFlooded() {
+    // returns true if the cell is flooded
     if(flood_timer_ >= flood_duration_) {
-        tau_ign_ = tau_ign_tmp_;
-        flood_timer_ = flood_duration_;
         return false;
     }
     return true;

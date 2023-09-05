@@ -32,6 +32,8 @@ std::string CellStateToString(CellState cell_state) {
             return "GENERIC_BURNING";
         case GENERIC_BURNED:
             return "GENERIC_BURNED";
+        case GENERIC_FLOODED:
+            return "GENERIC_FLOODED";
         default:
             return "UNKNOWN";
     }

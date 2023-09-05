@@ -9,41 +9,33 @@ sys.path.insert(0, module_directory)
 import firesim
 from agent import Agent
 from memory import Memory
+import cProfile
 
 # Change the current working directory, so that the python script has the same folder as the c++ executable
 os.chdir(module_directory)
 
 
-def restructure_data(observations):
-    # Initialize lists to store each drone's attributes.
-    all_terrains, all_fire_statuses, all_velocities, all_orientations = [], [], [], []
+def restructure_data(observations_):
+    all_terrains, all_fire_statuses, all_velocities, all_maps, all_positions = [], [], [], [], []
 
-    for deque in observations:
-        # Filter out instances that aren't of type firesim.DroneState.
+    for deque in observations_:
         drone_states = np.array([state for state in deque if isinstance(state, firesim.DroneState)])
-
         if len(drone_states) == 0:
             continue
 
-        # Use numpy vectorization to get the attributes.
         terrains = np.array([state.GetTerrain() for state in drone_states])
         fire_statuses = np.array([state.GetFireStatus() for state in drone_states])
         velocities = np.array([state.GetVelocity() for state in drone_states])
-        # orientations = np.array([state.GetOrientation() for state in drone_states])
+        maps = np.array([state.GetMap() for state in drone_states])
+        positions = np.array([state.GetPosition() for state in drone_states])
 
         all_terrains.append(terrains)
         all_fire_statuses.append(fire_statuses)
         all_velocities.append(velocities)
-        # all_orientations.append(orientations)
+        all_maps.append(maps)
+        all_positions.append(positions)
 
-    # Convert lists to numpy arrays for the final output.
-    all_terrains = np.array(all_terrains)
-    all_fire_statuses = np.array(all_fire_statuses)
-    all_velocities = np.array(all_velocities)
-    # all_orientations = np.array(all_orientations)
-
-    data = (all_terrains, all_fire_statuses, all_velocities)
-    return data
+    return np.array(all_terrains), np.array(all_fire_statuses), np.array(all_velocities), np.array(all_maps), np.array(all_positions)
 
 
 # Press the green button in the gutter to run the script.
@@ -54,7 +46,7 @@ if __name__ == '__main__':
 
     engine = firesim.EngineCore()
     agent = Agent()
-    memory = Memory(5000)
+    memory = Memory(2000)
     engine.Init(0)
 
     while engine.IsRunning():
@@ -69,10 +61,10 @@ if __name__ == '__main__':
             for activation in actions:
                 drone_actions.append(firesim.DroneAction(activation[0], activation[1], activation[2]))
             next_observations, rewards, terminals = engine.Step(drone_actions)
-            memory.add(observations, actions, action_logprobs, rewards, next_observations, terminals)
+            next_obs = restructure_data(next_observations)
+            memory.add(obs, actions, action_logprobs, rewards, next_obs, terminals)
             if memory.is_ready_to_train():
-                # agent.update(memory)
+                agent.update(memory)
                 memory.clear_memory()
-            # TODO Update Agent
 
     engine.Clean()

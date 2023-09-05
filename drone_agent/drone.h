@@ -19,27 +19,30 @@ class GridMap;
 
 class DroneAgent {
 public:
-    explicit DroneAgent(std::shared_ptr<SDL_Renderer> renderer, FireModelParameters &parameters, int id);
+    explicit DroneAgent(std::shared_ptr<SDL_Renderer> renderer, std::pair<int, int> point, FireModelParameters &parameters, int id);
     ~DroneAgent() = default;
     std::deque<DroneState> GetStates() { return drone_states_; }
-    void Update(double speed_x, double speed_y, std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status);
+    void Update(double speed_x, double speed_y, std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status, std::vector<std::vector<int>> updated_map);
     void Move(double speed_x, double speed_y);
-    bool DispenseWater(int water_dispense, GridMap &grid_map);
+    bool DispenseWater(GridMap &grid_map);
     std::pair<int, int> GetGridPosition();
     std::pair<double, double> GetGridPositionDouble();
     std::pair<double, double> GetRealPosition();
+    void IncrementOutOfAreaCounter() { out_of_area_counter_++; }
+    int GetOutOfAreaCounter() { return out_of_area_counter_; }
     DroneState GetLastState() { return drone_states_[0]; }
     int GetId() const { return id_; }
     int GetViewRange() const { return view_range_; }
     void Render(std::pair<int, int> position, int size);
-    void Initialize(std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status);
+    void Initialize(std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status, std::pair<int, int> size);
 private:
-    void UpdateStates(double speed_x, double speed_y, std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status);
+    void UpdateStates(double speed_x, double speed_y, std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status, std::vector<std::vector<int>> updated_map);
     int id_;
     FireModelParameters &parameters_;
     std::deque<DroneState> drone_states_;
     std::pair<double, double> position_; // x, y in (m)
     int view_range_;
+    int out_of_area_counter_;
     std::pair<double, double> velocity_; // angular & linear
     DroneRenderer renderer_;
 

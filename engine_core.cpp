@@ -79,7 +79,7 @@ bool EngineCore::Init(int mode){
 
     //agent_memory_ = Memory(5000);
     //agent_ = std::make_shared<DroneNetworkAgent>();
-    //StartServer();
+    StartServer();
     mode_ = mode;
     model_ = nullptr;
     return is_running_ = true;

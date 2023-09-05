@@ -5,12 +5,13 @@
 #include <iostream>
 #include "drone.h"
 
-DroneAgent::DroneAgent(std::shared_ptr<SDL_Renderer> renderer, FireModelParameters &parameters, int id) : id_(id), parameters_(parameters) {
+DroneAgent::DroneAgent(std::shared_ptr<SDL_Renderer> renderer, std::pair<int, int> point, FireModelParameters &parameters, int id) : id_(id), parameters_(parameters) {
     renderer_ = DroneRenderer(renderer);
-    int x = 20; // position in grid
-    int y = 20; // position in grid
+    int x = point.first; // position in grid
+    int y = point.second; // position in grid
     position_ = std::make_pair(x * parameters_.GetCellSize(), y * parameters_.GetCellSize());
     view_range_ = 20;
+    out_of_area_counter_ = 0;
 }
 
 void DroneAgent::Render(std::pair<int, int> position, int size) {
@@ -24,20 +25,21 @@ void DroneAgent::Move(double speed_x, double speed_y) {
     position_.second += velocity_vector.second * parameters_.GetDt();
 }
 
-void DroneAgent::Update(double speed_x, double speed_y, std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status) {
-    UpdateStates(speed_x, speed_y, terrain, fire_status);
+void DroneAgent::Update(double speed_x, double speed_y, std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status, std::vector<std::vector<int>> updated_map) {
+    UpdateStates(speed_x, speed_y, terrain, fire_status, updated_map);
 }
 
-void DroneAgent::Initialize(std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status) {
+void DroneAgent::Initialize(std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status, std::pair<int, int> size) {
     for(int i = 0; i < 4; ++i) {
-        DroneState new_state = DroneState(0, 0, parameters_.GetMaxVelocity(), terrain, fire_status);
+        std::vector<std::vector<int>> map(size.first, std::vector<int>(size.second, 0));
+        DroneState new_state = DroneState(0, 0, parameters_.GetMaxVelocity(), terrain, fire_status, map, GetGridPosition());
         drone_states_.push_front(new_state);
     }
 }
 
-void DroneAgent::UpdateStates(double speed_x, double speed_y, std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status) {
+void DroneAgent::UpdateStates(double speed_x, double speed_y, std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status, std::vector<std::vector<int>> updated_map) {
     // Update the states, last state get's kicked out
-    DroneState new_state = drone_states_[0].GetNewState(speed_x, speed_y, terrain, fire_status);
+    DroneState new_state = drone_states_[0].GetNewState(speed_x, speed_y, terrain, fire_status, updated_map, GetGridPosition());
     drone_states_.push_front(new_state);
 
     // Maximum number of states i.e. memory
@@ -46,13 +48,12 @@ void DroneAgent::UpdateStates(double speed_x, double speed_y, std::vector<std::v
     }
 }
 
-bool DroneAgent::DispenseWater(int water_dispense, GridMap &grid_map) {
-    if (water_dispense == 1) {
-        std::pair<int, int> grid_position = GetGridPosition();
-        grid_map.WaterDispension(grid_position.first, grid_position.second);
-        return true;
-    }
-    return false;
+bool DroneAgent::DispenseWater(GridMap &grid_map) {
+
+    std::pair<int, int> grid_position = GetGridPosition();
+    bool fire_extinguished = grid_map.WaterDispension(grid_position.first, grid_position.second);
+    return fire_extinguished;
+
 }
 
 std::pair<double, double> DroneAgent::GetGridPositionDouble() {

@@ -101,18 +101,13 @@ class PPO:
         rewards = []
         masks = []
 
-        for robotmemory in memory.swarmMemory:
-            _rewards = []
-            _masks = []
-            for reward, is_terminal in zip(reversed(robotmemory.rewards), reversed(robotmemory.is_terminals)):
-                _masks.insert(0, 1 - is_terminal)
-                _rewards.insert(0, reward)
-            rewards.append(_rewards)
-            masks.append(_masks)
+        for _rewards, _is_terminal in zip(reversed(memory.rewards), reversed(memory.is_terminals)):
+            masks.insert(0, 1 - _is_terminal)
+            rewards.insert(0, _rewards)
 
         # flatten the rewards
-        rewards = [item for sublist in rewards for item in sublist]
-        masks = [item for sublist in masks for item in sublist]
+        # rewards = [item for sublist in rewards for item in sublist]
+        # masks = [item for sublist in masks for item in sublist]
 
         # Normalize rewards
         self.running_reward_std.update(np.array(rewards))
@@ -122,25 +117,30 @@ class PPO:
         masks = torch.tensor(masks)
 
         # convert list to tensor
-        old_states = memory.getObservationOfAllRobots()
-        laser, orientation, distance, velocity = old_states
-        old_actions = torch.stack(memory.getActionsOfAllRobots())
-        old_logprobs = torch.stack(memory.getLogProbsOfAllRobots())
+        terrain = torch.tensor(memory.terrain, dtype=torch.float32)
+        fire_status = torch.tensor(memory.fire_status, dtype=torch.float32)
+        velocity = torch.tensor(memory.velocity, dtype=torch.float32)
+        maps = torch.tensor(memory.map, dtype=torch.float32)
+        position = torch.tensor(memory.position, dtype=torch.float32)
+        old_actions = torch.tensor(memory.actions, dtype=torch.float32)
+        old_logprobs = torch.tensor(memory.logprobs, dtype=torch.float32)
+
+        tensor_list = [rewards, terrain, fire_status, velocity, maps, position, old_actions, old_logprobs, masks]
+
+        minibatch_list = [torch.tensor_split(tensor, batches) for tensor in tensor_list]
 
         # TODO randomize the order of experiences that it DOESNT interfer with GAE calculation
 
         # Train policy for K epochs: sampling and updating
-        for rewards_minibatch, old_laser_minibatch, old_orientation_minibatch, old_distance_minibatch, \
-                old_velocity_minibatch, old_actions_minibatch, old_logprobs_minibatch, mask_minibatch in \
-                zip(torch.tensor_split(rewards, batches), torch.tensor_split(laser, batches),
-                    torch.tensor_split(orientation, batches), torch.tensor_split(distance, batches),
-                    torch.tensor_split(velocity, batches), torch.tensor_split(old_actions, batches),
-                    torch.tensor_split(old_logprobs, batches), torch.tensor_split(masks, batches)):
+        for rewards_minibatch, old_terrain_minibatch, old_fire_status_minibatch, \
+                old_velocity_minibatch, old_maps_minibatch, old_position_minibatch, old_actions_minibatch, old_logprobs_minibatch, mask_minibatch in \
+                zip(*minibatch_list):
 
-            old_states_minibatch = [old_laser_minibatch.detach().clone().to(device),
-                                    old_orientation_minibatch.detach().clone().to(device),
-                                    old_distance_minibatch.detach().clone().to(device),
-                                    old_velocity_minibatch.detach().clone().to(device)]
+            old_states_minibatch = [old_terrain_minibatch.detach().clone().to(device),
+                                    old_fire_status_minibatch.detach().clone().to(device),
+                                    old_velocity_minibatch.detach().clone().to(device),
+                                    old_maps_minibatch.detach().clone().to(device),
+                                    old_position_minibatch.detach().clone().to(device)]
             # Advantages
             old_actions_minibatch = old_actions_minibatch.detach().clone().to(device)
             old_logprobs_minibatch = old_logprobs_minibatch.detach().clone().to(device)
@@ -173,7 +173,7 @@ class PPO:
 
                 # Total loss
                 loss = actor_loss + critic_loss
-                self.logger.add_loss(loss.detach().mean().item(), entropy=entropy.detach().mean().item(), critic_loss=critic_loss.detach().mean().item(), actor_loss=actor_loss.detach().mean().item())
+                # self.logger.add_loss(loss.detach().mean().item(), entropy=entropy.detach().mean().item(), critic_loss=critic_loss.detach().mean().item(), actor_loss=actor_loss.detach().mean().item())
                 # Backward gradients
                 self.optimizer_a.zero_grad()
                 actor_loss.mean().backward(retain_graph=True)

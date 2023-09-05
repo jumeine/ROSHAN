@@ -45,6 +45,7 @@ public:
     CellState GetCellState() { return cell_state_; }
     CellState GetCellInitialState() { return cell_initial_state_; }
     bool IsBurning() { return GetIgnitionState() == CellState::GENERIC_BURNING; }
+    bool FloodTick();
     bool IsFlooded();
 
     bool CanIgnite();
@@ -91,6 +92,7 @@ private:
     ICell *GetCell();
 
     void SetCellState(CellState cell_state);
+    void ResetFloodedCell();
 };
 
 

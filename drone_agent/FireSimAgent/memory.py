@@ -4,8 +4,21 @@ class Memory:
     def __init__(self, horizon):
         self.horizon = horizon
         self.actions = []
-        self.states = []
-        self.next_states = []
+
+        # States
+        self.terrain = []
+        self.fire_status = []
+        self.velocity = []
+        self.map = []
+        self.position = []
+
+        # Next states
+        self.next_terrain = []
+        self.next_fire_status = []
+        self.next_velocity = []
+        self.next_map = []
+        self.next_position = []
+
         self.logprobs = []
         self.rewards = []
         self.is_terminals = []
@@ -25,18 +38,47 @@ class Memory:
         :param terminals: The terminal flag to add.
         :return: None.
         """
-        for state, action, logprob, reward, next_state, terminal in zip(states, actions, logprobs, rewards, next_states, terminals):
-            self.states.append(state)
+        terrains, fire_statuses, velocities, maps, positions = states
+        next_terrains, next_fire_statuses, next_velocities, next_maps, next_positions = next_states
+        for terrain, fire_status, velocity, map, position, action, logprob, reward, next_terrain, next_fire_status, \
+            next_velocity, next_map, next_position, terminal in zip(terrains, fire_statuses, velocities, maps,
+                                                                    positions,
+                                                                    actions, logprobs, rewards, next_terrains,
+                                                                    next_fire_statuses,
+                                                                    next_velocities, next_maps, next_positions,
+                                                                    terminals):
+            self.terrain.append(terrain)
+            self.fire_status.append(fire_status)
+            self.velocity.append(velocity)
+            self.map.append(map)
+            self.position.append(position)
+
             self.actions.append(action)
             self.logprobs.append(logprob)
             self.rewards.append(reward)
-            self.next_states.append(next_state)
             self.is_terminals.append(terminal)
+
+            self.next_terrain.append(next_terrain)
+            self.next_fire_status.append(next_fire_status)
+            self.next_velocity.append(next_velocity)
+            self.next_map.append(next_map)
+            self.next_position.append(next_position)
 
     def clear_memory(self):
         del self.actions[:]
-        del self.states[:]
-        del self.next_states[:]
         del self.logprobs[:]
         del self.rewards[:]
         del self.is_terminals[:]
+
+        del self.terrain[:]
+        del self.fire_status[:]
+        del self.velocity[:]
+        del self.map[:]
+        del self.position[:]
+
+        del self.next_terrain[:]
+        del self.next_fire_status[:]
+        del self.next_velocity[:]
+        del self.next_map[:]
+        del self.next_position[:]
+

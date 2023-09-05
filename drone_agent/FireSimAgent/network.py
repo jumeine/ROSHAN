@@ -20,28 +20,43 @@ class Inputspace(nn.Module):
         """
         super(Inputspace, self).__init__()
 
-        # 2D Convolutional Layers for terrain and fire status
+        # Initialize Adaptive Pooling layers
+        # self.terrain_adaptive_pool = nn.AdaptiveAvgPool2d((1, 1))
+        # self.fire_adaptive_pool = nn.AdaptiveAvgPool2d((1, 1))
+        dim_x = 100
+        dim_y = 100
+        self.map_adaptive_pool = nn.AdaptiveAvgPool2d((dim_y, dim_x))
+
+        # 2D Convolutional Layers for terrain, fire status and map
         self.terrain_conv1 = nn.Conv2d(in_channels=4, out_channels=2, kernel_size=3, stride=1)
         initialize_hidden_weights(self.terrain_conv1)
         in_f = self.get_in_features(h_in=vision_range, kernel_size=3, stride=1)
-        features_terrain = (int(in_f * in_f)) * 2 #2 is the number of output channels
+        features_terrain = (int(in_f * in_f)) * 2 # 2 is the number of output channels
 
         self.fire_conv1 = nn.Conv2d(in_channels=4, out_channels=2, kernel_size=3, stride=1)
         initialize_hidden_weights(self.fire_conv1)
         in_f = self.get_in_features(h_in=vision_range, kernel_size=3, stride=1)
-        features_fire = (int(in_f * in_f)) * 2 #32 is the number of output channels
+        features_fire = (int(in_f * in_f)) * 2 # 2 is the number of output channels
+
+        self.map_conv1 = nn.Conv2d(in_channels=4, out_channels=2, kernel_size=3, stride=1)
+        initialize_hidden_weights(self.map_conv1)
+        features_map = (int(dim_x * dim_y)) * 2 # 2 is the number of output channels
 
         self.flatten = nn.Flatten()
 
         vel_out_features = 32
-
         self.vel_dense = nn.Linear(in_features=2, out_features=vel_out_features)
         initialize_hidden_weights(self.vel_dense)
 
+        position_out_features = 16
+        self.position_dense = nn.Linear(in_features=2, out_features=position_out_features)
+        initialize_hidden_weights(self.position_dense)
+
         # four is the number of timeframes TODO make this dynamic
-        terrain_out_features = 192
-        fire_out_features = 192
-        input_features = terrain_out_features + fire_out_features + vel_out_features * 4
+        terrain_out_features = 64
+        fire_out_features = 64
+        map_out_features = 64
+        input_features = terrain_out_features + fire_out_features + map_out_features + (position_out_features + vel_out_features) * 4
 
         self.terrain_flat = nn.Linear(in_features=features_terrain, out_features=terrain_out_features)
         initialize_hidden_weights(self.terrain_flat)
@@ -49,16 +64,19 @@ class Inputspace(nn.Module):
         self.fire_flat = nn.Linear(in_features=features_fire, out_features=fire_out_features)
         initialize_hidden_weights(self.fire_flat)
 
+        self.map_flat = nn.Linear(in_features=features_map, out_features=map_out_features)
+        initialize_hidden_weights(self.map_flat)
+
         self.input_dense = nn.Linear(in_features=input_features, out_features=256)
         initialize_hidden_weights(self.input_dense)
 
     def get_in_features(self, h_in, padding=0, dilation=1, kernel_size=0, stride=1):
-        return (h_in - kernel_size + 2*padding) // stride + 1
+        return (h_in - kernel_size + 2 * padding) // stride + 1
 
     # def get_in_features(self, h_in, padding=0, dilation=1, kernel_size=0, stride=1):
     #     return (((h_in + 2 * padding - dilation * (kernel_size - 1) - 1) / stride) + 1)
 
-    def forward(self, terrain, fire_status, velocity):
+    def forward(self, terrain, fire_status, velocity, maps, position):
         terrain = F.relu(self.terrain_conv1(terrain))
         terrain = self.flatten(terrain)
         terrain = F.relu(self.terrain_flat(terrain))
@@ -67,10 +85,18 @@ class Inputspace(nn.Module):
         fire_status = self.flatten(fire_status)
         fire_status = F.relu(self.fire_flat(fire_status))
 
+        maps = F.relu(self.map_conv1(maps))
+        maps = self.map_adaptive_pool(maps)
+        maps = self.flatten(maps)
+        maps = F.relu(self.map_flat(maps))
+
+        position = F.relu(self.position_dense(position))
+        position = self.flatten(position)
+
         velocity = F.relu(self.vel_dense(velocity))
         velocity = self.flatten(velocity)
 
-        concated_input = torch.cat((terrain, fire_status, velocity), dim=1)
+        concated_input = torch.cat((terrain, fire_status, velocity, maps, position), dim=1)
         input_dense = F.relu(self.input_dense(concated_input))
 
         return input_dense
@@ -98,8 +124,8 @@ class Actor(nn.Module):
         # Logstd
         self.log_std = nn.Parameter(torch.zeros(3, ))
 
-    def forward(self, terrain, fire_status, velocity):
-        x = self.Inputspace(terrain, fire_status, velocity)
+    def forward(self, terrain, fire_status, velocity, maps, position):
+        x = self.Inputspace(terrain, fire_status, velocity, maps, position)
         mu = torch.tanh(self.mu(x))
         water_emit_value = torch.sigmoid(self.water_emit(x))
         actions = torch.cat((mu, water_emit_value), dim=1)
@@ -126,8 +152,8 @@ class Critic(nn.Module):
         self.value = nn.Linear(in_features=256, out_features=1)
         initialize_output_weights(self.value, 'critic')
 
-    def forward(self, terrain, fire_status, orientation, velocity):
-        x = self.Inputspace(terrain, fire_status, orientation, velocity)
+    def forward(self, terrain, fire_status, velocity, maps, position):
+        x = self.Inputspace(terrain, fire_status, velocity, maps, position)
         value = F.relu(self.value(x.detach().clone()))
         return value
 
@@ -155,15 +181,16 @@ class ActorCritic(nn.Module):
         :param states: A tuple of the current lidar scan, orientation to goal, distance to goal, and velocity.
         :return: A tuple of the sampled action and the log probability of that action.
         """
-        terrain, fire_status, velocity = state
+        terrain, fire_status, velocity, maps, position = state
         terrain = torch.tensor(terrain, dtype=torch.float32)
         fire_status = torch.tensor(fire_status, dtype=torch.float32)
-        # orientation = torch.tensor(orientation, dtype=torch.float32)
         velocity = torch.tensor(velocity, dtype=torch.float32)
+        maps = torch.tensor(maps, dtype=torch.float32)
+        position = torch.tensor(position, dtype=torch.float32)
 
         # TODO: check if normalization of states is necessary
         # was suggested in: Implementation_Matters in Deep RL: A Case Study on PPO and TRPO
-        action_mean, action_var = self.actor(terrain.to(device), fire_status.to(device), velocity.to(device))
+        action_mean, action_var = self.actor(terrain.to(device), fire_status.to(device), velocity.to(device), maps.to(device), position.to(device))
 
         action_mean_velocity = action_mean[:, :2].to('cpu')
         action_var_velocity = action_var[:2].to('cpu')
@@ -194,8 +221,8 @@ class ActorCritic(nn.Module):
         :param states: A tuple of the current lidar scan, orientation to goal, distance to goal, and velocity.
         :return: The action from the actor's distribution.
         """
-        terrain, fire_status, orientation, velocity = state
-        action, _ = self.actor(terrain.to(device), fire_status.to(device), orientation.to(device), velocity.to(device))
+        terrain, fire_status, velocity, maps, position = state
+        action, _ = self.actor(terrain.to(device), fire_status.to(device), velocity.to(device), maps.to(device), position.to(device))
 
         return action.to('cpu')
 
@@ -209,14 +236,25 @@ class ActorCritic(nn.Module):
         :return: A tuple of the log probability of the given action, the value of the given state, and the entropy of the
         actor's distribution.
         """
-        terrain, fire_status, orientation, velocity = state
-        state_value = self.critic(terrain.to(device), fire_status.to(device), orientation.to(device), velocity.to(device))
+        terrain, fire_status, velocity, maps, position = state
+        state_value = self.critic(terrain.to(device), fire_status.to(device), velocity.to(device), maps.to(device), position.to(device))
 
-        action_mean, action_var = self.actor(terrain.to(device), fire_status.to(device), orientation.to(device), velocity.to(device))
+        action_mean, action_var = self.actor(terrain.to(device), fire_status.to(device), velocity.to(device), maps.to(device), position.to(device))
 
-        cov_mat = torch.diag(action_var)
-        dist = MultivariateNormal(action_mean, cov_mat)
-        action_logprobs = dist.log_prob(action)
-        dist_entropy = dist.entropy()
+        action_mean_velocity = action_mean[:, :2]
+        action_var_velocity = action_var[:2]
+        action_mean_water_emit = action_mean[:, 2]
 
-        return action_logprobs.to(device), torch.squeeze(state_value), dist_entropy.to(device)
+        cov_mat = torch.diag(action_var_velocity)
+        dist_velocity = MultivariateNormal(action_mean_velocity, cov_mat)
+        dist_water = Bernoulli(action_mean_water_emit)
+
+        action_logprob_velocity = dist_velocity.log_prob(action[:, :2])
+        action_logprob_water = dist_water.log_prob(action[:, 2].view(1, -1))
+        combined_logprob = action_logprob_velocity + action_logprob_water
+
+        dist_entropy_velocity = dist_velocity.entropy()
+        dist_entropy_water = dist_water.entropy()
+        combined_entropy = dist_entropy_velocity + dist_entropy_water
+
+        return combined_logprob.to(device), torch.squeeze(state_value), combined_entropy.to(device)

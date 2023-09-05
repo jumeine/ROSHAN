@@ -71,7 +71,8 @@ private:
     //current data
     std::vector<std::vector<int>> current_raster_data_;
     // Agent Stuff
-    void MoveDrone(int drone_idx, double speed_x, double speed_y, int water_dispense);
+    std::pair<bool, bool> MoveDrone(int drone_idx, double speed_x, double speed_y, int water_dispense);
+    double CalculateReward(bool out_of_map, bool fire_extinguished, bool drone_terminal, int water_dispensed);
     void ResetDrones();
     std::shared_ptr<std::vector<std::shared_ptr<DroneAgent>>> drones_;
     std::vector<std::deque<DroneState>> observations_;

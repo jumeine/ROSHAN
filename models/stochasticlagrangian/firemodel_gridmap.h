@@ -28,12 +28,13 @@ public:
     int GetRows() const { return rows_; }
     int GetCols() const { return cols_; }
     void IgniteCell(int x, int y);
-    void WaterDispension(int x, int y);
+    bool WaterDispension(int x, int y);
     void ExtinguishCell(int x, int y);
     CellState GetCellState(int x, int y) { return cells_[x][y]->GetIgnitionState(); }
 
     void UpdateParticles();
     void UpdateCells();
+    double PercentageBurned() const;
     int GetNumParticles() { return virtual_particles_.size() + radiation_particles_.size();}
     void ShowCellInfo(int x, int y) { cells_[x][y]->ShowInfo(); }
     int GetNumCells() const { return rows_ * cols_; }
@@ -42,6 +43,17 @@ public:
     std::vector<Point> GetChangedCells() const { return changed_cells_; }
     void ResetChangedCells() { changed_cells_.clear(); }
     std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> GetDroneView(std::shared_ptr<DroneAgent> drone);
+    std::vector<std::vector<int>> GetUpdatedMap(std::shared_ptr<DroneAgent> drone, std::vector<std::vector<int>> fire_status);
+
+    std::pair<int, int> GetRandomPointInGrid() {
+        std::uniform_int_distribution<> dis_x(0, cols_ - 1);
+        std::uniform_int_distribution<> dis_y(0, rows_ - 1);
+        return std::make_pair(dis_x(gen_), dis_y(gen_));
+    }
+
+    bool IsPointInGrid(int i, int j) const {
+        return !(i < 0 || i >= cols_ || j < 0 || j >= rows_);
+    }
 
     FireCell& At(int i, int j) {
         return *cells_[i][j];
@@ -66,10 +78,12 @@ private:
     std::vector<RadiationParticle> radiation_particles_;
     template <typename ParticleType>
     void UpdateVirtualParticles(std::vector<ParticleType> &particles, std::vector<std::vector<bool>> &visited_cells);
-    bool IsPointInGrid(int i, int j) {
-        return !(i < 0 || i >= cols_ || j < 0 || j >= rows_);
-    }
 
+    void EraseParticles(int x, int y);
+
+    //For calculation of percentage burned
+    int num_cells_ = 0;
+    int num_burned_cells_ = 0;
 };
 
 

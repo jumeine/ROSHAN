@@ -71,7 +71,10 @@ class PPO:
         """
         returns = []
         gae = 0
-        a = [ai.unsqueeze(0) for ai in values]
+        if values.shape == torch.Size([]):
+            a = [values.unsqueeze(0)]
+        else:
+            a = [ai.unsqueeze(0) for ai in values]
         a.append(torch.tensor([0.], requires_grad=True).to(device))
         values = torch.cat(a).squeeze(0)
         for i in reversed(range(len(rewards))):
@@ -81,7 +84,10 @@ class PPO:
 
         returns = torch.FloatTensor(returns).to(device)
         adv = returns - values[:-1]
-        return returns, (adv - adv.mean()) / (adv.std() + 1e-10)
+        norm_adv = (adv - adv.mean()) / (adv.std() + 1e-10)
+        if adv.shape == torch.Size([1]):
+            norm_adv = adv
+        return returns, norm_adv
 
     def update(self, memory, batch_size):
         """

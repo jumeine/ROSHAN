@@ -44,8 +44,8 @@ if __name__ == '__main__':
 
     # Lists alls the functions in the EngineCore class
     # print(dir(EngineCore))
-    horizon = 512
-    batch_size = 1
+    horizon = 128
+    batch_size = 2
     t = -1
 
     engine = firesim.EngineCore()

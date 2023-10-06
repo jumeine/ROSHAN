@@ -21,11 +21,11 @@ enum CellState { GENERIC_UNBURNED = 0,
                  NON_AND_SPARSLEY_VEGETATED = 9,
                  WATER = 10,
                  SNOW_AND_ICE = 11,
-                 OUTSIDE_AREA = 254,
-                 GENERIC_BURNING = 60,
-                 GENERIC_BURNED = 61,
-                 GENERIC_FLOODED = 62,
-                 OUTSIDE_GRID = 255};
+                 GENERIC_BURNING = 12,
+                 GENERIC_BURNED = 13,
+                 GENERIC_FLOODED = 14,
+                 OUTSIDE_AREA = 15,
+                 OUTSIDE_GRID = 16};
 
 std::string CellStateToString(CellState cell_state);
 

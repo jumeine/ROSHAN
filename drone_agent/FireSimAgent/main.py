@@ -1,5 +1,6 @@
 import sys
 import os
+import warnings
 import numpy as np
 
 # Add path to module directories #TODO make this more elegant
@@ -25,9 +26,9 @@ def restructure_data(observations_):
 
         terrains = np.array([state.GetTerrain() for state in drone_states])
         fire_statuses = np.array([state.GetFireStatus() for state in drone_states])
-        velocities = np.array([state.GetVelocity() for state in drone_states])
+        velocities = np.array([state.GetVelocityNorm() for state in drone_states])
         maps = np.array([state.GetMap() for state in drone_states])
-        positions = np.array([state.GetPosition() for state in drone_states])
+        positions = np.array([state.GetPositionNorm() for state in drone_states])
 
         all_terrains.append(terrains)
         all_fire_statuses.append(fire_statuses)
@@ -43,10 +44,16 @@ if __name__ == '__main__':
 
     # Lists alls the functions in the EngineCore class
     # print(dir(EngineCore))
+    horizon = 512
+    batch_size = 1
+    t = -1
 
     engine = firesim.EngineCore()
-    agent = Agent()
-    memory = Memory(2000)
+    agent = Agent('ppo')
+    memory = Memory()
+    if memory.max_size <= horizon:
+        warnings.warn("Memory size is smaller than horizon. Setting horizon to memory size.")
+        horizon = memory.max_size - 1
     engine.Init(0)
 
     while engine.IsRunning():
@@ -54,17 +61,18 @@ if __name__ == '__main__':
         engine.Update()
         engine.Render()
         if engine.AgentIsRunning():
+            t += 1 #TODO use simulation time instead of timesteps
             observations = engine.GetObservations()
             obs = restructure_data(observations)
-            actions, action_logprobs = agent.act(obs)
+            actions, action_logprobs = agent.act(obs, t)
             drone_actions = []
             for activation in actions:
-                drone_actions.append(firesim.DroneAction(activation[0], activation[1], activation[2]))
+                drone_actions.append(firesim.DroneAction(activation[0], activation[1], int(activation[2])))
             next_observations, rewards, terminals = engine.Step(drone_actions)
             next_obs = restructure_data(next_observations)
             memory.add(obs, actions, action_logprobs, rewards, next_obs, terminals)
-            if memory.is_ready_to_train():
-                agent.update(memory)
-                memory.clear_memory()
+            if agent.should_train(memory, horizon, t):
+                print("Train Agent")
+                agent.update(memory, batch_size)
 
     engine.Clean()

@@ -31,6 +31,7 @@ public:
     void IncrementOutOfAreaCounter() { out_of_area_counter_++; }
     int GetOutOfAreaCounter() { return out_of_area_counter_; }
     DroneState GetLastState() { return drone_states_[0]; }
+    int DroneSeesFire();
     int GetId() const { return id_; }
     int GetViewRange() const { return view_range_; }
     void Render(std::pair<int, int> position, int size);

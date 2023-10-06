@@ -13,7 +13,7 @@ public:
     DroneAction(double angular, double linear, int water_dispense) : speed_x_(angular), speed_y_(linear), water_dispense_(water_dispense) {}
     double GetSpeedX() { return speed_x_; }
     double GetSpeedY() { return speed_y_; }
-    double GetWaterDispense() { return water_dispense_; }
+    int GetWaterDispense() { return water_dispense_; }
 private:
     double speed_x_;
     double speed_y_;

@@ -35,7 +35,9 @@ public:
     void UpdateParticles();
     void UpdateCells();
     double PercentageBurned() const;
+    bool IsBurning() const;
     int GetNumParticles() { return virtual_particles_.size() + radiation_particles_.size();}
+    bool CellCanIgnite(int x, int y) const { return cells_[x][y]->CanIgnite(); }
     void ShowCellInfo(int x, int y) { cells_[x][y]->ShowInfo(); }
     int GetNumCells() const { return rows_ * cols_; }
     std::vector<VirtualParticle> GetVirtualParticles() const { return virtual_particles_; }
@@ -84,6 +86,7 @@ private:
     //For calculation of percentage burned
     int num_cells_ = 0;
     int num_burned_cells_ = 0;
+
 };
 
 

@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import warnings
 import numpy as np
 from network import ActorCritic
 from utils import RunningMeanStd
@@ -82,7 +83,7 @@ class PPO:
         adv = returns - values[:-1]
         return returns, (adv - adv.mean()) / (adv.std() + 1e-10)
 
-    def update(self, memory, batches):
+    def update(self, memory, batch_size):
         """
         This function implements the update step of the Proximal Policy Optimization (PPO) algorithm for a swarm of
         robots. It takes in the memory buffer containing the experiences of the swarm, as well as the number of batches
@@ -95,65 +96,40 @@ class PPO:
         Finally, the function copies the updated weights to the old policy for future use in the next update step.
 
         :param memory: The memory to update the network with.
-        :param batches: The number of batches to divide the memory into.
+        :param batch_size: The size of batches.
         """
-        # computes the discounted reward for every robots in memory
-        rewards = []
-        masks = []
 
-        for _rewards, _is_terminal in zip(reversed(memory.rewards), reversed(memory.is_terminals)):
-            masks.insert(0, 1 - _is_terminal)
-            rewards.insert(0, _rewards)
+        if batch_size > memory.size:
+            warnings.warn("Batch size is larger than memory capacity. Setting batch size to memory capacity.")
+            batch_size = memory.size
 
-        # flatten the rewards
-        # rewards = [item for sublist in rewards for item in sublist]
-        # masks = [item for sublist in masks for item in sublist]
+        memory.build_masks()
 
         # Normalize rewards
-        self.running_reward_std.update(np.array(rewards))
-        rewards = np.clip(np.array(rewards) / self.running_reward_std.get_std(), -10, 10)
-        rewards = torch.tensor(rewards).type(torch.float32)
-
-        masks = torch.tensor(masks)
-
-        # convert list to tensor
-        terrain = torch.tensor(memory.terrain, dtype=torch.float32)
-        fire_status = torch.tensor(memory.fire_status, dtype=torch.float32)
-        velocity = torch.tensor(memory.velocity, dtype=torch.float32)
-        maps = torch.tensor(memory.map, dtype=torch.float32)
-        position = torch.tensor(memory.position, dtype=torch.float32)
-        old_actions = torch.tensor(memory.actions, dtype=torch.float32)
-        old_logprobs = torch.tensor(memory.logprobs, dtype=torch.float32)
-
-        tensor_list = [rewards, terrain, fire_status, velocity, maps, position, old_actions, old_logprobs, masks]
-
-        minibatch_list = [torch.tensor_split(tensor, batches) for tensor in tensor_list]
+        # self.running_reward_std.update(np.array(rewards))
+        # rewards = np.clip(np.array(rewards) / self.running_reward_std.get_std(), -10, 10)
+        # rewards = torch.tensor(rewards).type(torch.float32)
 
         # TODO randomize the order of experiences that it DOESNT interfer with GAE calculation
+        while memory.has_batches():
+            states, actions, logprobs, rewards, masks = memory.next_batch(batch_size=batch_size)
 
-        # Train policy for K epochs: sampling and updating
-        for rewards_minibatch, old_terrain_minibatch, old_fire_status_minibatch, \
-                old_velocity_minibatch, old_maps_minibatch, old_position_minibatch, old_actions_minibatch, old_logprobs_minibatch, mask_minibatch in \
-                zip(*minibatch_list):
+            old_states = tuple(state.detach().clone().to(device) for state in states)
+            old_actions = actions.detach().clone().to(device)
+            old_logprobs = logprobs.detach().clone().to(device)
+            old_rewards = rewards.detach().clone().to(device)
 
-            old_states_minibatch = [old_terrain_minibatch.detach().clone().to(device),
-                                    old_fire_status_minibatch.detach().clone().to(device),
-                                    old_velocity_minibatch.detach().clone().to(device),
-                                    old_maps_minibatch.detach().clone().to(device),
-                                    old_position_minibatch.detach().clone().to(device)]
             # Advantages
-            old_actions_minibatch = old_actions_minibatch.detach().clone().to(device)
-            old_logprobs_minibatch = old_logprobs_minibatch.detach().clone().to(device)
-            mask_minibatch = mask_minibatch.to(device)
-            _, values_, _ = self.policy.evaluate(old_states_minibatch, old_actions_minibatch)
-            returns, advantages = self.get_advantages(values_.detach(), mask_minibatch, rewards_minibatch)
+            _, values_, _ = self.policy.evaluate(old_states, old_actions)
+            returns, advantages = self.get_advantages(values_.detach(), masks.detach(), old_rewards)
 
+            # Train policy for K epochs: sampling and updating
             for _ in range(self.K_epochs):
                 # Evaluate old actions and values using current policy
-                logprobs, values, dist_entropy = self.policy.evaluate(old_states_minibatch, old_actions_minibatch)
+                logprobs, values, dist_entropy = self.policy.evaluate(old_states, old_actions)
 
                 # Importance ratio: p/q
-                ratios = torch.exp(logprobs - old_logprobs_minibatch)
+                ratios = torch.exp(logprobs - old_logprobs)
 
                 # Advantages
                 #returns, advantages = self.get_advantages(state_values.detach(), mask_minibatch, rewards_minibatch)
@@ -196,4 +172,6 @@ class PPO:
         # Copy new weights to old_policy
         self.old_policy.actor.load_state_dict(self.policy.actor.state_dict())
         self.old_policy.critic.load_state_dict(self.policy.critic.state_dict())
-        # self.old_policy.ac.load_state_dict(self.policy.ac.state_dict())
+
+        #Clear memory
+        memory.clear_memory()

@@ -270,6 +270,8 @@ ImVec4 FireModelRenderer::GetMappedColor(int cell_type) {
             color = {255, 0, 0, 255}; break;
         case CellState::GENERIC_BURNED:
             color = { 42, 42, 42, 255 }; break;
+        case CellState::GENERIC_FLOODED:
+            color = {77, 187, 230, 255}; break;
         default:
             color = { 80, 80, 80, 255 }; break;
     }

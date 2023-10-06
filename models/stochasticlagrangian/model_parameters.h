@@ -6,6 +6,7 @@
 #define ROSHAN_MODEL_PARAMETERS_H
 
 #include <math.h>
+#include <random>
 #include <SDL.h>
 class FireModelParameters {
 
@@ -59,15 +60,15 @@ public:
     bool emit_radiation_ = true;
     double radiationparticle_y_st_ = 1.0;
     double GetYStRad() const {return radiationparticle_y_st_;}
-    double radiationparticle_y_lim_ = 0.2;
+    double radiationparticle_y_lim_ = 0.155;
     double GetYLimRad() const {return radiationparticle_y_lim_;}
 
     // Parameter for the Grid
     // Number of cells in the x direction (rows)
-    int grid_nx_ = 200;
+    int grid_nx_ = 50;
     int GetGridNx() const {return grid_nx_;}
     // Number of cells in the y direction (cols)
-    int grid_ny_ = 200;
+    int grid_ny_ = 50;
     int GetGridNy() const {return grid_ny_;}
 
 
@@ -77,7 +78,7 @@ public:
     double cell_ignition_threshold_ = 100; // in seconds (s)
     double GetIgnitionDelayTime() const {return cell_ignition_threshold_;}
     // Time the cell is capable of burning
-    double cell_burning_duration_ = 60; // in seconds (s)
+    double cell_burning_duration_ = 120; // in seconds (s)
     double GetCellBurningDuration() const {return cell_burning_duration_;}
     // We assume quadratic cells and this is the length of the side of the cell
     double cell_size_ = 10.0; // in meters (m)
@@ -96,7 +97,8 @@ public:
     // Parameters for the wind
     double wind_uw_ = 10.0; // The 10-m wind speed in m/s
     double GetWindSpeed() const {return wind_uw_;}
-    double wind_angle_ = 0.0; // The angle of the wind direction (in rad)
+    // random number between 0 and 2pi
+    double wind_angle_ = random() * 2 * M_PI / RAND_MAX;
     double GetAngle() const {return wind_angle_;}
     double wind_a_ = 0.4; // The component of the wind speed in the 1st direction
     double GetA() const {return wind_a_;}

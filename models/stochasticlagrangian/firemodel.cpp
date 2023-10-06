@@ -28,9 +28,12 @@ void FireModel::ResetGridMap(std::vector<std::vector<int>>* rasterData) {
     ResetDrones();
 
     if (python_code_){
-        for(int i = 0; i < 15; i++) {
+        for(int i = 0; i < 7;) {
             std::pair<int, int> point = gridmap_->GetRandomPointInGrid();
-            gridmap_->IgniteCell(point.first, point.second);
+            if(gridmap_->CellCanIgnite(point.first, point.second)){
+                gridmap_->IgniteCell(point.first, point.second);
+                i++;
+            }
         }
     }
 
@@ -101,15 +104,24 @@ void FireModel::ResetDrones() {
     }
 }
 
-double FireModel::CalculateReward(bool out_of_map, bool fire_extinguished, bool drone_terminal, int water_dispensed) {
+double FireModel::CalculateReward(bool out_of_map, bool fire_extinguished, bool drone_terminal, int water_dispensed, int near_fires) {
     double reward = 0;
     if (out_of_map)
-        reward += -1;
-
+        reward += -2;
+    if (near_fires > 0)
+        reward += 0.1 * near_fires;
     if (fire_extinguished) {
-        reward += 10;
+        if (!gridmap_->IsBurning()) {
+            reward += 100;
+        }
+        else if (near_fires == 0) {
+            reward += 50;
+        }
+        else {
+            reward += 10;
+        }
     } else if (water_dispensed == 1) {
-        reward += -1;
+        reward += -0.1;
     }
 
     if (drone_terminal)
@@ -143,6 +155,7 @@ std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>,
             }
             next_observations.push_back(shared_states);
 
+            int near_fires = drones_->at(i)->DroneSeesFire();
             terminals.push_back(false);
             // Check if drone is out of area for too long, if so, reset it
             if (drones_->at(i)->GetOutOfAreaCounter() > 100) {
@@ -156,10 +169,16 @@ std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>,
                 drones_->insert(drones_->begin() + i, newDrone);
             }
             double reward = CalculateReward(map_boundary_n_water.first, map_boundary_n_water.second, terminals[i],
-                                            water_dispense);
+                                            water_dispense, near_fires);
             rewards.push_back(reward);
-            if(gridmap_->PercentageBurned() > 0.10) {
+            if(gridmap_->PercentageBurned() > 0.30) {
+                std::cout << "Percentage burned: " << gridmap_->PercentageBurned() << " resetting GridMap" << std::endl;
                 ResetGridMap(&current_raster_data_);
+                terminals[i] = true;
+            } else if (!gridmap_->IsBurning()) {
+                std::cout << "Fire is extinguished, resetting GridMap" << std::endl;
+                ResetGridMap(&current_raster_data_);
+                terminals[i] = true;
             }
         }
 
@@ -325,15 +344,18 @@ void FireModel::ImGuiModelMenu() {
             }
             if (ImGui::BeginMenu("View")) {
                 ImGui::MenuItem("Show Controls", NULL, &show_controls_);
-                if (python_code_) {
-                    ImGui::MenuItem("Show RL Controls", NULL, &show_rl_controls_);
-                }
                 ImGui::MenuItem("Show Simulation Analysis", NULL, &show_model_analysis_);
-                ImGui::MenuItem("Show Drone Analysis", NULL, &show_drone_analysis_);
                 ImGui::MenuItem("Show Parameter Config", NULL, &show_model_parameter_config_);
                 if(ImGui::MenuItem("Render Grid", NULL, &parameters_.render_grid_))
                     model_renderer_->SetFullRedraw();
                 ImGui::EndMenu();
+            }
+            if (python_code_) {
+                if (ImGui::BeginMenu("RL Controls")) {
+                    ImGui::MenuItem("Show RL Controls", NULL, &show_rl_controls_);
+                    ImGui::MenuItem("Show Drone Analysis", NULL, &show_drone_analysis_);
+                    ImGui::EndMenu();
+                }
             }
             if (ImGui::BeginMenu("Help")) {
                 ImGui::MenuItem("ImGui Help", NULL, &show_demo_window_);

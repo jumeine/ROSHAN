@@ -31,8 +31,8 @@ void DroneAgent::Update(double speed_x, double speed_y, std::vector<std::vector<
 
 void DroneAgent::Initialize(std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status, std::pair<int, int> size) {
     for(int i = 0; i < 4; ++i) {
-        std::vector<std::vector<int>> map(size.first, std::vector<int>(size.second, 0));
-        DroneState new_state = DroneState(0, 0, parameters_.GetMaxVelocity(), terrain, fire_status, map, GetGridPosition());
+        std::vector<std::vector<int>> map(size.first, std::vector<int>(size.second, -1));
+        DroneState new_state = DroneState(0, 0, parameters_.GetMaxVelocity(), terrain, fire_status, map, size, GetGridPosition());
         drone_states_.push_front(new_state);
     }
 }
@@ -71,6 +71,17 @@ std::pair<int, int> DroneAgent::GetGridPosition() {
     int x, y;
     parameters_.ConvertRealToGridCoordinates(position_.first, position_.second, x, y);
     return std::make_pair(x, y);
+}
+
+// Checks whether the drone sees fire in the current fire status
+int DroneAgent::DroneSeesFire() {
+    std::vector<std::vector<int>> fire_status = GetLastState().GetFireStatus();
+    int count = std::accumulate(fire_status.begin(), fire_status.end(), 0,
+                                [](int acc, const std::vector<int>& vec) {
+                                    return acc + std::count(vec.begin(), vec.end(), 1);
+                                }
+    );
+    return count;
 }
 
 //DroneAgent::~DroneAgent() {

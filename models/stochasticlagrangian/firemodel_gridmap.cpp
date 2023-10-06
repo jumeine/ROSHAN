@@ -61,7 +61,7 @@ void GridMap::UpdateVirtualParticles(std::vector<ParticleType> &particles, std::
         visited_cells[p.x_][p.y_] = true;
 
         // If cell can ignite, add particle to cell, if not allready in
-        if (cells_[p.x_][p.y_]->CanIgnite()) {
+        if (CellCanIgnite(p.x_, p.y_)) {
             ticking_cells_.insert(p);
         }
 
@@ -221,14 +221,14 @@ std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> GridMap:
     int drone_view_radius = drone->GetViewRange();
     std::pair<int, int> drone_position = drone->GetGridPosition();
     std::vector<std::vector<int>> cell_status(drone_view_radius + 1, std::vector<int>(drone_view_radius + 1, 0));
-    std::vector<std::vector<int>> fire_status(drone_view_radius + 1, std::vector<int>(drone_view_radius + 1, 0));
+    std::vector<std::vector<int>> fire_status(drone_view_radius + 1, std::vector<int>(drone_view_radius + 1, -1));
     int drone_view_radius_2 = drone_view_radius / 2;
     for (int j = drone_position.second - drone_view_radius_2; j <= drone_position.second + drone_view_radius_2; ++j) {
         for (int i = drone_position.first - drone_view_radius_2; i <= drone_position.first + drone_view_radius_2; ++i) {
             int new_i = j - drone_position.second + drone_view_radius_2;
             int new_j = i - drone_position.first + drone_view_radius_2;
             if (IsPointInGrid(i, j)) {
-                cell_status[new_i][new_j] = cells_[i][j]->GetCellInitialState();
+                cell_status[new_i][new_j] = cells_[i][j]->GetCellState();
                 if (cells_[i][j]->IsBurning())
                     fire_status[new_i][new_j] = 1;
             } else {
@@ -263,4 +263,9 @@ std::vector<std::vector<int>> GridMap::GetUpdatedMap(std::shared_ptr<DroneAgent>
 // Calculates the percentage of burned cells
 double GridMap::PercentageBurned() const {
     return (double)num_burned_cells_ / (double)num_cells_;
+}
+
+//Returns whether there are still burning fires on the map
+bool GridMap::IsBurning() const {
+    return !(burning_cells_.empty() && virtual_particles_.empty() && radiation_particles_.empty());
 }

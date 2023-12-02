@@ -20,6 +20,7 @@ FireCell::FireCell(int x, int y, std::mt19937 gen, FireModelParameters &paramete
     x_ = x * parameters_.GetCellSize();
     y_ = y * parameters_.GetCellSize();
     ticking_duration_ = 0;
+    burning_tick_ = 0;
 
     num_convection_particles_ = mother_cell_->GetNumConvectionParticles();
     num_radiation_particles = mother_cell_->GetNumRadiationParticles();
@@ -128,8 +129,8 @@ VirtualParticle FireCell::EmitConvectionParticle() {
     double x_pos_rnd = real_dis_(gen_);
     double y_pos_rnd = real_dis_(gen_);
     double cell_size = (parameters_.GetCellSize());
-    double x_pos = x_ + (cell_size * x_pos_rnd);
-    double y_pos = y_ + (cell_size * y_pos_rnd);
+    double x_pos = x_ + (cell_size * 0.5 * x_pos_rnd);
+    double y_pos = y_ + (cell_size * 0.5 * y_pos_rnd);
     VirtualParticle particle(x_pos, y_pos, parameters_.GetTauMemVirt(), parameters_.GetYStVirt(),
                              parameters_.GetYLimVirt(), parameters_.GetFlVirt(), parameters_.GetC0Virt(),
                              parameters_.GetLt(), gen_);

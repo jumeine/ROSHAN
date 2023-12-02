@@ -11,6 +11,8 @@ VirtualParticle::VirtualParticle(int x, int y, double tau_mem, double Y_st,
     }
     X_[0] = x;
     X_[1] = y;
+    U_[0] = 0.0;
+    U_[1] = 0.0;
     tau_mem_ = tau_mem;
     Y_st_ = Y_st;
     Y_lim_ = Y_lim;

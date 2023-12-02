@@ -65,10 +65,10 @@ public:
 
     // Parameter for the Grid
     // Number of cells in the x direction (rows)
-    int grid_nx_ = 50;
+    int grid_nx_ = 16;
     int GetGridNx() const {return grid_nx_;}
     // Number of cells in the y direction (cols)
-    int grid_ny_ = 50;
+    int grid_ny_ = 16;
     int GetGridNy() const {return grid_ny_;}
 
 
@@ -116,9 +116,9 @@ public:
 
     // Parameters for the agent
     int number_of_drones_ = 1;
-    std::pair<double, double> min_velocity_ = std::make_pair(-16.0, -16.0);
+    std::pair<double, double> min_velocity_ = std::make_pair(-5.0, -5.0);
     std::pair<double, double> GetMinVelocity() const {return min_velocity_;}
-    std::pair<double, double> max_velocity_ = std::make_pair(16.0, 16.0);
+    std::pair<double, double> max_velocity_ = std::make_pair(5.0, 5.0);
     std::pair<double, double> GetMaxVelocity() const {return max_velocity_;}
     int GetNumberOfDrones() const {return number_of_drones_;}
     void SetNumberOfDrones(int number) {number_of_drones_ = number;}

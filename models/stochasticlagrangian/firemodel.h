@@ -71,11 +71,12 @@ private:
     //current data
     std::vector<std::vector<int>> current_raster_data_;
     // Agent Stuff
-    std::pair<bool, bool> MoveDrone(int drone_idx, double speed_x, double speed_y, int water_dispense);
-    double CalculateReward(bool out_of_map, bool fire_extinguished, bool drone_terminal, int water_dispensed, int near_fires);
+    bool MoveDrone(int drone_idx, double speed_x, double speed_y, int water_dispense);
+    double CalculateReward(bool drone_in_grid, bool fire_extinguished, bool drone_terminal, int water_dispensed, int near_fires, double max_distance);
     void ResetDrones();
     std::shared_ptr<std::vector<std::shared_ptr<DroneAgent>>> drones_;
     std::vector<std::deque<DroneState>> observations_;
+    std::vector<double> rewards_;
 
     //Flags
     bool browser_selection_flag_ = false;  // If set to true, will load a new GridMap from a file.

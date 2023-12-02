@@ -19,27 +19,28 @@ void DroneAgent::Render(std::pair<int, int> position, int size) {
 }
 
 
-void DroneAgent::Move(double speed_x, double speed_y) {
-    std::pair<double, double> velocity_vector = drone_states_[0].GetNewVelocity(speed_x, speed_y);
+void DroneAgent::Move(double netout_speed_x, double netout_speed_y) {
+    std::pair<double, double> velocity_vector = drone_states_[0].GetNewVelocity(netout_speed_x, netout_speed_y);
     position_.first += velocity_vector.first * parameters_.GetDt();
     position_.second += velocity_vector.second * parameters_.GetDt();
 }
 
-void DroneAgent::Update(double speed_x, double speed_y, std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status, std::vector<std::vector<int>> updated_map) {
-    UpdateStates(speed_x, speed_y, terrain, fire_status, updated_map);
+void DroneAgent::Update(double netout_speed_x, double netout_speed_y, std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status, std::vector<std::vector<int>> updated_map) {
+    UpdateStates(netout_speed_x, netout_speed_y, terrain, fire_status, updated_map);
 }
 
-void DroneAgent::Initialize(std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status, std::pair<int, int> size) {
+void DroneAgent::Initialize(std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status, std::pair<int, int> size, double cell_size) {
     for(int i = 0; i < 4; ++i) {
         std::vector<std::vector<int>> map(size.first, std::vector<int>(size.second, -1));
-        DroneState new_state = DroneState(0, 0, parameters_.GetMaxVelocity(), terrain, fire_status, map, size, GetGridPosition());
+        std::pair<double, double> size_ = std::make_pair(size.first * parameters_.GetCellSize(), size.second * parameters_.GetCellSize());
+        DroneState new_state = DroneState(0, 0, parameters_.GetMaxVelocity(), terrain, fire_status, map, size, position_, cell_size);
         drone_states_.push_front(new_state);
     }
 }
 
-void DroneAgent::UpdateStates(double speed_x, double speed_y, std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status, std::vector<std::vector<int>> updated_map) {
+void DroneAgent::UpdateStates(double netout_speed_x, double netout_speed_y, std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status, std::vector<std::vector<int>> updated_map) {
     // Update the states, last state get's kicked out
-    DroneState new_state = drone_states_[0].GetNewState(speed_x, speed_y, terrain, fire_status, updated_map, GetGridPosition());
+    DroneState new_state = drone_states_[0].GetNewState(netout_speed_x, netout_speed_y, terrain, fire_status, updated_map, position_);
     drone_states_.push_front(new_state);
 
     // Maximum number of states i.e. memory

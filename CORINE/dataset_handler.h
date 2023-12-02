@@ -6,6 +6,7 @@
 #define ROSHAN_DATASET_HANDLER_H
 
 #include <iostream>
+#include <fstream>
 #include <gdal_priv.h>
 #include "json.hpp"
 #include <fstream>

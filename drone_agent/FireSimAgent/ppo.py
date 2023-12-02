@@ -44,21 +44,37 @@ class PPO:
         #self.optimizer = torch.optim.Adam(self.policy.ac.parameters(), lr=lr, betas=betas, eps=1e-5)
 
         # old policy: initialize old policy with current policy's parameter
-        self.old_policy = ActorCritic(vision_range=vision_range)
-        self.old_policy.load_state_dict(self.policy.state_dict())
+        # self.old_policy = ActorCritic(vision_range=vision_range)
+        # self.old_policy.load_state_dict(self.policy.state_dict())
 
         self.MSE_loss = nn.MSELoss()
         self.running_reward_std = RunningMeanStd()
 
     def select_action(self, observations):
-        return self.old_policy.act(observations)
+        return self.policy.act(observations)
 
     def select_action_certain(self, observations):
-        return self.old_policy.act_certain(observations)
+        return self.policy.act_certain(observations)
 
     def saveCurrentWeights(self, ckpt_folder, env_name):
         print('Saving current weights to ' + ckpt_folder + '/' + env_name + '_current.pth')
         torch.save(self.policy.state_dict(), ckpt_folder + '/PPO_continuous_{}_current.pth'.format(env_name))
+
+    def calculate_returns(self, rewards, normalize=False):
+
+        returns = []
+        return_ = 0
+
+        for r in reversed(rewards):
+            return_ = r + return_ * self.gamma
+            returns.insert(0, return_)
+
+        returns = torch.tensor(returns, dtype=torch.float32)
+
+        if normalize:
+            returns = (returns - returns.mean()) / (returns.std() + 1e-8)
+
+        return returns.to(device)
 
     def get_advantages(self, values, masks, rewards):
         """
@@ -69,27 +85,22 @@ class PPO:
         :param rewards: The rewards of the states.
         :return: The advantages of the states.
         """
-        returns = []
+        advantages = []
         gae = 0
-        if values.shape == torch.Size([]):
-            a = [values.unsqueeze(0)]
-        else:
-            a = [ai.unsqueeze(0) for ai in values]
-        a.append(torch.tensor([0.], requires_grad=True).to(device))
-        values = torch.cat(a).squeeze(0)
+
         for i in reversed(range(len(rewards))):
-            delta = rewards[i] + self.gamma * values[i + 1] * masks[i] - values[i]
-            gae = delta + self.gamma * 0.95 * masks[i] * gae
-            returns.insert(0, gae + values[i])
+            delta = rewards[i] - values[i]
+            if masks[i] == 1:
+                delta += self.gamma * values[i + 1]
+            gae = delta + self.gamma * self._lambda * masks[i] * gae
+            advantages.insert(0, gae)
 
-        returns = torch.FloatTensor(returns).to(device)
-        adv = returns - values[:-1]
-        norm_adv = (adv - adv.mean()) / (adv.std() + 1e-10)
-        if adv.shape == torch.Size([1]):
-            norm_adv = adv
-        return returns, norm_adv
+        advantages = torch.FloatTensor(advantages).to(device)
+        norm_adv = (advantages - advantages.mean()) / (advantages.std() + 1e-10)
 
-    def update(self, memory, batch_size):
+        return norm_adv
+
+    def update(self, memory, batch_size, logger):
         """
         This function implements the update step of the Proximal Policy Optimization (PPO) algorithm for a swarm of
         robots. It takes in the memory buffer containing the experiences of the swarm, as well as the number of batches
@@ -109,8 +120,12 @@ class PPO:
             warnings.warn("Batch size is larger than memory capacity. Setting batch size to memory capacity.")
             batch_size = memory.size
 
-        memory.build_masks()
+        if batch_size == 1:
+            raise ValueError("Batch size must be greater than 1.")
 
+        memory.build_masks()
+        log_rewards = []
+        log_values = []
         # Normalize rewards
         # self.running_reward_std.update(np.array(rewards))
         # rewards = np.clip(np.array(rewards) / self.running_reward_std.get_std(), -10, 10)
@@ -123,11 +138,19 @@ class PPO:
             old_states = tuple(state.detach().clone().to(device) for state in states)
             old_actions = actions.detach().clone().to(device)
             old_logprobs = logprobs.detach().clone().to(device)
-            old_rewards = rewards.detach().clone().to(device)
+            old_rewards = rewards.detach().clone().to(device) / 10
+            log_rewards.append(old_rewards.mean().item())
 
             # Advantages
             _, values_, _ = self.policy.evaluate(old_states, old_actions)
-            returns, advantages = self.get_advantages(values_.detach(), masks.detach(), old_rewards)
+            log_values.append(values_.mean().item())
+            if masks[-1] == 1:
+                last_state = (old_states[0][-1].unsqueeze(0), old_states[1][-1].unsqueeze(0), old_states[2][-1].unsqueeze(0), old_states[3][-1].unsqueeze(0), old_states[4][-1].unsqueeze(0))
+                bootstrapped_value = self.policy.critic(last_state)
+                values_ = torch.cat((values_, bootstrapped_value[0]), dim=0)
+            returns = self.calculate_returns(old_rewards, normalize=True)
+            advantages = self.get_advantages(values_, masks, old_rewards)
+            # returns, advantages = self.get_advantages(values_.detach(), masks.detach(), old_rewards)
 
             # Train policy for K epochs: sampling and updating
             for _ in range(self.K_epochs):
@@ -137,47 +160,50 @@ class PPO:
                 # Importance ratio: p/q
                 ratios = torch.exp(logprobs - old_logprobs)
 
-                # Advantages
-                #returns, advantages = self.get_advantages(state_values.detach(), mask_minibatch, rewards_minibatch)
-                #advantages = rewards_minibatch - state_values.detach()
-                #advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-10)
-
                 # Actor loss using Surrogate loss
                 surr1 = ratios * advantages
                 surr2 = torch.clamp(ratios, 1 - self.eps_clip, 1 + self.eps_clip) * advantages
                 entropy = 0.001 * dist_entropy
-                actor_loss = - torch.min(surr1, surr2).type(torch.float32)
+                actor_loss = (-torch.min(surr1, surr2).type(torch.float32)).mean()
 
                 # TODO CLIP VALUE LOSS ? Probably not necessary as according to:
                 # https://iclr-blog-track.github.io/2022/03/25/ppo-implementation-details/
                 critic_loss_ = 0.005 * self.MSE_loss(returns, values)
-                critic_loss = critic_loss_ - entropy
+                critic_loss = critic_loss_ - entropy.mean()
 
                 # Total loss
-                loss = actor_loss + critic_loss
+                # loss = actor_loss + critic_loss
                 # self.logger.add_loss(loss.detach().mean().item(), entropy=entropy.detach().mean().item(), critic_loss=critic_loss.detach().mean().item(), actor_loss=actor_loss.detach().mean().item())
+
+                # Sanity checks
+                if torch.isnan(critic_loss).any():
+                    print(entropy.mean())
+                    print(returns)
+                    print(values)
+                assert not torch.isnan(actor_loss).any()
+
+                assert not torch.isinf(critic_loss).any()
+                assert not torch.isinf(actor_loss).any()
                 # Backward gradients
                 self.optimizer_a.zero_grad()
-                actor_loss.mean().backward(retain_graph=True)
+                actor_loss.backward(retain_graph=True)
                 # Global gradient norm clipping https://vitalab.github.io/article/2020/01/14/Implementation_Matters.html
                 torch.nn.utils.clip_grad_norm_(self.policy.actor.parameters(), max_norm=0.5)
                 self.optimizer_a.step()
-                self.optimizer_a.zero_grad()
 
                 self.optimizer_c.zero_grad()
-                critic_loss.mean().backward()
+                critic_loss.backward()
                 # Global gradient norm clipping https://vitalab.github.io/article/2020/01/14/Implementation_Matters.html
                 torch.nn.utils.clip_grad_norm_(self.policy.critic.parameters(), max_norm=0.5)
                 self.optimizer_c.step()
-                # self.optimizer.zero_grad()
-                # loss.mean().backward()
                 # # Global gradient norm clipping https://vitalab.github.io/article/2020/01/14/Implementation_Matters.html
                 # torch.nn.utils.clip_grad_norm_(self.policy.ac.parameters(), max_norm=0.5)
-                # self.optimizer.step()
 
         # Copy new weights to old_policy
-        self.old_policy.actor.load_state_dict(self.policy.actor.state_dict())
-        self.old_policy.critic.load_state_dict(self.policy.critic.state_dict())
+        # self.old_policy.actor.load_state_dict(self.policy.actor.state_dict())
+        # self.old_policy.critic.load_state_dict(self.policy.critic.state_dict())
 
         #Clear memory
+        logger.add_reward([np.array(log_rewards).mean()])
+        logger.add_value([np.array(log_values).mean()])
         memory.clear_memory()

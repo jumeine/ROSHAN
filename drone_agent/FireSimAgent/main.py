@@ -1,6 +1,7 @@
 import sys
 import os
 import warnings
+import torch
 import numpy as np
 
 # Add path to module directories #TODO make this more elegant
@@ -10,6 +11,7 @@ sys.path.insert(0, module_directory)
 import firesim
 from agent import Agent
 from memory import Memory
+from utils import Logger
 import cProfile
 
 # Change the current working directory, so that the python script has the same folder as the c++ executable
@@ -24,7 +26,7 @@ def restructure_data(observations_):
         if len(drone_states) == 0:
             continue
 
-        terrains = np.array([state.GetTerrain() for state in drone_states])
+        terrains = np.array([state.GetTerrainNorm() for state in drone_states])
         fire_statuses = np.array([state.GetFireStatus() for state in drone_states])
         velocities = np.array([state.GetVelocityNorm() for state in drone_states])
         maps = np.array([state.GetMap() for state in drone_states])
@@ -44,13 +46,15 @@ if __name__ == '__main__':
 
     # Lists alls the functions in the EngineCore class
     # print(dir(EngineCore))
-    horizon = 128
-    batch_size = 2
+    horizon = 4096
+    batch_size = 512
     t = -1
 
     engine = firesim.EngineCore()
-    agent = Agent('ppo')
     memory = Memory()
+    logger = Logger(log_dir='./logs', log_interval=1)
+    agent = Agent('ppo', logger)
+    logger.set_logging(True)
     if memory.max_size <= horizon:
         warnings.warn("Memory size is smaller than horizon. Setting horizon to memory size.")
         horizon = memory.max_size - 1
@@ -72,7 +76,21 @@ if __name__ == '__main__':
             next_obs = restructure_data(next_observations)
             memory.add(obs, actions, action_logprobs, rewards, next_obs, terminals)
             if agent.should_train(memory, horizon, t):
-                print("Train Agent")
                 agent.update(memory, batch_size)
+                logger.log()
 
     engine.Clean()
+
+    # agent = Agent('ppo')
+    # ppo = agent.algorithm
+    #
+    # ppo.gamma = 1
+    # rewards = torch.tensor(np.array([1, 1, 1, 1]), dtype=torch.float32).to('cuda')
+    # masks = torch.tensor(np.array([1, 1, 1, 0]), dtype=torch.float32).to('cuda')
+    # values = torch.tensor(np.array([0.5, 1.2, 4, 0.4]), dtype=torch.float32).to('cuda')
+    # returns = ppo.calculate_returns(rewards)
+    # ppo.gamma = 0.99
+    # ppo._lambda = 0.7
+    # adv = ppo.get_advantages(values, masks, rewards)
+    # print(returns)
+    # print(adv)

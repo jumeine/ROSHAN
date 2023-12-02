@@ -28,7 +28,10 @@ void FireModel::ResetGridMap(std::vector<std::vector<int>>* rasterData) {
     ResetDrones();
 
     if (python_code_){
-        for(int i = 0; i < 7;) {
+        std::pair<int, int> drone_position = drones_->at(0)->GetGridPosition();
+        if(gridmap_->CellCanIgnite(drone_position.first, drone_position.second))
+            gridmap_->IgniteCell(drone_position.first, drone_position.second);
+        for(int i = 0; i < 4;) {
             std::pair<int, int> point = gridmap_->GetRandomPointInGrid();
             if(gridmap_->CellCanIgnite(point.first, point.second)){
                 gridmap_->IgniteCell(point.first, point.second);
@@ -75,19 +78,18 @@ std::vector<std::deque<std::shared_ptr<State>>> FireModel::GetObservations() {
     return {};
 }
 
-std::pair<bool, bool> FireModel::MoveDrone(int drone_idx, double speed_x, double speed_y, int water_dispense) {
+bool FireModel::MoveDrone(int drone_idx, double speed_x, double speed_y, int water_dispense) {
     drones_->at(drone_idx)->Move(speed_x, speed_y);
     bool dispensed = false;
     if (water_dispense == 1) {
         dispensed = drones_->at(drone_idx)->DispenseWater(*gridmap_);
     }
-    std::pair<int, int> drone_position = drones_->at(drone_idx)->GetGridPosition();
-    bool drone_in_grid = !gridmap_->IsPointInGrid(drone_position.first, drone_position.second);
+
     std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> drone_view = gridmap_->GetDroneView(drones_->at(drone_idx));
     std::vector<std::vector<int>> updated_map = gridmap_->GetUpdatedMap(drones_->at(drone_idx), drone_view.second);
     drones_->at(drone_idx)->Update(speed_x, speed_y, drone_view.first, drone_view.second, updated_map);
 
-    return {drone_in_grid, dispensed};
+    return dispensed;
 }
 
 bool FireModel::AgentIsRunning() {
@@ -99,34 +101,31 @@ void FireModel::ResetDrones() {
     for (int i = 0; i < parameters_.GetNumberOfDrones(); ++i) {
         auto newDrone = std::make_shared<DroneAgent>(model_renderer_->GetRenderer(), gridmap_->GetRandomPointInGrid(), parameters_, i);
         std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> drone_view = gridmap_->GetDroneView(newDrone);
-        newDrone->Initialize(drone_view.first, drone_view.second, std::make_pair(gridmap_->GetCols(), gridmap_->GetRows()));
+        newDrone->Initialize(drone_view.first, drone_view.second, std::make_pair(gridmap_->GetCols(), gridmap_->GetRows()), parameters_.GetCellSize());
         drones_->push_back(newDrone);
     }
 }
 
-double FireModel::CalculateReward(bool out_of_map, bool fire_extinguished, bool drone_terminal, int water_dispensed, int near_fires) {
+double FireModel::CalculateReward(bool drone_in_grid, bool fire_extinguished, bool drone_terminal, int water_dispensed, int near_fires, double max_distance) {
     double reward = 0;
-    if (out_of_map)
-        reward += -2;
-    if (near_fires > 0)
-        reward += 0.1 * near_fires;
-    if (fire_extinguished) {
-        if (!gridmap_->IsBurning()) {
-            reward += 100;
-        }
-        else if (near_fires == 0) {
-            reward += 50;
-        }
-        else {
-            reward += 10;
-        }
-    } else if (water_dispensed == 1) {
-        reward += -0.1;
+
+    if (!drone_in_grid) {
+        reward += -1 * max_distance;
     }
 
-    if (drone_terminal)
-        reward += -10;
-
+    if (fire_extinguished) {
+        // all fires in sight were extinguished
+        if (near_fires == 0) {
+            reward += 5;
+        }
+        // a fire was extinguished
+        else {
+            reward += 1;
+        }
+    } else {
+        if (water_dispensed)
+            reward += -0.001;
+    }
     return reward;
 }
 
@@ -135,18 +134,34 @@ std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>,
 
     if (gridmap_ != nullptr) {
         std::vector<std::deque<std::shared_ptr<State>>> next_observations;
-        std::vector<double> rewards;
         std::vector<bool> terminals;
+        rewards_.clear();
 
         // Move the drones and get the next_observation
         for (int i = 0; i < (*drones_).size(); ++i) {
-            double speed_x = std::dynamic_pointer_cast<DroneAction>(actions[i])->GetSpeedX() * 0.1; // change this to "real" speed
-            double speed_y = std::dynamic_pointer_cast<DroneAction>(actions[i])->GetSpeedY() * 0.1;
+            double speed_x = std::dynamic_pointer_cast<DroneAction>(actions[i])->GetSpeedX(); // change this to "real" speed
+            double speed_y = std::dynamic_pointer_cast<DroneAction>(actions[i])->GetSpeedY();
 //            std::cout << "Drone " << i << " is moving with speed: " << speed_x << ", " << speed_y << std::endl;
             int water_dispense = std::dynamic_pointer_cast<DroneAction>(actions[i])->GetWaterDispense();
-            std::pair<bool, bool> map_boundary_n_water = MoveDrone(i, speed_x, speed_y, water_dispense);
-            if (map_boundary_n_water.first) {
+            bool drone_dispensed_water = MoveDrone(i, speed_x, speed_y, water_dispense);
+
+            std::pair<int, int> drone_position = drones_->at(i)->GetGridPosition();
+            bool drone_in_grid = gridmap_->IsPointInGrid(drone_position.first, drone_position.second);
+
+            double max_distance = 0;
+            if (!drone_in_grid) {
                 drones_->at(i)->IncrementOutOfAreaCounter();
+                std::pair<double, double> pos = drones_->at(i)->GetLastState().GetPositionNorm();
+                double max_distance1 = 0;
+                double max_distance2 = 0;
+                if (pos.first < 0 || pos.second < 0) {
+                    max_distance1 = abs(std::min(pos.first, pos.second));
+                } else if (pos.first > 1 || pos.second > 1) {
+                    max_distance2 = std::max(pos.first, pos.second) - 1;
+                }
+                max_distance = std::max(max_distance1, max_distance2);
+            } else {
+                drones_->at(i)->ResetOutOfAreaCounter();
             }
             std::deque<DroneState> drone_states = drones_->at(i)->GetStates();
             std::deque<std::shared_ptr<State>> shared_states;
@@ -158,31 +173,32 @@ std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>,
             int near_fires = drones_->at(i)->DroneSeesFire();
             terminals.push_back(false);
             // Check if drone is out of area for too long, if so, reset it
-            if (drones_->at(i)->GetOutOfAreaCounter() > 100) {
+            if (drones_->at(i)->GetOutOfAreaCounter() > 15) {
                 terminals[i] = true;
                 // Delete Drone and create new one
                 drones_->erase(drones_->begin() + i);
                 auto newDrone = std::make_shared<DroneAgent>(model_renderer_->GetRenderer(),gridmap_->GetRandomPointInGrid(), parameters_, i);
                 std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> drone_view = gridmap_->GetDroneView(newDrone);
-                newDrone->Initialize(drone_view.first, drone_view.second, std::make_pair(gridmap_->GetCols(), gridmap_->GetRows()));
+                newDrone->Initialize(drone_view.first, drone_view.second, std::make_pair(gridmap_->GetCols(), gridmap_->GetRows()), parameters_.GetCellSize());
                 // Insert new drone at the same position
                 drones_->insert(drones_->begin() + i, newDrone);
             }
-            double reward = CalculateReward(map_boundary_n_water.first, map_boundary_n_water.second, terminals[i],
-                                            water_dispense, near_fires);
-            rewards.push_back(reward);
+            double reward = CalculateReward(drone_in_grid, drone_dispensed_water, terminals[i],
+                                            water_dispense, near_fires, max_distance);
+
             if(gridmap_->PercentageBurned() > 0.30) {
-                std::cout << "Percentage burned: " << gridmap_->PercentageBurned() << " resetting GridMap" << std::endl;
+//                std::cout << "Percentage burned: " << gridmap_->PercentageBurned() << " resetting GridMap" << std::endl;
                 ResetGridMap(&current_raster_data_);
                 terminals[i] = true;
             } else if (!gridmap_->IsBurning()) {
-                std::cout << "Fire is extinguished, resetting GridMap" << std::endl;
+//                std::cout << "Fire is extinguished, resetting GridMap" << std::endl;
                 ResetGridMap(&current_raster_data_);
                 terminals[i] = true;
             }
+            rewards_.push_back(reward);
         }
 
-        return {next_observations, rewards, terminals};
+        return {next_observations, rewards_, terminals};
 
     }
     return {};
@@ -437,8 +453,11 @@ void FireModel::Config() {
                 ImGui::Text("Out of Area Counter: %d", selected_drone->GetOutOfAreaCounter());
                 ImGui::Text("Real Position: (%.2f, %.2f)", selected_drone->GetRealPosition().first,
                             selected_drone->GetRealPosition().second);
-                ImGui::Text("Velocity (x,y) m/s: %.2f, %.2f", selected_drone->GetLastState().GetVelocity().first,
-                                                                    selected_drone->GetLastState().GetVelocity().second);
+                ImGui::Text("Network Input:");
+                ImGui::Text("Relative Position: %.2f, %.2f", selected_drone->GetLastState().GetPositionNorm().first,
+                                                             selected_drone->GetLastState().GetPositionNorm().second);
+                ImGui::Text("Velocity (x,y) m/s: %.2f, %.2f", selected_drone->GetLastState().GetVelocityNorm().first,
+                                                                    selected_drone->GetLastState().GetVelocityNorm().second);
                 ImGui::Text("Terrain");
                 // Calculate the size and position of each cell
                 float cell_size = 15.0f;
@@ -491,7 +510,15 @@ void FireModel::Config() {
                         ImGui::GetWindowDrawList()->AddRectFilled(p_min, p_max, IM_COL32(color.x * 255, color.y * 255, color.z * 255, color.w * 255));
                     }
                 }
-
+                if (ImGui::Begin("Rewards List")) {
+                    if (ImGui::BeginChild("RewardChild", ImVec2(0, 200), true)) {  // 200 is the height; adjust as required
+                        for (size_t i = 0; i < rewards_.size(); ++i) {
+                            ImGui::Text("Reward %zu: %f", i, rewards_[i]);
+                        }
+                    }
+                    ImGui::EndChild();
+                }
+                ImGui::End();
 
             } else {
                 ImGui::Text("No drones available.");

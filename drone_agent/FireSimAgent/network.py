@@ -28,104 +28,172 @@ class Inputspace(nn.Module):
         d_in = 4
         self.map_adaptive_pool = nn.AdaptiveAvgPool3d((dim_y, dim_x, 1))
 
-        layers_dict = [
-            {'padding': (1, 1, 1), 'dilation': (1, 1, 1), 'kernel_size': (3, 3, 3), 'stride': (1, 1, 1)},
-            {'padding': (1, 1, 1), 'dilation': (1, 1, 1), 'kernel_size': (3, 3, 3), 'stride': (1, 1, 1)},
-            {'padding': (0, 0, 0), 'dilation': (1, 1, 1), 'kernel_size': (3, 3, 3), 'stride': (2, 2, 2)},
-        ]
-        self.terrain_conv1 = nn.Conv3d(in_channels=17, out_channels=8, kernel_size=layers_dict[0]['kernel_size'],
-                                       stride=layers_dict[0]['stride'], padding=layers_dict[0]['padding'])
-        self.terrain_bn1 = nn.BatchNorm3d(8)
-        self.terrain_conv2 = nn.Conv3d(in_channels=8, out_channels=16, kernel_size=layers_dict[1]['kernel_size'],
-                                       stride=layers_dict[1]['stride'], padding=layers_dict[1]['padding'])
-        self.terrain_bn2 = nn.BatchNorm3d(16)
-        self.terrain_conv3 = nn.Conv3d(in_channels=16, out_channels=32, kernel_size=layers_dict[2]['kernel_size'],
-                                       stride=layers_dict[2]['stride'])
-        self.terrain_bn3 = nn.BatchNorm3d(32)
+        # layers_dict = [
+        #     {'padding': (1, 1, 1), 'dilation': (1, 1, 1), 'kernel_size': (3, 3, 3), 'stride': (1, 1, 1)},
+        #     {'padding': (1, 1, 1), 'dilation': (1, 1, 1), 'kernel_size': (3, 3, 3), 'stride': (1, 1, 1)},
+        #     # {'padding': (0, 0, 0), 'dilation': (1, 1, 1), 'kernel_size': (3, 3, 3), 'stride': (2, 2, 2)},
+        # ]
+        # self.terrain_conv1 = nn.Conv3d(in_channels=17, out_channels=16, kernel_size=layers_dict[0]['kernel_size'],
+        #                                stride=layers_dict[0]['stride'], padding=layers_dict[0]['padding'])
+        # self.terrain_bn1 = nn.BatchNorm3d(16)
+        # self.terrain_conv2 = nn.Conv3d(in_channels=16, out_channels=32, kernel_size=layers_dict[1]['kernel_size'],
+        #                                stride=layers_dict[1]['stride'], padding=layers_dict[1]['padding'])
+        # self.terrain_bn2 = nn.BatchNorm3d(32)
+        # # self.terrain_conv3 = nn.Conv3d(in_channels=16, out_channels=32, kernel_size=layers_dict[2]['kernel_size'],
+        # #                                stride=layers_dict[2]['stride'])
+        # # self.terrain_bn3 = nn.BatchNorm3d(32)
+        # in_f = self.get_in_features_3d(h_in=vision_range, w_in=vision_range, d_in=d_in, layers_dict=layers_dict)
 
-        in_f = self.get_in_features_3d(h_in=vision_range, w_in=vision_range, d_in=d_in, layers_dict=layers_dict)
+        layers_dict = [
+            {'padding': (1, 1), 'dilation': (1, 1), 'kernel_size': (3, 3), 'stride': (1, 1)},
+            {'padding': (1, 1), 'dilation': (1, 1), 'kernel_size': (3, 3), 'stride': (1, 1)},
+            # {'padding': (0, 0, 0), 'dilation': (1, 1, 1), 'kernel_size': (3, 3, 3), 'stride': (2, 2, 2)},
+        ]
+        self.terrain_conv1 = nn.Conv2d(in_channels=d_in, out_channels=16, kernel_size=layers_dict[0]['kernel_size'],
+                                       stride=layers_dict[0]['stride'], padding=layers_dict[0]['padding'])
+        self.terrain_bn1 = nn.BatchNorm2d(16)
+        self.terrain_conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=layers_dict[1]['kernel_size'],
+                                       stride=layers_dict[1]['stride'], padding=layers_dict[1]['padding'])
+        self.terrain_bn2 = nn.BatchNorm2d(32)
+        # self.terrain_conv3 = nn.Conv3d(in_channels=16, out_channels=32, kernel_size=layers_dict[2]['kernel_size'],
+        #                                stride=layers_dict[2]['stride'])
+        # self.terrain_bn3 = nn.BatchNorm3d(32)
+        in_f = self.get_in_features_2d(h_in=vision_range, w_in=vision_range, layers_dict=layers_dict)
+
+        # layers_dict = [
+        #     {'padding': (1, 1), 'dilation': (1, 1), 'kernel_size': (3, 3), 'stride': (1, 1)},
+        #     {'padding': (1, 1), 'dilation': (1, 1), 'kernel_size': (3, 3), 'stride': (1, 1)},
+        #     {'padding': (0, 0), 'dilation': (1, 1), 'kernel_size': (3, 3), 'stride': (2, 2)},
+        # ]
+        #
+        # self.terrain_conv1 = nn.Conv2d(in_channels=17, out_channels=8, kernel_size=layers_dict[0]['kernel_size'],
+        #                                stride=layers_dict[0]['stride'], padding=layers_dict[0]['padding'])
+        # self.terrain_bn1 = nn.BatchNorm2d(8)
+        # self.terrain_conv2 = nn.Conv2d(in_channels=8, out_channels=16, kernel_size=layers_dict[1]['kernel_size'],
+        #                                stride=layers_dict[1]['stride'], padding=layers_dict[1]['padding'])
+        # self.terrain_bn2 = nn.BatchNorm2d(16)
+        # self.terrain_conv3 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=layers_dict[2]['kernel_size'],
+        #                                stride=layers_dict[2]['stride'])
+        # self.terrain_bn3 = nn.BatchNorm2d(32)
+        #
+        # in_f = self.get_in_features_2d(h_in=vision_range, w_in=vision_range, layers_dict=layers_dict)
+
         features_terrain = in_f * 32 # 32 is the number of output channels
 
-        layers_dict = [
-            {'padding': (1, 1, 1), 'dilation': (1, 1, 1), 'kernel_size': (3, 3, 3), 'stride': (1, 1, 1)},
-            {'padding': (1, 1, 1), 'dilation': (1, 1, 1), 'kernel_size': (3, 3, 3), 'stride': (1, 1, 1)},
-            {'padding': (0, 0, 0), 'dilation': (1, 1, 1), 'kernel_size': (3, 3, 3), 'stride': (2, 2, 2)},
-        ]
-        self.fire_conv1 = nn.Conv3d(in_channels=1, out_channels=8, padding=layers_dict[0]['padding'],
-                                    kernel_size=layers_dict[0]['kernel_size'], stride=layers_dict[0]['stride'])
-        self.fire_bn1 = nn.BatchNorm3d(8)
-        self.fire_conv2 = nn.Conv3d(in_channels=8, out_channels=16, padding=layers_dict[1]['padding'],
-                                    kernel_size=layers_dict[1]['kernel_size'], stride=layers_dict[1]['stride'])
-        self.fire_bn2 = nn.BatchNorm3d(16)
-        self.fire_conv3 = nn.Conv3d(in_channels=16, out_channels=32, padding=layers_dict[2]['padding'],
-                                    kernel_size=layers_dict[2]['kernel_size'], stride=layers_dict[2]['stride'])
-        self.fire_bn3 = nn.BatchNorm3d(32)
-        # initialize_hidden_weights(self.fire_conv1)
-        in_f = self.get_in_features_3d(h_in=vision_range, w_in=vision_range, d_in=d_in, layers_dict=layers_dict)
-        features_fire = in_f * 32 # 32 is the number of output channels
+        # layers_dict = [
+        #     {'padding': (1, 1, 1), 'dilation': (1, 1, 1), 'kernel_size': (3, 3, 3), 'stride': (1, 1, 1)},
+        #     {'padding': (1, 1, 1), 'dilation': (1, 1, 1), 'kernel_size': (3, 3, 3), 'stride': (1, 1, 1)},
+        #     {'padding': (0, 0, 0), 'dilation': (1, 1, 1), 'kernel_size': (3, 3, 3), 'stride': (2, 2, 2)},
+        # ]
+        # self.fire_conv1 = nn.Conv3d(in_channels=1, out_channels=8, padding=layers_dict[0]['padding'],
+        #                             kernel_size=layers_dict[0]['kernel_size'], stride=layers_dict[0]['stride'])
+        # self.fire_bn1 = nn.BatchNorm3d(8)
+        # self.fire_conv2 = nn.Conv3d(in_channels=8, out_channels=16, padding=layers_dict[1]['padding'],
+        #                             kernel_size=layers_dict[1]['kernel_size'], stride=layers_dict[1]['stride'])
+        # self.fire_bn2 = nn.BatchNorm3d(16)
+        # self.fire_conv3 = nn.Conv3d(in_channels=16, out_channels=32, padding=layers_dict[2]['padding'],
+        #                             kernel_size=layers_dict[2]['kernel_size'], stride=layers_dict[2]['stride'])
+        # self.fire_bn3 = nn.BatchNorm3d(32)
+        # # initialize_hidden_weights(self.fire_conv1)
+        # in_f = self.get_in_features_3d(h_in=vision_range, w_in=vision_range, d_in=d_in, layers_dict=layers_dict)
 
         layers_dict = [
-            {'padding': (0, 0, 0), 'dilation': (1, 1, 1), 'kernel_size': (3, 3, 3), 'stride': (1, 1, 1)}
+            {'padding': (1, 1), 'dilation': (1, 1), 'kernel_size': (3, 3), 'stride': (1, 1)},
+            {'padding': (1, 1), 'dilation': (1, 1), 'kernel_size': (3, 3), 'stride': (1, 1)},
+            {'padding': (0, 0), 'dilation': (1, 1), 'kernel_size': (3, 3), 'stride': (2, 2)},
         ]
-        self.map_conv1 = nn.Conv3d(in_channels=1, out_channels=1, kernel_size=layers_dict[0]['kernel_size'], stride=layers_dict[0]['stride'])
+        self.fire_conv1 = nn.Conv2d(in_channels=d_in, out_channels=8, padding=layers_dict[0]['padding'],
+                                    kernel_size=layers_dict[0]['kernel_size'], stride=layers_dict[0]['stride'])
+        self.fire_bn1 = nn.BatchNorm2d(8)
+        self.fire_conv2 = nn.Conv2d(in_channels=8, out_channels=16, padding=layers_dict[1]['padding'],
+                                    kernel_size=layers_dict[1]['kernel_size'], stride=layers_dict[1]['stride'])
+        self.fire_bn2 = nn.BatchNorm2d(16)
+        self.fire_conv3 = nn.Conv2d(in_channels=16, out_channels=32, padding=layers_dict[2]['padding'],
+                                    kernel_size=layers_dict[2]['kernel_size'], stride=layers_dict[2]['stride'])
+        self.fire_bn3 = nn.BatchNorm2d(32)
+        # initialize_hidden_weights(self.fire_conv1)
+        in_f = self.get_in_features_2d(h_in=vision_range, w_in=vision_range, layers_dict=layers_dict)
+        features_fire = in_f * 32 # 32 is the number of output channels
+
+        # layers_dict = [
+        #     {'padding': (0, 0, 0), 'dilation': (1, 1, 1), 'kernel_size': (3, 3, 3), 'stride': (1, 1, 1)}
+        # ]
+        # self.map_conv1 = nn.Conv3d(in_channels=1, out_channels=1, kernel_size=layers_dict[0]['kernel_size'], stride=layers_dict[0]['stride'])
+
+        layers_dict = [
+            {'padding': (0, 0), 'dilation': (1, 1), 'kernel_size': (3, 3), 'stride': (1, 1)}
+        ]
+        self.map_conv1 = nn.Conv2d(in_channels=d_in, out_channels=1, kernel_size=layers_dict[0]['kernel_size'], stride=layers_dict[0]['stride'])
+
         initialize_hidden_weights(self.map_conv1)
         features_map = (int(dim_x * dim_y)) * 1 # 2 is the number of output channels
 
         self.flatten = nn.Flatten()
 
         vel_out_features = 64
-        self.vel_dense1 = nn.Linear(in_features=2, out_features=16)
+        self.vel_dense1 = nn.Linear(in_features=2, out_features=32)
         initialize_hidden_weights(self.vel_dense1)
-        self.vel_dense2 = nn.Linear(in_features=16, out_features=32)
+        self.vel_dense2 = nn.Linear(in_features=32, out_features=vel_out_features)
         initialize_hidden_weights(self.vel_dense2)
-        self.vel_dense3 = nn.Linear(in_features=32, out_features=vel_out_features)
-        initialize_hidden_weights(self.vel_dense3)
+        # self.vel_dense3 = nn.Linear(in_features=32, out_features=vel_out_features)
+        # initialize_hidden_weights(self.vel_dense3)
 
         position_out_features = 64
-        self.position_dense1 = nn.Linear(in_features=2, out_features=16)
+        self.position_dense1 = nn.Linear(in_features=2, out_features=32)
         initialize_hidden_weights(self.position_dense1)
-        self.position_dense2 = nn.Linear(in_features=16, out_features=32)
+        self.position_dense2 = nn.Linear(in_features=32, out_features=position_out_features)
         initialize_hidden_weights(self.position_dense2)
-        self.position_dense3 = nn.Linear(in_features=32, out_features=position_out_features)
-        initialize_hidden_weights(self.position_dense3)
+        # self.position_dense3 = nn.Linear(in_features=32, out_features=position_out_features)
+        # initialize_hidden_weights(self.position_dense3)
 
         # four is the number of timeframes TODO make this dynamic
-        terrain_out_features = 256
-        fire_out_features = 256
-        map_out_features = 256
+        terrain_out_features = 32
+        fire_out_features = 32
+        map_out_features = 32
         input_features = terrain_out_features + fire_out_features + map_out_features + (position_out_features + vel_out_features) * 4
 
         self.terrain_flat1 = nn.Linear(in_features=features_terrain, out_features=64)
         initialize_hidden_weights(self.terrain_flat1)
-        self.terrain_flat2 = nn.Linear(in_features=64, out_features=128)
+        self.terrain_flat2 = nn.Linear(in_features=64, out_features=32)
         initialize_hidden_weights(self.terrain_flat2)
-        self.terrain_flat3 = nn.Linear(in_features=128, out_features=terrain_out_features)
-        initialize_hidden_weights(self.terrain_flat3)
+        # self.terrain_flat3 = nn.Linear(in_features=128, out_features=terrain_out_features)
+        # initialize_hidden_weights(self.terrain_flat3)
 
         self.fire_flat1 = nn.Linear(in_features=features_fire, out_features=64)
         initialize_hidden_weights(self.fire_flat1)
-        self.fire_flat2 = nn.Linear(in_features=64, out_features=128)
+        self.fire_flat2 = nn.Linear(in_features=64, out_features=32)
         initialize_hidden_weights(self.fire_flat2)
-        self.fire_flat3 = nn.Linear(in_features=128, out_features=fire_out_features)
-        initialize_hidden_weights(self.fire_flat3)
+        # self.fire_flat3 = nn.Linear(in_features=128, out_features=fire_out_features)
+        # initialize_hidden_weights(self.fire_flat3)
 
         self.map_flat1 = nn.Linear(in_features=features_map, out_features=64)
         initialize_hidden_weights(self.map_flat1)
-        self.map_flat2 = nn.Linear(in_features=64, out_features=128)
+        self.map_flat2 = nn.Linear(in_features=64, out_features=32)
         initialize_hidden_weights(self.map_flat2)
-        self.map_flat3 = nn.Linear(in_features=128, out_features=map_out_features)
-        initialize_hidden_weights(self.map_flat3)
+        # self.map_flat3 = nn.Linear(in_features=128, out_features=map_out_features)
+        # initialize_hidden_weights(self.map_flat3)
 
-        self.input_dense1 = nn.Linear(in_features=input_features, out_features=64)
+        # self.input_dense1 = nn.Linear(in_features=input_features, out_features=64)
+        # initialize_hidden_weights(self.input_dense1)
+        input_features = terrain_out_features + (position_out_features + vel_out_features) * 4
+        self.input_dense1 = nn.Linear(in_features=input_features, out_features=128)
         initialize_hidden_weights(self.input_dense1)
-        self.input_dense2 = nn.Linear(in_features=64, out_features=128)
+        self.input_dense2 = nn.Linear(in_features=128, out_features=256)
         initialize_hidden_weights(self.input_dense2)
-        self.input_dense3 = nn.Linear(in_features=128, out_features=256)
-        initialize_hidden_weights(self.input_dense3)
+        # self.input_dense3 = nn.Linear(in_features=128, out_features=256)
+        # initialize_hidden_weights(self.input_dense3)
 
+    def get_in_features_2d(self, h_in, w_in, layers_dict):
+        for layer in layers_dict:
+            padding = layer['padding']
+            dilation = layer['dilation']
+            kernel_size = layer['kernel_size']
+            stride = layer['stride']
 
-    def get_in_features(self, h_in, padding=0, dilation=1, kernel_size=0, stride=1):
-        return (h_in - kernel_size + 2 * padding) // stride + 1
+            h_in = ((h_in + 2 * padding[0] - dilation[0] * (kernel_size[0] - 1) - 1) // stride[0]) + 1
+            w_in = ((w_in + 2 * padding[1] - dilation[1] * (kernel_size[1] - 1) - 1) // stride[1]) + 1
+
+        return h_in * w_in
 
     def get_in_features_3d(self, h_in, w_in, d_in, layers_dict):
         for layer in layers_dict:
@@ -143,24 +211,27 @@ class Inputspace(nn.Module):
     def prepare_tensor(self, states):
         terrain, fire_status, velocity, maps, position = states
 
+        # if isinstance(terrain, np.ndarray):
+        #     terrain = torch.tensor(terrain, dtype=torch.int64).to(device)
+        # else:
+        #     terrain = terrain.to(dtype=torch.int64)
+        # terrain = F.one_hot(terrain, num_classes=17)
+        # terrain = terrain.permute(0, 4, 1, 2, 3)
+        # terrain = terrain.to(dtype=torch.float32)
+
         if isinstance(terrain, np.ndarray):
-            terrain = torch.tensor(terrain, dtype=torch.int64).to(device)
-        else:
-            terrain = terrain.to(dtype=torch.int64)
-        terrain = F.one_hot(terrain, num_classes=17)
-        terrain = terrain.permute(0, 4, 1, 2, 3)
-        terrain = terrain.to(dtype=torch.float32)
+            terrain = torch.tensor(terrain, dtype=torch.float32).to(device)
 
         if isinstance(fire_status, np.ndarray):
             fire_status = torch.tensor(fire_status, dtype=torch.float32).to(device)
-        fire_status = fire_status.unsqueeze(1)
+        #fire_status = fire_status.unsqueeze(1)
 
         if isinstance(velocity, np.ndarray):
             velocity = torch.tensor(velocity, dtype=torch.float32).to(device)
 
         if isinstance(maps, np.ndarray):
             maps = torch.tensor(maps, dtype=torch.float32).to(device)
-        maps = maps.unsqueeze(1)
+        #maps = maps.unsqueeze(1)
 
         if isinstance(position, np.ndarray):
             position = torch.tensor(position, dtype=torch.float32).to(device)
@@ -169,43 +240,44 @@ class Inputspace(nn.Module):
 
     def forward(self, states):
         terrain, fire_status, velocity, maps, position = self.prepare_tensor(states)
-        terrain = F.relu(self.terrain_bn1(self.terrain_conv1(terrain)))
-        terrain = F.relu(self.terrain_bn2(self.terrain_conv2(terrain)))
-        terrain = F.relu(self.terrain_bn3(self.terrain_conv3(terrain)))
+        terrain = F.relu(self.terrain_conv1(terrain))
+        terrain = F.relu(self.terrain_conv2(terrain))
+        # terrain = F.relu(self.terrain_bn3(self.terrain_conv3(terrain)))
         terrain = self.flatten(terrain)
         terrain = F.relu(self.terrain_flat1(terrain))
         terrain = F.relu(self.terrain_flat2(terrain))
-        terrain = F.relu(self.terrain_flat3(terrain))
+        # terrain = F.relu(self.terrain_flat3(terrain))
 
-        fire_status = F.relu(self.fire_bn1(self.fire_conv1(fire_status)))
-        fire_status = F.relu(self.fire_bn2(self.fire_conv2(fire_status)))
-        fire_status = F.relu(self.fire_bn3(self.fire_conv3(fire_status)))
-        fire_status = self.flatten(fire_status)
-        fire_status = F.relu(self.fire_flat1(fire_status))
-        fire_status = F.relu(self.fire_flat2(fire_status))
-        fire_status = F.relu(self.fire_flat3(fire_status))
-
-        maps = F.relu(self.map_conv1(maps))
-        maps = self.map_adaptive_pool(maps)
-        maps = self.flatten(maps)
-        maps = F.relu(self.map_flat1(maps))
-        maps = F.relu(self.map_flat2(maps))
-        maps = F.relu(self.map_flat3(maps))
+        # fire_status = F.relu(self.fire_bn1(self.fire_conv1(fire_status)))
+        # fire_status = F.relu(self.fire_bn2(self.fire_conv2(fire_status)))
+        # fire_status = F.relu(self.fire_bn3(self.fire_conv3(fire_status)))
+        # fire_status = self.flatten(fire_status)
+        # fire_status = F.relu(self.fire_flat1(fire_status))
+        # fire_status = F.relu(self.fire_flat2(fire_status))
+        # fire_status = F.relu(self.fire_flat3(fire_status))
+        #
+        # maps = F.relu(self.map_conv1(maps))
+        # maps = self.map_adaptive_pool(maps)
+        # maps = self.flatten(maps)
+        # maps = F.relu(self.map_flat1(maps))
+        # maps = F.relu(self.map_flat2(maps))
+        # maps = F.relu(self.map_flat3(maps))
 
         position = F.relu(self.position_dense1(position))
         position = F.relu(self.position_dense2(position))
-        position = F.relu(self.position_dense3(position))
+        # position = F.relu(self.position_dense3(position))
         position = self.flatten(position)
 
         velocity = F.relu(self.vel_dense1(velocity))
         velocity = F.relu(self.vel_dense2(velocity))
-        velocity = F.relu(self.vel_dense3(velocity))
+        # velocity = F.relu(self.vel_dense3(velocity))
         velocity = self.flatten(velocity)
 
-        concated_input = torch.cat((terrain, fire_status, velocity, maps, position), dim=1)
+        concated_input = torch.cat((terrain, velocity, position), dim=1)
+        # concated_input = torch.cat((terrain, fire_status, velocity, maps, position), dim=1)
         input_dense = F.relu(self.input_dense1(concated_input))
         input_dense = F.relu(self.input_dense2(input_dense))
-        input_dense = F.relu(self.input_dense3(input_dense))
+        # input_dense = F.relu(self.input_dense3(input_dense))
 
         return input_dense
 
@@ -219,12 +291,12 @@ class Actor(nn.Module):
         self.Inputspace = Inputspace(vision_range)
 
         # Mu
-        self.pre_mu = nn.Linear(in_features=256, out_features=128)
-        self.mu = nn.Linear(in_features=128, out_features=2)
-        self.pre_water = nn.Linear(in_features=256, out_features=128)
-        self.water_emit = nn.Linear(in_features=128, out_features=1)
-        initialize_output_weights(self.pre_mu, 'actor')
-        initialize_output_weights(self.pre_water, 'actor')
+        # self.pre_mu = nn.Linear(in_features=256, out_features=128)
+        self.mu = nn.Linear(in_features=256, out_features=2)
+        # self.pre_water = nn.Linear(in_features=256, out_features=128)
+        self.water_emit = nn.Linear(in_features=256, out_features=1)
+        # initialize_output_weights(self.pre_mu, 'actor')
+        # initialize_output_weights(self.pre_water, 'actor')
         initialize_output_weights(self.mu, 'actor')
         initialize_output_weights(self.water_emit, 'actor')
 
@@ -233,10 +305,10 @@ class Actor(nn.Module):
 
     def forward(self, states):
         x = self.Inputspace(states)
-        mu = F.relu(self.pre_mu(x))
-        mu = torch.tanh(self.mu(mu))
-        water_emit_value = F.relu(self.pre_water(x))
-        water_emit_value = torch.sigmoid(self.water_emit(water_emit_value))
+        # mu = F.relu(self.pre_mu(x))
+        mu = torch.tanh(self.mu(x))
+        # water_emit_value = F.relu(self.pre_water(x))
+        water_emit_value = torch.sigmoid(self.water_emit(x))
         actions = torch.cat((mu, water_emit_value), dim=1)
         std = torch.exp(self.log_std)
         var = torch.pow(std, 2)
@@ -252,15 +324,15 @@ class Critic(nn.Module):
         super(Critic, self).__init__()
         self.Inputspace = self.Inputspace = Inputspace(vision_range)
         # Value
-        self.pre_value = nn.Linear(in_features=256, out_features=128)
-        self.value = nn.Linear(in_features=128, out_features=1)
+        # self.pre_value = nn.Linear(in_features=256, out_features=128)
+        self.value = nn.Linear(in_features=256, out_features=1)
         initialize_output_weights(self.value, 'critic')
-        initialize_output_weights(self.pre_value, 'critic')
+        # initialize_output_weights(self.pre_value, 'critic')
 
     def forward(self, states):
         x = self.Inputspace(states)
-        value = self.pre_value(x)
-        value = self.value(value.detach().clone())
+        # value = F.tanh(self.pre_value(x))
+        value = self.value(x)
         return value
 
 

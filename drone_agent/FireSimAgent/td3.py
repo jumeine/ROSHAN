@@ -85,17 +85,17 @@ class Critic(nn.Module):
 
 class TD3:
 
-    def __init__(self, action_dim, vision_range, discount=0.99, tau=0.005, policy_noise=0.2, noise_clip=0.5, policy_freq=2):
+    def __init__(self, action_dim, vision_range, lr=0.0003, discount=0.99, tau=0.005, policy_noise=0.2, noise_clip=0.5, policy_freq=2):
 
         self.action_dim = action_dim
 
         self.actor = Actor(vision_range).to(device)
         self.actor_target = copy.deepcopy(self.actor)
-        self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=3e-4)
+        self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=lr)
 
         self.critic = Critic(vision_range).to(device)
         self.critic_target = copy.deepcopy(self.critic)
-        self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=3e-4)
+        self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=lr)
 
         self.discount = discount
         self.tau = tau
@@ -114,7 +114,7 @@ class TD3:
     def select_action(self, observations):
         return self.actor(observations).cpu().data.numpy(), [0]
 
-    def update(self, memory, batch_size):
+    def update(self, memory, batch_size, logger):
         self.total_it += 1
 
         if batch_size > memory.size:

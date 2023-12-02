@@ -29,13 +29,14 @@ public:
     std::pair<double, double> GetGridPositionDouble();
     std::pair<double, double> GetRealPosition();
     void IncrementOutOfAreaCounter() { out_of_area_counter_++; }
+    void ResetOutOfAreaCounter() { out_of_area_counter_ = 0; }
     int GetOutOfAreaCounter() { return out_of_area_counter_; }
     DroneState GetLastState() { return drone_states_[0]; }
     int DroneSeesFire();
     int GetId() const { return id_; }
     int GetViewRange() const { return view_range_; }
     void Render(std::pair<int, int> position, int size);
-    void Initialize(std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status, std::pair<int, int> size);
+    void Initialize(std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status, std::pair<int, int> size, double cell_size);
 private:
     void UpdateStates(double speed_x, double speed_y, std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status, std::vector<std::vector<int>> updated_map);
     int id_;

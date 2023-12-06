@@ -72,7 +72,7 @@ private:
     std::vector<std::vector<int>> current_raster_data_;
     // Agent Stuff
     bool MoveDrone(int drone_idx, double speed_x, double speed_y, int water_dispense);
-    double CalculateReward(bool drone_in_grid, bool fire_extinguished, bool drone_terminal, int water_dispensed, int near_fires, double max_distance);
+    double CalculateReward(bool drone_in_grid, bool fire_extinguished, bool drone_terminal, int water_dispensed, int near_fires, double max_distance, double distance_to_fire);
     void ResetDrones();
     std::shared_ptr<std::vector<std::shared_ptr<DroneAgent>>> drones_;
     std::vector<std::deque<DroneState>> observations_;
@@ -95,6 +95,9 @@ private:
     bool python_code_ = true;
     bool agent_is_running_ = false;
     bool show_rl_controls_ = true;
+
+    // Dirty Variables
+    double last_distance_to_fire_;
 
     void ShowParameterConfig();
     bool ImGuiOnStartup();

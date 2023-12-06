@@ -28,10 +28,11 @@ void FireModel::ResetGridMap(std::vector<std::vector<int>>* rasterData) {
     ResetDrones();
 
     if (python_code_){
+        last_distance_to_fire_ = std::numeric_limits<double>::max();
         std::pair<int, int> drone_position = drones_->at(0)->GetGridPosition();
         if(gridmap_->CellCanIgnite(drone_position.first, drone_position.second))
             gridmap_->IgniteCell(drone_position.first, drone_position.second);
-        for(int i = 0; i < 4;) {
+        for(int i = 0; i < 1;) {
             std::pair<int, int> point = gridmap_->GetRandomPointInGrid();
             if(gridmap_->CellCanIgnite(point.first, point.second)){
                 gridmap_->IgniteCell(point.first, point.second);
@@ -106,7 +107,7 @@ void FireModel::ResetDrones() {
     }
 }
 
-double FireModel::CalculateReward(bool drone_in_grid, bool fire_extinguished, bool drone_terminal, int water_dispensed, int near_fires, double max_distance) {
+double FireModel::CalculateReward(bool drone_in_grid, bool fire_extinguished, bool drone_terminal, int water_dispensed, int near_fires, double max_distance, double distance_to_fire) {
     double reward = 0;
 
     if (!drone_in_grid) {
@@ -123,6 +124,19 @@ double FireModel::CalculateReward(bool drone_in_grid, bool fire_extinguished, bo
             reward += 1;
         }
     } else {
+        // if last_distance or last_distance_to_fire_ is very large, dismiss the reward
+        if (!(last_distance_to_fire_ > 1000000 || distance_to_fire > 1000000))
+        {
+            double delta_distance = last_distance_to_fire_ - distance_to_fire;
+            //These high values occure when fire spreads and gets extinguished
+//            if (delta_distance < -10 || delta_distance > 10) {
+//                std::cout << "Delta distance: " << delta_distance << std::endl;
+//                std::cout << "Last distance: " << last_distance_to_fire_ << std::endl;
+//                std::cout << "Current distance: " << distance_to_fire << std::endl;
+//                std::cout << "" << std::endl;
+//            }
+            reward += 0.05 * delta_distance;
+        }
         if (water_dispensed)
             reward += -0.001;
     }
@@ -139,14 +153,16 @@ std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>,
 
         // Move the drones and get the next_observation
         for (int i = 0; i < (*drones_).size(); ++i) {
-            double speed_x = std::dynamic_pointer_cast<DroneAction>(actions[i])->GetSpeedX(); // change this to "real" speed
-            double speed_y = std::dynamic_pointer_cast<DroneAction>(actions[i])->GetSpeedY();
+            double speed_x = std::dynamic_pointer_cast<DroneAction>(actions[i])->GetSpeedX() * 0.1; // change this to "real" speed
+            double speed_y = std::dynamic_pointer_cast<DroneAction>(actions[i])->GetSpeedY() * 0.1;
 //            std::cout << "Drone " << i << " is moving with speed: " << speed_x << ", " << speed_y << std::endl;
             int water_dispense = std::dynamic_pointer_cast<DroneAction>(actions[i])->GetWaterDispense();
             bool drone_dispensed_water = MoveDrone(i, speed_x, speed_y, water_dispense);
 
             std::pair<int, int> drone_position = drones_->at(i)->GetGridPosition();
             bool drone_in_grid = gridmap_->IsPointInGrid(drone_position.first, drone_position.second);
+            // Calculate distance to nearest fire, dirty maybe change that later(lol never gonna happen)
+            double distance_to_fire = drones_->at(i)->FindNearestFireDistance();
 
             double max_distance = 0;
             if (!drone_in_grid) {
@@ -172,6 +188,7 @@ std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>,
 
             int near_fires = drones_->at(i)->DroneSeesFire();
             terminals.push_back(false);
+
             // Check if drone is out of area for too long, if so, reset it
             if (drones_->at(i)->GetOutOfAreaCounter() > 15) {
                 terminals[i] = true;
@@ -184,7 +201,7 @@ std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>,
                 drones_->insert(drones_->begin() + i, newDrone);
             }
             double reward = CalculateReward(drone_in_grid, drone_dispensed_water, terminals[i],
-                                            water_dispense, near_fires, max_distance);
+                                            water_dispense, near_fires, max_distance, distance_to_fire);
 
             if(gridmap_->PercentageBurned() > 0.30) {
 //                std::cout << "Percentage burned: " << gridmap_->PercentageBurned() << " resetting GridMap" << std::endl;
@@ -196,6 +213,11 @@ std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>,
                 terminals[i] = true;
             }
             rewards_.push_back(reward);
+            if (terminals[i]) {
+                last_distance_to_fire_ = std::numeric_limits<double>::max();
+            } else {
+                last_distance_to_fire_ = distance_to_fire;
+            }
         }
 
         return {next_observations, rewards_, terminals};

@@ -37,7 +37,9 @@ public:
     int GetViewRange() const { return view_range_; }
     void Render(std::pair<int, int> position, int size);
     void Initialize(std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status, std::pair<int, int> size, double cell_size);
+    double FindNearestFireDistance();
 private:
+    std::pair<double, double> GetRealPositionFromGrid(int x, int y);
     void UpdateStates(double speed_x, double speed_y, std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status, std::vector<std::vector<int>> updated_map);
     int id_;
     FireModelParameters &parameters_;

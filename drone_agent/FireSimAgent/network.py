@@ -49,12 +49,12 @@ class Inputspace(nn.Module):
             {'padding': (1, 1), 'dilation': (1, 1), 'kernel_size': (3, 3), 'stride': (1, 1)},
             # {'padding': (0, 0, 0), 'dilation': (1, 1, 1), 'kernel_size': (3, 3, 3), 'stride': (2, 2, 2)},
         ]
-        self.terrain_conv1 = nn.Conv2d(in_channels=d_in, out_channels=16, kernel_size=layers_dict[0]['kernel_size'],
+        self.terrain_conv1 = nn.Conv2d(in_channels=d_in, out_channels=4, kernel_size=layers_dict[0]['kernel_size'],
                                        stride=layers_dict[0]['stride'], padding=layers_dict[0]['padding'])
-        self.terrain_bn1 = nn.BatchNorm2d(16)
-        self.terrain_conv2 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=layers_dict[1]['kernel_size'],
+        self.terrain_bn1 = nn.BatchNorm2d(4)
+        self.terrain_conv2 = nn.Conv2d(in_channels=4, out_channels=8, kernel_size=layers_dict[1]['kernel_size'],
                                        stride=layers_dict[1]['stride'], padding=layers_dict[1]['padding'])
-        self.terrain_bn2 = nn.BatchNorm2d(32)
+        self.terrain_bn2 = nn.BatchNorm2d(8)
         # self.terrain_conv3 = nn.Conv3d(in_channels=16, out_channels=32, kernel_size=layers_dict[2]['kernel_size'],
         #                                stride=layers_dict[2]['stride'])
         # self.terrain_bn3 = nn.BatchNorm3d(32)
@@ -78,7 +78,7 @@ class Inputspace(nn.Module):
         #
         # in_f = self.get_in_features_2d(h_in=vision_range, w_in=vision_range, layers_dict=layers_dict)
 
-        features_terrain = in_f * 32 # 32 is the number of output channels
+        features_terrain = in_f * 8 # 32 is the number of output channels
 
         # layers_dict = [
         #     {'padding': (1, 1, 1), 'dilation': (1, 1, 1), 'kernel_size': (3, 3, 3), 'stride': (1, 1, 1)},

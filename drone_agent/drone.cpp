@@ -74,7 +74,7 @@ std::pair<int, int> DroneAgent::GetGridPosition() {
     return std::make_pair(x, y);
 }
 
-// Checks whether the drone sees fire in the current fire status
+// Checks whether the drone sees fire in the current fire status and return how much
 int DroneAgent::DroneSeesFire() {
     std::vector<std::vector<int>> fire_status = GetLastState().GetFireStatus();
     int count = std::accumulate(fire_status.begin(), fire_status.end(), 0,
@@ -83,6 +83,42 @@ int DroneAgent::DroneSeesFire() {
                                 }
     );
     return count;
+}
+
+std::pair<double, double> DroneAgent::GetRealPositionFromGrid(int x, int y) {
+    double real_x = x * parameters_.GetCellSize();
+    double real_y = y * parameters_.GetCellSize();
+    return std::make_pair(real_x, real_y);
+}
+
+double DroneAgent::FindNearestFireDistance() {
+    std::pair<double, double> drone_real_position = GetRealPosition();
+    std::pair<int, int> drone_grid_position = GetGridPosition();
+    double min_distance = std::numeric_limits<double>::max();
+    std::vector<std::vector<int>> fire_status = GetLastState().GetFireStatus();
+
+    for (int y = 0; y <= view_range_; ++y) {
+        for (int x = 0; x <= view_range_; ++x) {
+            if (fire_status[x][y] == 1) { // Assuming 1 indicates fire
+                std::pair<int, int> fire_grid_position = std::make_pair(
+                        drone_grid_position.first + y - (view_range_ / 2),
+                         drone_grid_position.second + x - (view_range_ / 2)
+                );
+
+                std::pair<double, double> fire_real_position = GetRealPositionFromGrid(fire_grid_position.first, fire_grid_position.second);
+                double distance = sqrt(
+                        pow(fire_real_position.first - drone_real_position.first, 2) +
+                        pow(fire_real_position.second - drone_real_position.second, 2)
+                );
+
+                if (distance < min_distance) {
+                    min_distance = distance;
+                }
+            }
+        }
+    }
+
+    return min_distance;
 }
 
 //DroneAgent::~DroneAgent() {

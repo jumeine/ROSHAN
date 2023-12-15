@@ -26,8 +26,8 @@ DroneState DroneState::GetNewState(double speed_x, double speed_y, std::vector<s
 
 std::pair<double, double> DroneState::GetNewVelocity(double netout_speed_x, double netout_speed_y) {
     // Netout determines the velocity CHANGE
-    double new_speed_x = velocity_.first + netout_speed_x;
-    double new_speed_y = velocity_.second + netout_speed_y;
+    double new_speed_x = velocity_.first + netout_speed_x * max_speed_.first;
+    double new_speed_y = velocity_.second + netout_speed_y * max_speed_.second;
 
     // Netout determines the velocity DIRECTLY
 //    double new_speed_x = netout_speed_x * max_speed_.first;

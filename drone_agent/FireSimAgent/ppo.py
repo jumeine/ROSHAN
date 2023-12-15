@@ -74,7 +74,7 @@ class PPO:
         if normalize:
             returns = (returns - returns.mean()) / (returns.std() + 1e-8)
 
-        return returns.to(device)
+        return returns.detach().to(device)
 
     def get_advantages(self, values, masks, rewards):
         """
@@ -91,7 +91,7 @@ class PPO:
         for i in reversed(range(len(rewards))):
             delta = rewards[i] - values[i]
             if masks[i] == 1:
-                delta += self.gamma * values[i + 1]
+                delta = delta + self.gamma * values[i + 1]
             gae = delta + self.gamma * self._lambda * masks[i] * gae
             advantages.insert(0, gae)
 
@@ -135,21 +135,20 @@ class PPO:
         while memory.has_batches():
             states, actions, logprobs, rewards, masks = memory.next_batch(batch_size=batch_size)
 
-            old_states = tuple(state.detach().clone().to(device) for state in states)
-            old_actions = actions.detach().clone().to(device)
-            old_logprobs = logprobs.detach().clone().to(device)
-            old_rewards = rewards.detach().clone().to(device) / 10
+            old_states = tuple(state.detach().to(device) for state in states)
+            old_actions = actions.detach().to(device)
+            old_logprobs = logprobs.detach().to(device)
+            old_rewards = rewards.detach().to(device) #/ 10
             log_rewards.append(old_rewards.mean().item())
-
             # Advantages
             _, values_, _ = self.policy.evaluate(old_states, old_actions)
-            log_values.append(values_.mean().item())
+            log_values.append(values_.detach().mean().item())
             if masks[-1] == 1:
                 last_state = (old_states[0][-1].unsqueeze(0), old_states[1][-1].unsqueeze(0), old_states[2][-1].unsqueeze(0), old_states[3][-1].unsqueeze(0), old_states[4][-1].unsqueeze(0))
-                bootstrapped_value = self.policy.critic(last_state)
+                bootstrapped_value = self.policy.critic(last_state).detach()
                 values_ = torch.cat((values_, bootstrapped_value[0]), dim=0)
             returns = self.calculate_returns(old_rewards, normalize=True)
-            advantages = self.get_advantages(values_, masks, old_rewards)
+            advantages = self.get_advantages(values_.detach(), masks, old_rewards)
             # returns, advantages = self.get_advantages(values_.detach(), masks.detach(), old_rewards)
 
             # Train policy for K epochs: sampling and updating
@@ -169,8 +168,7 @@ class PPO:
                 # TODO CLIP VALUE LOSS ? Probably not necessary as according to:
                 # https://iclr-blog-track.github.io/2022/03/25/ppo-implementation-details/
                 critic_loss_ = 0.005 * self.MSE_loss(returns, values)
-                critic_loss = critic_loss_ - entropy.mean()
-
+                critic_loss = critic_loss_ #- entropy.mean()
                 # Total loss
                 # loss = actor_loss + critic_loss
                 # self.logger.add_loss(loss.detach().mean().item(), entropy=entropy.detach().mean().item(), critic_loss=critic_loss.detach().mean().item(), actor_loss=actor_loss.detach().mean().item())

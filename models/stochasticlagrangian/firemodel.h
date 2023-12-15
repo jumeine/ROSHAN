@@ -98,6 +98,7 @@ private:
 
     // Dirty Variables
     double last_distance_to_fire_;
+    int last_near_fires_;
 
     void ShowParameterConfig();
     bool ImGuiOnStartup();

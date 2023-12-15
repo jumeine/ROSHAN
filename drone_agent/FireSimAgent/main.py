@@ -5,7 +5,8 @@ import torch
 import numpy as np
 
 # Add path to module directories #TODO make this more elegant
-module_directory = '../../cmake-build-debug'
+script_directory = os.path.dirname(os.path.abspath(__file__))
+module_directory = os.path.join(script_directory, '../../build/')
 sys.path.insert(0, module_directory)
 
 import firesim

@@ -72,6 +72,7 @@ private:
     double flood_duration_;
     double flood_timer_;
     double tau_ign_;
+    double tau_ign_start_;
     double tau_ign_tmp_;
     int x_; // Start of the x coordinate in meters (m)
     int y_; // Start of the y coordinate in meters (m)

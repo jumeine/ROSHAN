@@ -81,8 +81,22 @@ std::vector<std::deque<std::shared_ptr<State>>> FireModel::GetObservations() {
     return {};
 }
 
+bool FireModel::MoveDroneByAngle(int drone_idx, double netout_speed, double netout_angle, int water_dispense) {
+    drones_->at(drone_idx)->MoveByAngle(netout_speed, netout_angle);
+    bool dispensed = false;
+    if (water_dispense == 1) {
+        dispensed = drones_->at(drone_idx)->DispenseWater(*gridmap_);
+    }
+
+    std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> drone_view = gridmap_->GetDroneView(drones_->at(drone_idx));
+    std::vector<std::vector<int>> updated_map = gridmap_->GetUpdatedMap(drones_->at(drone_idx), drone_view.second);
+    drones_->at(drone_idx)->Update(netout_speed, netout_angle, drone_view.first, drone_view.second, updated_map);
+
+    return dispensed;
+}
+
 bool FireModel::MoveDrone(int drone_idx, double speed_x, double speed_y, int water_dispense) {
-    drones_->at(drone_idx)->Move(speed_x * parameters_.GetDt(), speed_y * parameters_.GetDt());
+    drones_->at(drone_idx)->Move(speed_x, speed_y);
     bool dispensed = false;
     if (water_dispense == 1) {
         dispensed = drones_->at(drone_idx)->DispenseWater(*gridmap_);
@@ -166,7 +180,7 @@ std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>,
             double speed_y = std::dynamic_pointer_cast<DroneAction>(actions[i])->GetSpeedY();
 //            std::cout << "Drone " << i << " is moving with speed: " << speed_x << ", " << speed_y << std::endl;
             int water_dispense = std::dynamic_pointer_cast<DroneAction>(actions[i])->GetWaterDispense();
-            bool drone_dispensed_water = MoveDrone(i, speed_x, speed_y, water_dispense);
+            bool drone_dispensed_water = MoveDroneByAngle(i, speed_x, speed_y, water_dispense);
 
             std::pair<int, int> drone_position = drones_->at(i)->GetGridPosition();
             bool drone_in_grid = gridmap_->IsPointInGrid(drone_position.first, drone_position.second);
@@ -284,15 +298,20 @@ void FireModel::HandleEvents(SDL_Event event, ImGuiIO *io) {
         }
     } else if (event.type == SDL_KEYDOWN && parameters_.GetNumberOfDrones() == 1 && !agent_is_running_) {
         if (event.key.keysym.sym == SDLK_w)
-            MoveDrone(0, 0, parameters_.GetDroneSpeed(0.1), 0);
+            // MoveDrone(0, 0, parameters_.GetDroneSpeed(0.1), 0);
+            MoveDroneByAngle(0, 0.25, 0, 0);
         if (event.key.keysym.sym == SDLK_s)
-            MoveDrone(0, 0, -parameters_.GetDroneSpeed(0.1), 0);
+            // MoveDrone(0, 0, -parameters_.GetDroneSpeed(0.1), 0);
+            MoveDroneByAngle(0, -0.25, 0, 0);
         if (event.key.keysym.sym == SDLK_a)
-            MoveDrone(0, -parameters_.GetDroneSpeed(0.1), 0, 0);
+            // MoveDrone(0, -parameters_.GetDroneSpeed(0.1), 0, 0);
+            MoveDroneByAngle(0, 0, -0.25, 0);
         if (event.key.keysym.sym == SDLK_d)
-            MoveDrone(0, parameters_.GetDroneSpeed(0.1), 0, 0);
+            // MoveDrone(0, parameters_.GetDroneSpeed(0.1), 0, 0);
+            MoveDroneByAngle(0, 0, 0.25, 0);
         if (event.key.keysym.sym == SDLK_SPACE)
-            MoveDrone(0, 0, 0, 1);
+            // MoveDrone(0, 0, 0, 1);
+            MoveDroneByAngle(0, 0, 0, 1);
     }
     // Browser Events
     // TODO: Eventloop only gets executed when Application is in Focus. Fix this.

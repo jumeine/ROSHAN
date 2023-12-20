@@ -50,6 +50,7 @@ public:
 private:
     std::pair<double, double> velocity_; // speed_x, speed_y
     std::pair<double, double> max_speed_;
+    double max_angle_ = M_PI_2;
     std::pair<double, double> map_dimensions_;
     double cell_size_;
     std::pair<int, int> position_; // x, y

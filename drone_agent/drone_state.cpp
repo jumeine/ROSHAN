@@ -35,8 +35,20 @@ std::pair<double, double> DroneState::GetNewVelocity(double netout_speed_x, doub
 
     new_speed_x = (new_speed_x < max_speed_.first) ? new_speed_x : max_speed_.first;
     new_speed_x = (new_speed_x > -max_speed_.first) ? new_speed_x : -max_speed_.first;
-    new_speed_y = (new_speed_y < max_speed_.second) ? new_speed_y : max_speed_.second;
-    new_speed_y = (new_speed_y > -max_speed_.second) ? new_speed_y : -max_speed_.second;
+    // Not by Angle
+    // new_speed_y = (new_speed_y < max_speed_.second) ? new_speed_y : max_speed_.second;
+    // new_speed_y = (new_speed_y > -max_speed_.second) ? new_speed_y : -max_speed_.second;
+
+    // By Angle
+    double angle = fmod(new_speed_y, 2 * M_PI);
+
+    // This ensures that if the angle is negative, it's converted to a positive value within the range.
+    if (angle < 0) {
+        angle += 2 * M_PI;
+    }
+    new_speed_y = angle;
+    // new_speed_y = (new_speed_y < max_speed_.second) ? new_speed_y : max_speed_.second;
+    // new_speed_y = (new_speed_y > 0) ? new_speed_y : 0;
 
     return std::make_pair(new_speed_x, new_speed_y);
 }

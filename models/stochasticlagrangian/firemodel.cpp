@@ -53,6 +53,29 @@ void FireModel::SetUniformRasterData() {
     parameters_.map_is_uniform_ = true;
 }
 
+void FireModel::FillRasterWithEnum() {
+    current_raster_data_.clear();
+    current_raster_data_ = std::vector<std::vector<int>>(parameters_.GetGridNx(), std::vector<int>(parameters_.GetGridNy(), GENERIC_UNBURNED));
+    int total_cells = parameters_.GetGridNx() * parameters_.GetGridNy();
+    int num_classes = CELL_STATE_COUNT - 1;
+
+    int per_class = total_cells / num_classes;
+    int extra = total_cells % num_classes;
+
+    int current_class = 0;
+    int count = 0;
+
+    for(int i = 0; i < parameters_.GetGridNx(); ++i) {
+        for(int j = 0; j < parameters_.GetGridNy(); ++j) {
+            current_raster_data_[i][j] = current_class;
+            if (++count == per_class + (current_class < extra)) {
+                count = 0;
+                ++current_class;
+            }
+        }
+    }
+}
+
 void FireModel::Update() {
     // Simulation time step update
     running_time_ += parameters_.GetDt();
@@ -403,6 +426,10 @@ void FireModel::ImGuiModelMenu() {
                     browser_selection_flag_ = true;
                 if (ImGui::MenuItem("Load Uniform Map")) {
                     SetUniformRasterData();
+                    ResetGridMap(&current_raster_data_);
+                }
+                if (ImGui::MenuItem("Load Map with Classes")) {
+                    FillRasterWithEnum();
                     ResetGridMap(&current_raster_data_);
                 }
                 if (ImGui::MenuItem("Save Map")) {

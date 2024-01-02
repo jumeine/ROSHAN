@@ -78,7 +78,7 @@ std::pair<double, double> DroneAgent::GetRealPosition() {
 
 std::pair<int, int> DroneAgent::GetGridPosition() {
     int x, y;
-    parameters_.ConvertRealToGridCoordinates(position_.first, position_.second, x, y);
+    parameters_.ConvertRealToGridCoordinatesDrone(position_.first, position_.second, x, y);
     return std::make_pair(x, y);
 }
 

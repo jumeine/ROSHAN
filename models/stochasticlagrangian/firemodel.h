@@ -104,7 +104,7 @@ private:
     void ShowParameterConfig();
     bool ImGuiOnStartup();
     void SetUniformRasterData();
-
+    void FillRasterWithEnum();
 };
 
 

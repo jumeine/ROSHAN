@@ -114,6 +114,13 @@ public:
         j = int(round(y / GetCellSize()));
     }
 
+    void ConvertRealToGridCoordinatesDrone(double x, double y, int &i, int &j) {
+        // round x and y to get the cell coordinates
+        i = int(round(x / GetCellSize()));
+        j = int(round(y / GetCellSize()));
+    }
+
+
     // Parameters for the agent
     int number_of_drones_ = 1;
     // std::pair<double, double> min_velocity_ = std::make_pair(-5.0, -5.0);

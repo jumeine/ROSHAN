@@ -72,6 +72,7 @@ private:
     std::vector<std::vector<int>> current_raster_data_;
     // Agent Stuff
     bool MoveDrone(int drone_idx, double speed_x, double speed_y, int water_dispense);
+    bool MoveDroneByAngle(int drone_idx, double netout_speed, double netout_angle, int water_dispense);
     double CalculateReward(bool drone_in_grid, bool fire_extinguished, bool drone_terminal, int water_dispensed, int near_fires, double max_distance, double distance_to_fire);
     void ResetDrones();
     std::shared_ptr<std::vector<std::shared_ptr<DroneAgent>>> drones_;
@@ -98,6 +99,7 @@ private:
 
     // Dirty Variables
     double last_distance_to_fire_;
+    int last_near_fires_;
 
     void ShowParameterConfig();
     bool ImGuiOnStartup();

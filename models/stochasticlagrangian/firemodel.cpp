@@ -29,16 +29,18 @@ void FireModel::ResetGridMap(std::vector<std::vector<int>>* rasterData) {
 
     if (python_code_){
         last_distance_to_fire_ = std::numeric_limits<double>::max();
+        int fires = 4;
         std::pair<int, int> drone_position = drones_->at(0)->GetGridPosition();
         if(gridmap_->CellCanIgnite(drone_position.first, drone_position.second))
             gridmap_->IgniteCell(drone_position.first, drone_position.second);
-        for(int i = 0; i < 1;) {
+        for(int i = 0; i < fires;) {
             std::pair<int, int> point = gridmap_->GetRandomPointInGrid();
             if(gridmap_->CellCanIgnite(point.first, point.second)){
                 gridmap_->IgniteCell(point.first, point.second);
                 i++;
             }
         }
+        last_near_fires_ = fires + 1;
     }
 
 //    model_renderer_->CheckCamera();
@@ -79,6 +81,20 @@ std::vector<std::deque<std::shared_ptr<State>>> FireModel::GetObservations() {
     return {};
 }
 
+bool FireModel::MoveDroneByAngle(int drone_idx, double netout_speed, double netout_angle, int water_dispense) {
+    drones_->at(drone_idx)->MoveByAngle(netout_speed, netout_angle);
+    bool dispensed = false;
+    if (water_dispense == 1) {
+        dispensed = drones_->at(drone_idx)->DispenseWater(*gridmap_);
+    }
+
+    std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> drone_view = gridmap_->GetDroneView(drones_->at(drone_idx));
+    std::vector<std::vector<int>> updated_map = gridmap_->GetUpdatedMap(drones_->at(drone_idx), drone_view.second);
+    drones_->at(drone_idx)->Update(netout_speed, netout_angle, drone_view.first, drone_view.second, updated_map);
+
+    return dispensed;
+}
+
 bool FireModel::MoveDrone(int drone_idx, double speed_x, double speed_y, int water_dispense) {
     drones_->at(drone_idx)->Move(speed_x, speed_y);
     bool dispensed = false;
@@ -111,17 +127,20 @@ double FireModel::CalculateReward(bool drone_in_grid, bool fire_extinguished, bo
     double reward = 0;
 
     if (!drone_in_grid) {
-        reward += -1 * max_distance;
+        reward += -2 * max_distance;
+        if(drone_terminal) {
+            reward -= 10;
+        }
     }
 
     if (fire_extinguished) {
         // all fires in sight were extinguished
         if (near_fires == 0) {
-            reward += 5;
+            reward += 50;
         }
         // a fire was extinguished
         else {
-            reward += 1;
+            reward += 15;
         }
     } else {
         // if last_distance or last_distance_to_fire_ is very large, dismiss the reward
@@ -137,6 +156,10 @@ double FireModel::CalculateReward(bool drone_in_grid, bool fire_extinguished, bo
 //            }
             reward += 0.1 * delta_distance;
         }
+        //int dist_fires = last_near_fires_ - near_fires; 
+        // tricky because if the agent flies towards a big fire thats desireable but we dont
+        // want the agent to wait for fires to spawn
+
         if (water_dispensed)
             reward += -0.01;
     }
@@ -153,11 +176,11 @@ std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>,
 
         // Move the drones and get the next_observation
         for (int i = 0; i < (*drones_).size(); ++i) {
-            double speed_x = std::dynamic_pointer_cast<DroneAction>(actions[i])->GetSpeedX() * 0.1; // change this to "real" speed
-            double speed_y = std::dynamic_pointer_cast<DroneAction>(actions[i])->GetSpeedY() * 0.1;
+            double speed_x = std::dynamic_pointer_cast<DroneAction>(actions[i])->GetSpeedX(); // change this to "real" speed
+            double speed_y = std::dynamic_pointer_cast<DroneAction>(actions[i])->GetSpeedY();
 //            std::cout << "Drone " << i << " is moving with speed: " << speed_x << ", " << speed_y << std::endl;
             int water_dispense = std::dynamic_pointer_cast<DroneAction>(actions[i])->GetWaterDispense();
-            bool drone_dispensed_water = MoveDrone(i, speed_x, speed_y, water_dispense);
+            bool drone_dispensed_water = MoveDroneByAngle(i, speed_x, speed_y, water_dispense);
 
             std::pair<int, int> drone_position = drones_->at(i)->GetGridPosition();
             bool drone_in_grid = gridmap_->IsPointInGrid(drone_position.first, drone_position.second);
@@ -193,12 +216,13 @@ std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>,
             if (drones_->at(i)->GetOutOfAreaCounter() > 15) {
                 terminals[i] = true;
                 // Delete Drone and create new one
-                drones_->erase(drones_->begin() + i);
-                auto newDrone = std::make_shared<DroneAgent>(model_renderer_->GetRenderer(),gridmap_->GetRandomPointInGrid(), parameters_, i);
-                std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> drone_view = gridmap_->GetDroneView(newDrone);
-                newDrone->Initialize(drone_view.first, drone_view.second, std::make_pair(gridmap_->GetCols(), gridmap_->GetRows()), parameters_.GetCellSize());
-                // Insert new drone at the same position
-                drones_->insert(drones_->begin() + i, newDrone);
+                // drones_->erase(drones_->begin() + i);
+                // auto newDrone = std::make_shared<DroneAgent>(model_renderer_->GetRenderer(),gridmap_->GetRandomPointInGrid(), parameters_, i);
+                // std::pair<std::vector<std::vector<int>>, std::vector<std::vector<int>>> drone_view = gridmap_->GetDroneView(newDrone);
+                // newDrone->Initialize(drone_view.first, drone_view.second, std::make_pair(gridmap_->GetCols(), gridmap_->GetRows()), parameters_.GetCellSize());
+                // // Insert new drone at the same position
+                // drones_->insert(drones_->begin() + i, newDrone);
+                ResetGridMap(&current_raster_data_);
             }
             double reward = CalculateReward(drone_in_grid, drone_dispensed_water, terminals[i],
                                             water_dispense, near_fires, max_distance, distance_to_fire);
@@ -213,10 +237,9 @@ std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>,
                 terminals[i] = true;
             }
             rewards_.push_back(reward);
-            if (terminals[i]) {
-                last_distance_to_fire_ = std::numeric_limits<double>::max();
-            } else {
+            if (!terminals[i]) {
                 last_distance_to_fire_ = distance_to_fire;
+                last_near_fires_ = near_fires;
             }
         }
 
@@ -275,15 +298,20 @@ void FireModel::HandleEvents(SDL_Event event, ImGuiIO *io) {
         }
     } else if (event.type == SDL_KEYDOWN && parameters_.GetNumberOfDrones() == 1 && !agent_is_running_) {
         if (event.key.keysym.sym == SDLK_w)
-            MoveDrone(0, 0, parameters_.GetDroneSpeed(0.1), 0);
+            // MoveDrone(0, 0, parameters_.GetDroneSpeed(0.1), 0);
+            MoveDroneByAngle(0, 0.25, 0, 0);
         if (event.key.keysym.sym == SDLK_s)
-            MoveDrone(0, 0, -parameters_.GetDroneSpeed(0.1), 0);
+            // MoveDrone(0, 0, -parameters_.GetDroneSpeed(0.1), 0);
+            MoveDroneByAngle(0, -0.25, 0, 0);
         if (event.key.keysym.sym == SDLK_a)
-            MoveDrone(0, -parameters_.GetDroneSpeed(0.1), 0, 0);
+            // MoveDrone(0, -parameters_.GetDroneSpeed(0.1), 0, 0);
+            MoveDroneByAngle(0, 0, -0.25, 0);
         if (event.key.keysym.sym == SDLK_d)
-            MoveDrone(0, parameters_.GetDroneSpeed(0.1), 0, 0);
+            // MoveDrone(0, parameters_.GetDroneSpeed(0.1), 0, 0);
+            MoveDroneByAngle(0, 0, 0.25, 0);
         if (event.key.keysym.sym == SDLK_SPACE)
-            MoveDrone(0, 0, 0, 1);
+            // MoveDrone(0, 0, 0, 1);
+            MoveDroneByAngle(0, 0, 0, 1);
     }
     // Browser Events
     // TODO: Eventloop only gets executed when Application is in Focus. Fix this.
@@ -553,7 +581,7 @@ void FireModel::Config() {
         if (open_file_dialog_) {
             std::string filePathName;
             // open Dialog Simple
-            ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".tif", "../maps/");
+            ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".tif", ".");
 
             // display
             if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey")) {

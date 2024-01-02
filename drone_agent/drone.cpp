@@ -18,6 +18,14 @@ void DroneAgent::Render(std::pair<int, int> position, int size) {
     renderer_.Render(position, size, view_range_, 0);
 }
 
+void DroneAgent::MoveByAngle(double netout_speed, double netout_angle){
+    // If you use this function you currently need to manually set the correct boundarys at the velocity max_vector in parameters_
+    std::pair<double, double> velocity_vector = drone_states_[0].GetNewVelocity(netout_speed, netout_angle);
+    double vel = velocity_vector.first * parameters_.GetDt();
+    double angle = velocity_vector.second;
+    position_.first += vel * cos(angle);
+    position_.second += vel * sin(angle);
+}
 
 void DroneAgent::Move(double netout_speed_x, double netout_speed_y) {
     std::pair<double, double> velocity_vector = drone_states_[0].GetNewVelocity(netout_speed_x, netout_speed_y);

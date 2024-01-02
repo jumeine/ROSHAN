@@ -54,6 +54,7 @@ FireCell::FireCell(int x, int y, std::mt19937 gen, FireModelParameters &paramete
     std::uniform_real_distribution<> dis(0.1, 0.2);
     std::uniform_int_distribution<> sign_dis(-1, 1);
     tau_ign_ += sign_dis(gen_) * tau_ign_ * dis(gen_);
+    tau_ign_start_ = tau_ign_;
 }
 
 CellState FireCell::GetIgnitionState() {
@@ -123,6 +124,7 @@ void FireCell::Ignite() {
         throw std::runtime_error("FireCell::Ignite() called on a cell that is not unburned");
     }
     SetCellState(GENERIC_BURNING);
+    ticking_duration_ = tau_ign_;
 }
 
 VirtualParticle FireCell::EmitConvectionParticle() {
@@ -225,8 +227,12 @@ bool FireCell::FloodTick(){
 
 void FireCell::Flood() {
     if (cell_state_ != GENERIC_FLOODED) {
-        tau_ign_tmp_ = tau_ign_ * 1.5;
+        tau_ign_tmp_ = tau_ign_start_;
         tau_ign_ = -1;
+        if (cell_state_ == GENERIC_BURNING) {
+            Extinguish();
+            ticking_duration_ = 0;
+        }
         SetCellState(GENERIC_FLOODED);
     }
     flood_timer_ = 0;

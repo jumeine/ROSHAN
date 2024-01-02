@@ -158,7 +158,10 @@ bool GridMap::WaterDispension(int x, int y) {
         // Drone is outside the grid so nothing happens
         return false;
     if (GetCellState(x, y) == CellState::GENERIC_BURNING) {
-        ExtinguishCell(x, y);
+        burning_cells_.erase(Point(x, y));
+        EraseParticles(x, y);
+        changed_cells_.push_back(Point(x, y));
+        
         flooded_cells_.insert(Point(x, y));
         cells_[x][y]->Flood();
         flooded_cells_.insert(Point(x, y));

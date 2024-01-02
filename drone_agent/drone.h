@@ -24,6 +24,7 @@ public:
     std::deque<DroneState> GetStates() { return drone_states_; }
     void Update(double speed_x, double speed_y, std::vector<std::vector<int>> terrain, std::vector<std::vector<int>> fire_status, std::vector<std::vector<int>> updated_map);
     void Move(double speed_x, double speed_y);
+    void MoveByAngle(double netout_speed, double netout_angle);
     bool DispenseWater(GridMap &grid_map);
     std::pair<int, int> GetGridPosition();
     std::pair<double, double> GetGridPositionDouble();

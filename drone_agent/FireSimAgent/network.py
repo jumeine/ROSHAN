@@ -427,6 +427,6 @@ class ActorCritic(nn.Module):
 
         dist_entropy_velocity = dist_velocity.entropy()
         dist_entropy_water = dist_water.entropy()
-        combined_entropy = dist_entropy_velocity + dist_entropy_water
+        combined_entropy = dist_entropy_velocity + dist_entropy_water.detach()
 
         return combined_logprob.to(device), torch.squeeze(state_value), combined_entropy.to(device)

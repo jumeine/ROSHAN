@@ -120,28 +120,28 @@ class Inputspace(nn.Module):
         # ]
         # self.map_conv1 = nn.Conv3d(in_channels=1, out_channels=1, kernel_size=layers_dict[0]['kernel_size'], stride=layers_dict[0]['stride'])
 
-        layers_dict = [
-            {'padding': (0, 0), 'dilation': (1, 1), 'kernel_size': (3, 3), 'stride': (1, 1)}
-        ]
-        self.map_conv1 = nn.Conv2d(in_channels=d_in, out_channels=1, kernel_size=layers_dict[0]['kernel_size'], stride=layers_dict[0]['stride'])
+        # layers_dict = [
+        #     {'padding': (0, 0), 'dilation': (1, 1), 'kernel_size': (3, 3), 'stride': (1, 1)}
+        # ]
+        # self.map_conv1 = nn.Conv2d(in_channels=d_in, out_channels=1, kernel_size=layers_dict[0]['kernel_size'], stride=layers_dict[0]['stride'])
 
-        initialize_hidden_weights(self.map_conv1)
-        features_map = (int(dim_x * dim_y)) * 1 # 2 is the number of output channels
+        # initialize_hidden_weights(self.map_conv1)
+        # features_map = (int(dim_x * dim_y)) * 1 # 2 is the number of output channels
 
         self.flatten = nn.Flatten()
 
-        vel_out_features = 64
-        self.vel_dense1 = nn.Linear(in_features=2, out_features=32)
+        vel_out_features = 8
+        self.vel_dense1 = nn.Linear(in_features=2, out_features=16)
         initialize_hidden_weights(self.vel_dense1)
-        self.vel_dense2 = nn.Linear(in_features=32, out_features=vel_out_features)
+        self.vel_dense2 = nn.Linear(in_features=16, out_features=vel_out_features)
         initialize_hidden_weights(self.vel_dense2)
         # self.vel_dense3 = nn.Linear(in_features=32, out_features=vel_out_features)
         # initialize_hidden_weights(self.vel_dense3)
 
-        position_out_features = 64
-        self.position_dense1 = nn.Linear(in_features=2, out_features=32)
+        position_out_features = 8
+        self.position_dense1 = nn.Linear(in_features=2, out_features=16)
         initialize_hidden_weights(self.position_dense1)
-        self.position_dense2 = nn.Linear(in_features=32, out_features=position_out_features)
+        self.position_dense2 = nn.Linear(in_features=16, out_features=position_out_features)
         initialize_hidden_weights(self.position_dense2)
         # self.position_dense3 = nn.Linear(in_features=32, out_features=position_out_features)
         # initialize_hidden_weights(self.position_dense3)
@@ -149,27 +149,26 @@ class Inputspace(nn.Module):
         # four is the number of timeframes TODO make this dynamic
         terrain_out_features = 32
         fire_out_features = 32
-        map_out_features = 32
-        input_features = terrain_out_features + fire_out_features + map_out_features + (position_out_features + vel_out_features) * 4
+        # map_out_features = 32
 
         self.terrain_flat1 = nn.Linear(in_features=features_terrain, out_features=64)
         initialize_hidden_weights(self.terrain_flat1)
-        self.terrain_flat2 = nn.Linear(in_features=64, out_features=32)
+        self.terrain_flat2 = nn.Linear(in_features=64, out_features=terrain_out_features)
         initialize_hidden_weights(self.terrain_flat2)
         # self.terrain_flat3 = nn.Linear(in_features=128, out_features=terrain_out_features)
         # initialize_hidden_weights(self.terrain_flat3)
 
         self.fire_flat1 = nn.Linear(in_features=features_fire, out_features=64)
         initialize_hidden_weights(self.fire_flat1)
-        self.fire_flat2 = nn.Linear(in_features=64, out_features=32)
+        self.fire_flat2 = nn.Linear(in_features=64, out_features=fire_out_features)
         initialize_hidden_weights(self.fire_flat2)
         # self.fire_flat3 = nn.Linear(in_features=128, out_features=fire_out_features)
         # initialize_hidden_weights(self.fire_flat3)
 
-        self.map_flat1 = nn.Linear(in_features=features_map, out_features=64)
-        initialize_hidden_weights(self.map_flat1)
-        self.map_flat2 = nn.Linear(in_features=64, out_features=32)
-        initialize_hidden_weights(self.map_flat2)
+        # self.map_flat1 = nn.Linear(in_features=features_map, out_features=64)
+        # initialize_hidden_weights(self.map_flat1)
+        # self.map_flat2 = nn.Linear(in_features=64, out_features=32)
+        # initialize_hidden_weights(self.map_flat2)
         # self.map_flat3 = nn.Linear(in_features=128, out_features=map_out_features)
         # initialize_hidden_weights(self.map_flat3)
 
@@ -427,6 +426,6 @@ class ActorCritic(nn.Module):
 
         dist_entropy_velocity = dist_velocity.entropy()
         dist_entropy_water = dist_water.entropy()
-        combined_entropy = dist_entropy_velocity + dist_entropy_water.detach()
+        combined_entropy = dist_entropy_velocity + dist_entropy_water
 
         return combined_logprob.to(device), torch.squeeze(state_value), combined_entropy.to(device)

@@ -135,10 +135,10 @@ double FireModel::CalculateReward(bool drone_in_grid, bool fire_extinguished, bo
 //                std::cout << "Current distance: " << distance_to_fire << std::endl;
 //                std::cout << "" << std::endl;
 //            }
-            reward += 0.05 * delta_distance;
+            reward += 0.1 * delta_distance;
         }
         if (water_dispensed)
-            reward += -0.001;
+            reward += -0.01;
     }
     return reward;
 }

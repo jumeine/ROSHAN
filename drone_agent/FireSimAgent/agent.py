@@ -13,7 +13,7 @@ class Agent:
         self.algorithm_name = algorithm
         self.logger = logger
         if algorithm == 'ppo':
-            self.algorithm = PPO(vision_range=21, lr=0.00003, betas=(0.9, 0.999), gamma=0.99, _lambda=0.9, K_epochs=10, eps_clip=0.2)
+            self.algorithm = PPO(vision_range=21, lr=0.00003, betas=(0.9, 0.999), gamma=0.99, _lambda=0.9, K_epochs=4, eps_clip=0.2)
             print("PPO agent initialized")
         elif algorithm == 'td3':
             self.algorithm = TD3(action_dim=action_dim, lr=0.00003, vision_range=21, discount=0.99, tau=0.005, policy_noise=0.2, noise_clip=0.5, policy_freq=2)

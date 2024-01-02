@@ -117,6 +117,7 @@ class Logger(object):
         self.value = []
 
         #objective
+        self.reward_best = -9999
         self.objective_reached = 0
         self.number_of_agents = 0
         self.steps_agents = 0
@@ -219,6 +220,13 @@ class Logger(object):
     def summary_steps_agents(self):
         if self.logging and self.episode > self.last_logging_episode:
             self.writer.add_scalar('avg steps per agent', self.steps_agents / self.number_of_agents, self.episode)
+
+    def better_reward(self):
+        if np.mean(self.reward) > self.reward_best:
+            self.reward_best = np.mean(self.reward)
+            return True
+        else:
+            return False
 
     def log(self):
 

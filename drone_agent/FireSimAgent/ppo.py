@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import warnings
 import numpy as np
+from copy import deepcopy
 from network import ActorCritic
 from utils import RunningMeanStd
 
@@ -44,8 +45,8 @@ class PPO:
         #self.optimizer = torch.optim.Adam(self.policy.ac.parameters(), lr=lr, betas=betas, eps=1e-5)
 
         # old policy: initialize old policy with current policy's parameter
-        # self.old_policy = ActorCritic(vision_range=vision_range)
-        # self.old_policy.load_state_dict(self.policy.state_dict())
+        self.old_policy = ActorCritic(vision_range=vision_range)
+        self.old_policy.load_state_dict(self.policy.state_dict())
 
         self.MSE_loss = nn.MSELoss()
         self.running_reward_std = RunningMeanStd()
@@ -199,11 +200,17 @@ class PPO:
                 # # Global gradient norm clipping https://vitalab.github.io/article/2020/01/14/Implementation_Matters.html
                 # torch.nn.utils.clip_grad_norm_(self.policy.ac.parameters(), max_norm=0.5)
 
-        # Copy new weights to old_policy
-        # self.old_policy.actor.load_state_dict(self.policy.actor.state_dict())
-        # self.old_policy.critic.load_state_dict(self.policy.critic.state_dict())
-
-        #Clear memory
         logger.add_reward([np.array(log_rewards).mean()])
         logger.add_value([np.array(log_values).mean()])
+
+        # Save current weights if the mean reward is higher than the best reward so far
+        if logger.better_reward():
+            print("Saving best weights with reward {}".format(logger.reward_best))
+            torch.save(self.old_policy.state_dict(), '.best.pth')
+
+        # Copy new weights to old_policy
+        self.old_policy.actor.load_state_dict(deepcopy(self.policy.actor.state_dict()))
+        self.old_policy.critic.load_state_dict(deepcopy(self.policy.critic.state_dict()))
+
+        #Clear memory
         memory.clear_memory()

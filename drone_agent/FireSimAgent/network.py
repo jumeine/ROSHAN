@@ -78,7 +78,7 @@ class Inputspace(nn.Module):
         #
         # in_f = self.get_in_features_2d(h_in=vision_range, w_in=vision_range, layers_dict=layers_dict)
 
-        features_terrain = in_f * 8 # 32 is the number of output channels
+        features_terrain = in_f * 8 # 8 is the number of output channels
 
         # layers_dict = [
         #     {'padding': (1, 1, 1), 'dilation': (1, 1, 1), 'kernel_size': (3, 3, 3), 'stride': (1, 1, 1)},
@@ -100,20 +100,20 @@ class Inputspace(nn.Module):
         layers_dict = [
             {'padding': (1, 1), 'dilation': (1, 1), 'kernel_size': (3, 3), 'stride': (1, 1)},
             {'padding': (1, 1), 'dilation': (1, 1), 'kernel_size': (3, 3), 'stride': (1, 1)},
-            {'padding': (0, 0), 'dilation': (1, 1), 'kernel_size': (3, 3), 'stride': (2, 2)},
+            #{'padding': (0, 0), 'dilation': (1, 1), 'kernel_size': (3, 3), 'stride': (2, 2)},
         ]
-        self.fire_conv1 = nn.Conv2d(in_channels=d_in, out_channels=8, padding=layers_dict[0]['padding'],
+        self.fire_conv1 = nn.Conv2d(in_channels=d_in, out_channels=4, padding=layers_dict[0]['padding'],
                                     kernel_size=layers_dict[0]['kernel_size'], stride=layers_dict[0]['stride'])
-        self.fire_bn1 = nn.BatchNorm2d(8)
-        self.fire_conv2 = nn.Conv2d(in_channels=8, out_channels=16, padding=layers_dict[1]['padding'],
+        self.fire_bn1 = nn.BatchNorm2d(4)
+        self.fire_conv2 = nn.Conv2d(in_channels=4, out_channels=8, padding=layers_dict[1]['padding'],
                                     kernel_size=layers_dict[1]['kernel_size'], stride=layers_dict[1]['stride'])
-        self.fire_bn2 = nn.BatchNorm2d(16)
-        self.fire_conv3 = nn.Conv2d(in_channels=16, out_channels=32, padding=layers_dict[2]['padding'],
-                                    kernel_size=layers_dict[2]['kernel_size'], stride=layers_dict[2]['stride'])
-        self.fire_bn3 = nn.BatchNorm2d(32)
+        self.fire_bn2 = nn.BatchNorm2d(8)
+        # self.fire_conv3 = nn.Conv2d(in_channels=16, out_channels=32, padding=layers_dict[2]['padding'],
+        #                             kernel_size=layers_dict[2]['kernel_size'], stride=layers_dict[2]['stride'])
+        # self.fire_bn3 = nn.BatchNorm2d(32)
         # initialize_hidden_weights(self.fire_conv1)
         in_f = self.get_in_features_2d(h_in=vision_range, w_in=vision_range, layers_dict=layers_dict)
-        features_fire = in_f * 32 # 32 is the number of output channels
+        features_fire = in_f * 8 # 32 is the number of output channels
 
         # layers_dict = [
         #     {'padding': (0, 0, 0), 'dilation': (1, 1, 1), 'kernel_size': (3, 3, 3), 'stride': (1, 1, 1)}
@@ -175,7 +175,7 @@ class Inputspace(nn.Module):
 
         # self.input_dense1 = nn.Linear(in_features=input_features, out_features=64)
         # initialize_hidden_weights(self.input_dense1)
-        input_features = terrain_out_features + (position_out_features + vel_out_features) * 4
+        input_features = terrain_out_features + fire_out_features + (position_out_features + vel_out_features) * 4
         self.input_dense1 = nn.Linear(in_features=input_features, out_features=128)
         initialize_hidden_weights(self.input_dense1)
         self.input_dense2 = nn.Linear(in_features=128, out_features=256)
@@ -248,12 +248,12 @@ class Inputspace(nn.Module):
         terrain = F.relu(self.terrain_flat2(terrain))
         # terrain = F.relu(self.terrain_flat3(terrain))
 
-        # fire_status = F.relu(self.fire_bn1(self.fire_conv1(fire_status)))
-        # fire_status = F.relu(self.fire_bn2(self.fire_conv2(fire_status)))
+        fire_status = F.relu(self.fire_bn1(self.fire_conv1(fire_status)))
+        fire_status = F.relu(self.fire_bn2(self.fire_conv2(fire_status)))
         # fire_status = F.relu(self.fire_bn3(self.fire_conv3(fire_status)))
-        # fire_status = self.flatten(fire_status)
-        # fire_status = F.relu(self.fire_flat1(fire_status))
-        # fire_status = F.relu(self.fire_flat2(fire_status))
+        fire_status = self.flatten(fire_status)
+        fire_status = F.relu(self.fire_flat1(fire_status))
+        fire_status = F.relu(self.fire_flat2(fire_status))
         # fire_status = F.relu(self.fire_flat3(fire_status))
         #
         # maps = F.relu(self.map_conv1(maps))
@@ -273,7 +273,7 @@ class Inputspace(nn.Module):
         # velocity = F.relu(self.vel_dense3(velocity))
         velocity = self.flatten(velocity)
 
-        concated_input = torch.cat((terrain, velocity, position), dim=1)
+        concated_input = torch.cat((terrain, fire_status, velocity, position), dim=1)
         # concated_input = torch.cat((terrain, fire_status, velocity, maps, position), dim=1)
         input_dense = F.relu(self.input_dense1(concated_input))
         input_dense = F.relu(self.input_dense2(input_dense))

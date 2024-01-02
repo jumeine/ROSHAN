@@ -65,10 +65,10 @@ public:
 
     // Parameter for the Grid
     // Number of cells in the x direction (rows)
-    int grid_nx_ = 16;
+    int grid_nx_ = 100;
     int GetGridNx() const {return grid_nx_;}
     // Number of cells in the y direction (cols)
-    int grid_ny_ = 16;
+    int grid_ny_ = 100;
     int GetGridNy() const {return grid_ny_;}
 
 
@@ -110,8 +110,8 @@ public:
 
     void ConvertRealToGridCoordinates(double x, double y, int &i, int &j) {
         // round x and y to get the cell coordinates
-        i = int(round(x / GetCellSize()));
-        j = int(round(y / GetCellSize()));
+        i = int(trunc(x / GetCellSize()));
+        j = int(trunc(y / GetCellSize()));
     }
 
     void ConvertRealToGridCoordinatesDrone(double x, double y, int &i, int &j) {

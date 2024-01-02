@@ -118,8 +118,8 @@ public:
     int number_of_drones_ = 1;
     // std::pair<double, double> min_velocity_ = std::make_pair(-5.0, -5.0);
     // std::pair<double, double> GetMinVelocity() const {return min_velocity_;}
-    //std::pair<double, double> max_velocity_ = std::make_pair(5.0, 5.0); // X and Y Speed
-    std::pair<double, double> max_velocity_ = std::make_pair(5.0, 2 * M_PI); // X and Y Speed
+    std::pair<double, double> max_velocity_ = std::make_pair(5.0, 5.0); // X and Y Speed
+    // std::pair<double, double> max_velocity_ = std::make_pair(5.0, 2 * M_PI); // Max Speed and Angle
     std::pair<double, double> GetMaxVelocity() const {return max_velocity_;}
     int GetNumberOfDrones() const {return number_of_drones_;}
     void SetNumberOfDrones(int number) {number_of_drones_ = number;}

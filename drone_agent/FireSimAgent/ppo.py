@@ -204,7 +204,7 @@ class PPO:
         # Save current weights if the mean reward is higher than the best reward so far
         if logger.better_reward():
             print("Saving best weights with reward {}".format(logger.reward_best))
-            torch.save(self.old_policy.state_dict(), '.best.pth')
+            torch.save(self.old_policy.state_dict(), 'best.pth')
 
         # Copy new weights to old_policy
         self.old_policy.actor.load_state_dict(deepcopy(self.policy.actor.state_dict()))

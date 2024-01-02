@@ -126,21 +126,32 @@ void FireModel::ResetDrones() {
 double FireModel::CalculateReward(bool drone_in_grid, bool fire_extinguished, bool drone_terminal, int water_dispensed, int near_fires, double max_distance, double distance_to_fire) {
     double reward = 0;
 
+    // check the boundaries of the network
     if (!drone_in_grid) {
-        reward += -2 * max_distance;
+        reward += -5 * max_distance;
         if(drone_terminal) {
-            reward -= 10;
+            reward -= 20;
+            return reward;
         }
     }
 
+    // Fire was discovered
+    if (last_near_fires_ == 0 && near_fires > 0) {
+        reward += 2;
+    }
+
     if (fire_extinguished) {
+        if (drone_terminal) {
+            reward += 50;
+            return reward;
+        }
         // all fires in sight were extinguished
         if (near_fires == 0) {
-            reward += 50;
+            reward += 20;
         }
         // a fire was extinguished
         else {
-            reward += 15;
+            reward += 10;
         }
     } else {
         // if last_distance or last_distance_to_fire_ is very large, dismiss the reward
@@ -160,8 +171,8 @@ double FireModel::CalculateReward(bool drone_in_grid, bool fire_extinguished, bo
         // tricky because if the agent flies towards a big fire thats desireable but we dont
         // want the agent to wait for fires to spawn
 
-        if (water_dispensed)
-            reward += -0.01;
+        // if (water_dispensed)
+        //     reward += -0.1;
     }
     return reward;
 }
@@ -180,7 +191,8 @@ std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>,
             double speed_y = std::dynamic_pointer_cast<DroneAction>(actions[i])->GetSpeedY();
 //            std::cout << "Drone " << i << " is moving with speed: " << speed_x << ", " << speed_y << std::endl;
             int water_dispense = std::dynamic_pointer_cast<DroneAction>(actions[i])->GetWaterDispense();
-            bool drone_dispensed_water = MoveDroneByAngle(i, speed_x, speed_y, water_dispense);
+            bool drone_dispensed_water = MoveDrone(i, speed_x, speed_y, water_dispense);
+            // bool drone_dispensed_water = MoveDroneByAngle(i, speed_x, speed_y, water_dispense);
 
             std::pair<int, int> drone_position = drones_->at(i)->GetGridPosition();
             bool drone_in_grid = gridmap_->IsPointInGrid(drone_position.first, drone_position.second);
@@ -224,8 +236,6 @@ std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>,
                 // drones_->insert(drones_->begin() + i, newDrone);
                 ResetGridMap(&current_raster_data_);
             }
-            double reward = CalculateReward(drone_in_grid, drone_dispensed_water, terminals[i],
-                                            water_dispense, near_fires, max_distance, distance_to_fire);
 
             if(gridmap_->PercentageBurned() > 0.30) {
 //                std::cout << "Percentage burned: " << gridmap_->PercentageBurned() << " resetting GridMap" << std::endl;
@@ -236,6 +246,8 @@ std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>,
                 ResetGridMap(&current_raster_data_);
                 terminals[i] = true;
             }
+            double reward = CalculateReward(drone_in_grid, drone_dispensed_water, terminals[i],
+                                water_dispense, near_fires, max_distance, distance_to_fire);
             rewards_.push_back(reward);
             if (!terminals[i]) {
                 last_distance_to_fire_ = distance_to_fire;
@@ -298,20 +310,20 @@ void FireModel::HandleEvents(SDL_Event event, ImGuiIO *io) {
         }
     } else if (event.type == SDL_KEYDOWN && parameters_.GetNumberOfDrones() == 1 && !agent_is_running_) {
         if (event.key.keysym.sym == SDLK_w)
-            // MoveDrone(0, 0, parameters_.GetDroneSpeed(0.1), 0);
-            MoveDroneByAngle(0, 0.25, 0, 0);
+            MoveDrone(0, 0, parameters_.GetDroneSpeed(0.1), 0);
+            // MoveDroneByAngle(0, 0.25, 0, 0);
         if (event.key.keysym.sym == SDLK_s)
-            // MoveDrone(0, 0, -parameters_.GetDroneSpeed(0.1), 0);
-            MoveDroneByAngle(0, -0.25, 0, 0);
+            MoveDrone(0, 0, -parameters_.GetDroneSpeed(0.1), 0);
+            // MoveDroneByAngle(0, -0.25, 0, 0);
         if (event.key.keysym.sym == SDLK_a)
-            // MoveDrone(0, -parameters_.GetDroneSpeed(0.1), 0, 0);
-            MoveDroneByAngle(0, 0, -0.25, 0);
+            MoveDrone(0, -parameters_.GetDroneSpeed(0.1), 0, 0);
+            // MoveDroneByAngle(0, 0, -0.25, 0);
         if (event.key.keysym.sym == SDLK_d)
-            // MoveDrone(0, parameters_.GetDroneSpeed(0.1), 0, 0);
-            MoveDroneByAngle(0, 0, 0.25, 0);
+            MoveDrone(0, parameters_.GetDroneSpeed(0.1), 0, 0);
+            // MoveDroneByAngle(0, 0, 0.25, 0);
         if (event.key.keysym.sym == SDLK_SPACE)
-            // MoveDrone(0, 0, 0, 1);
-            MoveDroneByAngle(0, 0, 0, 1);
+            MoveDrone(0, 0, 0, 1);
+            // MoveDroneByAngle(0, 0, 0, 1);
     }
     // Browser Events
     // TODO: Eventloop only gets executed when Application is in Focus. Fix this.

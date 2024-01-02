@@ -117,7 +117,7 @@ class Logger(object):
         self.value = []
 
         #objective
-        self.reward_best = -9999
+        self.reward_best = -99999
         self.objective_reached = 0
         self.number_of_agents = 0
         self.steps_agents = 0

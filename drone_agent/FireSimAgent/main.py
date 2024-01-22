@@ -6,7 +6,7 @@ import numpy as np
 
 # Add path to module directories #TODO make this more elegant
 script_directory = os.path.dirname(os.path.abspath(__file__))
-module_directory = os.path.join(script_directory, '../../build/')
+module_directory = os.path.join(script_directory, '../../cmake-build-debug/')
 sys.path.insert(0, module_directory)
 
 import firesim
@@ -47,8 +47,8 @@ if __name__ == '__main__':
 
     # Lists alls the functions in the EngineCore class
     # print(dir(EngineCore))
-    horizon = 8192
-    batch_size = 64
+    batch_size = 2048
+    mini_batch_size = 64
     t = -1
 
     engine = firesim.EngineCore()
@@ -56,7 +56,7 @@ if __name__ == '__main__':
     logger = Logger(log_dir='./logs', log_interval=1)
     agent = Agent('ppo', logger)
     logger.set_logging(True)
-    if memory.max_size <= horizon:
+    if memory.max_size <= batch_size:
         warnings.warn("Memory size is smaller than horizon. Setting horizon to memory size.")
         horizon = memory.max_size - 1
     engine.Init(0)
@@ -76,8 +76,8 @@ if __name__ == '__main__':
             next_observations, rewards, terminals = engine.Step(drone_actions)
             next_obs = restructure_data(next_observations)
             memory.add(obs, actions, action_logprobs, rewards, next_obs, terminals)
-            if agent.should_train(memory, horizon, t):
-                agent.update(memory, batch_size)
+            if agent.should_train(memory, batch_size, t):
+                agent.update(memory, batch_size, mini_batch_size)
                 logger.log()
 
     engine.Clean()

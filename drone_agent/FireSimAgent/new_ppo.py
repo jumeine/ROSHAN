@@ -103,9 +103,9 @@ class PPO:
         norm_adv = (advantages - advantages.mean()) / (advantages.std() + 1e-10)
 
         returns = torch.FloatTensor(returns).to(device)
-        #norm_returns = (returns - returns.mean()) / (returns.std() + 1e-10)
+        norm_returns = (returns - returns.mean()) / (returns.std() + 1e-10)
 
-        return norm_adv, returns
+        return norm_adv, norm_returns
 
     def update(self, memory, batch_size, mini_batch_size, logger):
         """
@@ -149,13 +149,19 @@ class PPO:
             torch.save(self.policy.state_dict(), 'best.pth')
 
         # Advantages
+        advantages = []
+        gae = 0
         with torch.no_grad():
-            _, values_, _ = self.policy.evaluate(states, actions)
-            if masks[-1] == 1:
-                last_state = (states[0][-1].unsqueeze(0), states[1][-1].unsqueeze(0), states[2][-1].unsqueeze(0), states[3][-1].unsqueeze(0), states[4][-1].unsqueeze(0))
-                bootstrapped_value = self.policy.critic(last_state).detach()
-                values_ = torch.cat((values_, bootstrapped_value[0]), dim=0)
-            advantages, returns = self.get_advantages(values_.detach(), masks, rewards)
+            values_ = self.policy.critic(states)
+            next_values_ = self.policy.critic(next_states)
+            deltas = rewards + self.gamma * masks * next_values_ - values_
+            for delta, d in zip(reversed(deltas.flatten()), reversed(masks.flatten())):
+                gae = delta + self.gamma * self._lambda * gae * d
+                advantages.insert(0, gae)
+
+            advantages = torch.tensor(advantages, dtype=torch.float32).view(-1, 1).to(device)
+            returns = advantages + values_
+            advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-5)
 
         # Train policy for K epochs: sampling and updating
         for _ in range(self.K_epochs):

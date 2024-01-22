@@ -151,9 +151,9 @@ double FireModel::CalculateReward(bool drone_in_grid, bool fire_extinguished, bo
 
     // check the boundaries of the network
     if (!drone_in_grid) {
-        reward += -5 * max_distance;
+        reward += -2 * max_distance;
         if(drone_terminal) {
-            reward -= 20;
+            reward -= 10;
             return reward;
         }
     }
@@ -165,16 +165,16 @@ double FireModel::CalculateReward(bool drone_in_grid, bool fire_extinguished, bo
 
     if (fire_extinguished) {
         if (drone_terminal) {
-            reward += 50;
+            reward += 10;
             return reward;
         }
         // all fires in sight were extinguished
-        if (near_fires == 0) {
-            reward += 20;
+        else if (near_fires == 0) {
+            reward += 5;
         }
         // a fire was extinguished
         else {
-            reward += 10;
+            reward += 1;
         }
     } else {
         // if last_distance or last_distance_to_fire_ is very large, dismiss the reward
@@ -188,7 +188,7 @@ double FireModel::CalculateReward(bool drone_in_grid, bool fire_extinguished, bo
 //                std::cout << "Current distance: " << distance_to_fire << std::endl;
 //                std::cout << "" << std::endl;
 //            }
-            reward += 0.1 * delta_distance;
+            reward += 0.05 * delta_distance;
         }
         //int dist_fires = last_near_fires_ - near_fires; 
         // tricky because if the agent flies towards a big fire thats desireable but we dont

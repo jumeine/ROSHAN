@@ -113,6 +113,14 @@ class Memory(object):
     def has_batches(self):
         return self.batch_ptr < (self.size - 1) # TODO little bit dirty I throw away one observation
 
+    def to_tensor(self):
+        return tuple(torch.FloatTensor(np.array(state)).to(self.device) for state in zip(*self.state[:self.size])), \
+               torch.FloatTensor(self.action[:self.size]).to(self.device), \
+               torch.FloatTensor(self.logprobs[:self.size]).to(self.device), \
+               torch.FloatTensor(self.reward[:self.size]).to(self.device), \
+               tuple(torch.FloatTensor(np.array(state)).to(self.device) for state in zip(*self.next_state[:self.size])), \
+               torch.FloatTensor(self.masks[:self.size]).to(self.device)
+
     def next_batch(self, batch_size):
         batch_start = self.batch_ptr
         if self.batch_ptr + batch_size < self.size:

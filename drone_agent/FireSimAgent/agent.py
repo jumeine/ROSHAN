@@ -28,8 +28,8 @@ class Agent:
             else:
                 return False
 
-    def update(self, memory, batch_size):
-        self.algorithm.update(memory, batch_size, self.logger)
+    def update(self, memory, batch_size, mini_batch_size):
+        self.algorithm.update(memory, batch_size, mini_batch_size, self.logger)
 
     def act(self, observations, t):
         if self.algorithm_name == 'td3':

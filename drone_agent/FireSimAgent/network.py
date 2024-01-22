@@ -130,18 +130,18 @@ class Inputspace(nn.Module):
 
         self.flatten = nn.Flatten()
 
-        vel_out_features = 8
-        self.vel_dense1 = nn.Linear(in_features=2, out_features=16)
+        vel_out_features = 64
+        self.vel_dense1 = nn.Linear(in_features=2, out_features=32)
         initialize_hidden_weights(self.vel_dense1)
-        self.vel_dense2 = nn.Linear(in_features=16, out_features=vel_out_features)
+        self.vel_dense2 = nn.Linear(in_features=32, out_features=vel_out_features)
         initialize_hidden_weights(self.vel_dense2)
         # self.vel_dense3 = nn.Linear(in_features=32, out_features=vel_out_features)
         # initialize_hidden_weights(self.vel_dense3)
 
-        position_out_features = 8
-        self.position_dense1 = nn.Linear(in_features=2, out_features=16)
+        position_out_features = 64
+        self.position_dense1 = nn.Linear(in_features=2, out_features=32)
         initialize_hidden_weights(self.position_dense1)
-        self.position_dense2 = nn.Linear(in_features=16, out_features=position_out_features)
+        self.position_dense2 = nn.Linear(in_features=32, out_features=position_out_features)
         initialize_hidden_weights(self.position_dense2)
         # self.position_dense3 = nn.Linear(in_features=32, out_features=position_out_features)
         # initialize_hidden_weights(self.position_dense3)
@@ -361,29 +361,29 @@ class ActorCritic(nn.Module):
 
         # TODO: check if normalization of states is necessary
         # was suggested in: Implementation_Matters in Deep RL: A Case Study on PPO and TRPO
-        action_mean, action_var = self.actor(state)
+        with torch.no_grad():
+            action_mean, action_var = self.actor(state)
 
-        action_mean_velocity = action_mean[:, :2].to('cpu')
-        action_var_velocity = action_var[:2].to('cpu')
-        action_mean_water_emit = action_mean[:, 2].to('cpu')
+            action_mean_velocity = action_mean[:, :2].to('cpu')
+            action_var_velocity = action_var[:2].to('cpu')
+            action_mean_water_emit = action_mean[:, 2].to('cpu')
 
-        cov_mat = torch.diag(action_var_velocity)
-        dist_velocity = MultivariateNormal(action_mean_velocity, cov_mat)
-        dist_water = Bernoulli(action_mean_water_emit)
-        ## logging of actions
-        #self.logger.add_actor_output(action_mean.mean(0)[0].item(), action_mean.mean(0)[1].item(), action_var[0].item(), action_var[1].item())
+            cov_mat = torch.diag(action_var_velocity)
+            dist_velocity = MultivariateNormal(action_mean_velocity, cov_mat)
+            dist_water = Bernoulli(action_mean_water_emit)
+            ## logging of actions
+            #self.logger.add_actor_output(action_mean.mean(0)[0].item(), action_mean.mean(0)[1].item(), action_var[0].item(), action_var[1].item())
 
-        action_velocity = dist_velocity.sample()
-        action_velocity = torch.clip(action_velocity, -1, 1)
-        action_water = dist_water.sample().view(1, -1)
+            action_velocity = dist_velocity.sample()
+            action_velocity = torch.clip(action_velocity, -1, 1)
+            action_water = dist_water.sample().view(1, -1)
 
+            action_logprob_velocity = dist_velocity.log_prob(action_velocity)
+            action_logprob_water = dist_water.log_prob(action_water)
+            action = torch.cat([action_velocity, action_water], dim=1)
+            combined_logprob = action_logprob_velocity + action_logprob_water
 
-        action_logprob_velocity = dist_velocity.log_prob(action_velocity)
-        action_logprob_water = dist_water.log_prob(action_water)
-        action = torch.cat([action_velocity, action_water], dim=1)
-        combined_logprob = action_logprob_velocity + action_logprob_water
-
-        return action.detach().numpy(), combined_logprob.detach().numpy()
+            return action.detach().numpy(), combined_logprob.detach().numpy()
 
     def act_certain(self, state):
         """

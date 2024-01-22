@@ -18,8 +18,8 @@ public:
         radiation_sf0_[0] = 0.1;
         radiation_sf0_[1] = 0.025;
         num_convection_particles_ = 10;
-        radiation_length_min_ = 9;
-        radiation_length_max_ = 10;
+        radiation_length_min_ = 5;
+        radiation_length_max_ = 50;
         num_radiation_particles_ = 4;
     }
 };

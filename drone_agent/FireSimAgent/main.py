@@ -51,10 +51,14 @@ if __name__ == '__main__':
     mini_batch_size = 64
     t = -1
 
+
     engine = firesim.EngineCore()
     memory = Memory()
     logger = Logger(log_dir='./logs', log_interval=1)
     agent = Agent('ppo', logger)
+    train = False
+    if not train:
+        agent.algorithm.load_model('../networks/best.pth')
     logger.set_logging(True)
     if memory.max_size <= batch_size:
         warnings.warn("Memory size is smaller than horizon. Setting horizon to memory size.")
@@ -69,16 +73,23 @@ if __name__ == '__main__':
             t += 1 #TODO use simulation time instead of timesteps
             observations = engine.GetObservations()
             obs = restructure_data(observations)
-            actions, action_logprobs = agent.act(obs, t)
-            drone_actions = []
-            for activation in actions:
-                drone_actions.append(firesim.DroneAction(activation[0], activation[1], int(activation[2])))
-            next_observations, rewards, terminals = engine.Step(drone_actions)
-            next_obs = restructure_data(next_observations)
-            memory.add(obs, actions, action_logprobs, rewards, next_obs, terminals)
-            if agent.should_train(memory, batch_size, t):
-                agent.update(memory, batch_size, mini_batch_size)
-                logger.log()
+            if train:
+                actions, action_logprobs = agent.act(obs, t)
+                drone_actions = []
+                for activation in actions:
+                    drone_actions.append(firesim.DroneAction(activation[0], activation[1], int(np.round(actions[0][2]))))
+                next_observations, rewards, terminals = engine.Step(drone_actions)
+                next_obs = restructure_data(next_observations)
+                memory.add(obs, actions, action_logprobs, rewards, next_obs, terminals)
+                if agent.should_train(memory, batch_size, t):
+                    agent.update(memory, batch_size, mini_batch_size)
+                    logger.log()
+            else:
+                actions = agent.act_certain(obs)
+                drone_actions = []
+                for activation in actions:
+                    drone_actions.append(firesim.DroneAction(activation[0], activation[1], int(np.round(actions[0][2]))))
+                next_observations, rewards, terminals = engine.Step(drone_actions)
 
     engine.Clean()
 

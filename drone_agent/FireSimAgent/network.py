@@ -130,18 +130,18 @@ class Inputspace(nn.Module):
 
         self.flatten = nn.Flatten()
 
-        vel_out_features = 64
-        self.vel_dense1 = nn.Linear(in_features=2, out_features=32)
+        vel_out_features = 16
+        self.vel_dense1 = nn.Linear(in_features=2, out_features=8)
         initialize_hidden_weights(self.vel_dense1)
-        self.vel_dense2 = nn.Linear(in_features=32, out_features=vel_out_features)
+        self.vel_dense2 = nn.Linear(in_features=8, out_features=vel_out_features)
         initialize_hidden_weights(self.vel_dense2)
         # self.vel_dense3 = nn.Linear(in_features=32, out_features=vel_out_features)
         # initialize_hidden_weights(self.vel_dense3)
 
-        position_out_features = 64
-        self.position_dense1 = nn.Linear(in_features=2, out_features=32)
+        position_out_features = 8
+        self.position_dense1 = nn.Linear(in_features=2, out_features=16)
         initialize_hidden_weights(self.position_dense1)
-        self.position_dense2 = nn.Linear(in_features=32, out_features=position_out_features)
+        self.position_dense2 = nn.Linear(in_features=16, out_features=position_out_features)
         initialize_hidden_weights(self.position_dense2)
         # self.position_dense3 = nn.Linear(in_features=32, out_features=position_out_features)
         # initialize_hidden_weights(self.position_dense3)
@@ -392,10 +392,10 @@ class ActorCritic(nn.Module):
         :param states: A tuple of the current lidar scan, orientation to goal, distance to goal, and velocity.
         :return: The action from the actor's distribution.
         """
-        terrain, fire_status, velocity, maps, position = state
-        action, _ = self.actor(terrain.to(device), fire_status.to(device), velocity.to(device), maps.to(device), position.to(device))
+        with torch.no_grad():
+            action_mean, _ = self.actor(state)
 
-        return action.to('cpu')
+        return action_mean.detach().cpu().numpy()
 
     def evaluate(self, state, action):
         """

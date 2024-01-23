@@ -28,6 +28,9 @@ class Agent:
             else:
                 return False
 
+    def load_model(self, path):
+        self.algorithm.load_model(path)
+
     def update(self, memory, batch_size, mini_batch_size):
         self.algorithm.update(memory, batch_size, mini_batch_size, self.logger)
 
@@ -37,5 +40,8 @@ class Agent:
                 return self.algorithm.random_action()
 
         return self.algorithm.select_action(observations)
+
+    def act_certain(self, observations):
+        return self.algorithm.select_action_certain(observations)
 
 

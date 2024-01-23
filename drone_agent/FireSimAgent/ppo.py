@@ -52,6 +52,10 @@ class PPO:
         self.MSE_loss = nn.MSELoss()
         self.running_reward_std = RunningMeanStd()
 
+    def load_model(self, path):
+        self.policy.load_state_dict(torch.load(path, map_location=lambda storage, loc: storage))
+        self.policy.eval()
+
     def select_action(self, observations):
         return self.policy.act(observations)
 

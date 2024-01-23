@@ -24,7 +24,7 @@ void GameOfLifeInfinite::Update() {
 
 }
 
-std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>, std::vector<bool>> GameOfLifeInfinite::Step(std::vector<std::shared_ptr<Action>> actions) {
+std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>, std::vector<bool>, std::pair<bool, bool>> GameOfLifeInfinite::Step(std::vector<std::shared_ptr<Action>> actions) {
     CellStateGOF new_state;
 
     // Find all cells that need to be updated

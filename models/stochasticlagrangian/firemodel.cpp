@@ -201,13 +201,15 @@ double FireModel::CalculateReward(bool drone_in_grid, bool fire_extinguished, bo
 }
 
 
-std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>, std::vector<bool>> FireModel::Step(std::vector<std::shared_ptr<Action>> actions) {
+std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>, std::vector<bool>, std::pair<bool, bool>> FireModel::Step(std::vector<std::shared_ptr<Action>> actions) {
 
     if (gridmap_ != nullptr) {
         std::vector<std::deque<std::shared_ptr<State>>> next_observations;
         std::vector<bool> terminals;
         rewards_.clear();
-
+        // TODO this is dirty
+        bool drone_died = false;
+        bool all_fires_ext = false;
         // Move the drones and get the next_observation
         for (int i = 0; i < (*drones_).size(); ++i) {
             double speed_x = std::dynamic_pointer_cast<DroneAction>(actions[i])->GetSpeedX(); // change this to "real" speed
@@ -250,6 +252,7 @@ std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>,
             // Check if drone is out of area for too long, if so, reset it
             if (drones_->at(i)->GetOutOfAreaCounter() > 15) {
                 terminals[i] = true;
+                drone_died = true;
                 // Delete Drone and create new one
                 // drones_->erase(drones_->begin() + i);
                 // auto newDrone = std::make_shared<DroneAgent>(model_renderer_->GetRenderer(),gridmap_->GetRandomPointInGrid(), parameters_, i);
@@ -264,10 +267,12 @@ std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>,
 //                std::cout << "Percentage burned: " << gridmap_->PercentageBurned() << " resetting GridMap" << std::endl;
                 ResetGridMap(&current_raster_data_);
                 terminals[i] = true;
+                drone_died = true;
             } else if (!gridmap_->IsBurning()) {
 //                std::cout << "Fire is extinguished, resetting GridMap" << std::endl;
                 ResetGridMap(&current_raster_data_);
                 terminals[i] = true;
+                all_fires_ext = true;
             }
             double reward = CalculateReward(drone_in_grid, drone_dispensed_water, terminals[i],
                                 water_dispense, near_fires, max_distance, distance_to_fire);
@@ -278,7 +283,7 @@ std::tuple<std::vector<std::deque<std::shared_ptr<State>>>, std::vector<double>,
             }
         }
 
-        return {next_observations, rewards_, terminals};
+        return {next_observations, rewards_, terminals, std::make_pair(drone_died, all_fires_ext)};
 
     }
     return {};

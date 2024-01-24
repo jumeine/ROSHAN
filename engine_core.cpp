@@ -130,7 +130,7 @@ bool EngineCore::ImGuiModelSelection(){
             model_ = GameOfLifeFixed::GetInstance(renderer_);
         }
         ImGui::Separator();
-        if (ImGui::Button("Firemodel", ImVec2(-1, 0))) {
+        if (ImGui::Button("FireSPIN", ImVec2(-1, 0))) {
             model_ = FireModel::GetInstance(renderer_, mode_);
 //            model_->Initialize();
         }

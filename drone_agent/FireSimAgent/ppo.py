@@ -143,6 +143,8 @@ class PPO:
         memory.build_masks()
         states, actions, old_logprobs, rewards, next_states, masks = memory.to_tensor()
 
+        rewards = (rewards - rewards.mean()) / (rewards.std() + 1e-10)
+
         # Logger
         log_values = []
         logger.add_reward([np.array(rewards.detach().cpu()).mean()])

@@ -135,24 +135,24 @@ class PPO:
         # if batch_size == 1:
         #     raise ValueError("Batch size must be greater than 1.")
 
-        # Normalize rewards
-        # self.running_reward_std.update(np.array(rewards))
-        # rewards = np.clip(np.array(rewards) / self.running_reward_std.get_std(), -10, 10)
-        # rewards = torch.tensor(rewards).type(torch.float32)
-
         memory.build_masks()
         states, actions, old_logprobs, rewards, next_states, masks = memory.to_tensor()
-
-        rewards = (rewards - rewards.mean()) / (rewards.std() + 1e-10)
 
         # Logger
         log_values = []
         logger.add_reward([np.array(rewards.detach().cpu()).mean()])
+        
+        # Normalize rewards by running reward
+        # self.running_reward_std.update(np.array(rewards))
+        # rewards = np.clip(np.array(rewards) / self.running_reward_std.get_std(), -10, 10)
+        # rewards = torch.tensor(rewards).type(torch.float32)
 
         # Save current weights if the mean reward is higher than the best reward so far
         if logger.better_reward():
             print("Saving best weights with reward {}".format(logger.reward_best))
             torch.save(self.policy.state_dict(), 'best.pth')
+        
+        rewards = (rewards - rewards.mean()) / (rewards.std() + 1e-10)
 
         # Advantages
         with torch.no_grad():

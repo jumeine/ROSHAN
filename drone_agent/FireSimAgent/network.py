@@ -130,7 +130,7 @@ class Inputspace(nn.Module):
 
         self.flatten = nn.Flatten()
 
-        vel_out_features = 4
+        vel_out_features = 16
         self.vel_dense1 = nn.Linear(in_features=2, out_features=8)
         initialize_hidden_weights(self.vel_dense1)
         self.vel_dense2 = nn.Linear(in_features=8, out_features=vel_out_features)
@@ -138,29 +138,29 @@ class Inputspace(nn.Module):
         # self.vel_dense3 = nn.Linear(in_features=32, out_features=vel_out_features)
         # initialize_hidden_weights(self.vel_dense3)
 
-        position_out_features = 4
-        self.position_dense1 = nn.Linear(in_features=2, out_features=8)
+        position_out_features = 8
+        self.position_dense1 = nn.Linear(in_features=2, out_features=16)
         initialize_hidden_weights(self.position_dense1)
-        self.position_dense2 = nn.Linear(in_features=8, out_features=position_out_features)
+        self.position_dense2 = nn.Linear(in_features=16, out_features=position_out_features)
         initialize_hidden_weights(self.position_dense2)
         # self.position_dense3 = nn.Linear(in_features=32, out_features=position_out_features)
         # initialize_hidden_weights(self.position_dense3)
 
         # four is the number of timeframes TODO make this dynamic
-        terrain_out_features = 16
-        fire_out_features = 16
+        terrain_out_features = 32
+        fire_out_features = 32
         # map_out_features = 32
 
-        self.terrain_flat1 = nn.Linear(in_features=features_terrain, out_features=32)
+        self.terrain_flat1 = nn.Linear(in_features=features_terrain, out_features=64)
         initialize_hidden_weights(self.terrain_flat1)
-        self.terrain_flat2 = nn.Linear(in_features=32, out_features=terrain_out_features)
+        self.terrain_flat2 = nn.Linear(in_features=64, out_features=terrain_out_features)
         initialize_hidden_weights(self.terrain_flat2)
         # self.terrain_flat3 = nn.Linear(in_features=128, out_features=terrain_out_features)
         # initialize_hidden_weights(self.terrain_flat3)
 
-        self.fire_flat1 = nn.Linear(in_features=features_fire, out_features=32)
+        self.fire_flat1 = nn.Linear(in_features=features_fire, out_features=64)
         initialize_hidden_weights(self.fire_flat1)
-        self.fire_flat2 = nn.Linear(in_features=32, out_features=fire_out_features)
+        self.fire_flat2 = nn.Linear(in_features=64, out_features=fire_out_features)
         initialize_hidden_weights(self.fire_flat2)
         # self.fire_flat3 = nn.Linear(in_features=128, out_features=fire_out_features)
         # initialize_hidden_weights(self.fire_flat3)
@@ -177,7 +177,7 @@ class Inputspace(nn.Module):
         input_features = terrain_out_features + fire_out_features + (position_out_features + vel_out_features) * 4
         self.input_dense1 = nn.Linear(in_features=input_features, out_features=128)
         initialize_hidden_weights(self.input_dense1)
-        self.input_dense2 = nn.Linear(in_features=128, out_features=64)
+        self.input_dense2 = nn.Linear(in_features=128, out_features=256)
         initialize_hidden_weights(self.input_dense2)
         # self.input_dense3 = nn.Linear(in_features=128, out_features=256)
         # initialize_hidden_weights(self.input_dense3)
@@ -291,9 +291,9 @@ class Actor(nn.Module):
 
         # Mu
         # self.pre_mu = nn.Linear(in_features=256, out_features=128)
-        self.mu = nn.Linear(in_features=64, out_features=2)
+        self.mu = nn.Linear(in_features=256, out_features=2)
         # self.pre_water = nn.Linear(in_features=256, out_features=128)
-        self.water_emit = nn.Linear(in_features=64, out_features=1)
+        self.water_emit = nn.Linear(in_features=256, out_features=1)
         # initialize_output_weights(self.pre_mu, 'actor')
         # initialize_output_weights(self.pre_water, 'actor')
         initialize_output_weights(self.mu, 'actor')
@@ -324,7 +324,7 @@ class Critic(nn.Module):
         self.Inputspace = self.Inputspace = Inputspace(vision_range)
         # Value
         # self.pre_value = nn.Linear(in_features=256, out_features=128)
-        self.value = nn.Linear(in_features=64, out_features=1)
+        self.value = nn.Linear(in_features=256, out_features=1)
         initialize_output_weights(self.value, 'critic')
         # initialize_output_weights(self.pre_value, 'critic')
 

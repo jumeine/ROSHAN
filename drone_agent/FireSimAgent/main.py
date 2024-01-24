@@ -93,7 +93,7 @@ if __name__ == '__main__':
     memory = Memory()
     logger = Logger(log_dir='./logs', log_interval=1)
     agent = Agent('ppo', logger)
-    train = True
+    train = False
     if not train:
         agent.algorithm.load_model('best.pth')
     logger.set_logging(True)
@@ -114,7 +114,7 @@ if __name__ == '__main__':
                 actions, action_logprobs = agent.act(obs, t)
                 drone_actions = []
                 for activation in actions:
-                    drone_actions.append(firesim.DroneAction(activation[0], activation[1], np.round(activation[2])))
+                    drone_actions.append(firesim.DroneAction(activation[0], activation[1], int(np.round(activation[2]))))
                 next_observations, rewards, terminals, _ = engine.Step(drone_actions)
                 next_obs = restructure_data(next_observations)
                 memory.add(obs, actions, action_logprobs, rewards, next_obs, terminals)

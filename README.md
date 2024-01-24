@@ -4,6 +4,10 @@ ROSHAN (Rescue Oriented Simulation: Handling and Navigating Fires), is a wildfir
 
 You can read everything about the development [here](paper.pdf).
 
+<div align="center">
+  <video src="agent.mp4" width="400" />
+</div>
+
 # Installation
 ## Dependencies
 

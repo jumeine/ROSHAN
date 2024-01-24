@@ -18,6 +18,11 @@ https://github.com/aiekick/ImGuiFileDialog
 ###### JSON
 https://github.com/nlohmann/json
 
+###### Pybind11
+`sudo apt install libpython3.9-dev`
+
+https://github.com/pybind/pybind11
+
 #### NodeJS
 
 `cd openstreetmap`
@@ -45,16 +50,13 @@ Install SDL2 according to:
 https://github.com/libsdl-org/SDL/releases/tag/release-2.26.5
 https://github.com/libsdl-org/SDL_image/releases/tag/release-2.6.3
 
-#### pybind11
-
-`sudo apt install libpython3.9-dev`
-
-# Usage
-
-##### Conda install
+##### Anaconda & PyTorch
 
 `conda create --name roshan python=3.9 libffi==3.3`
 `conda activate roshan`
+`pip install torch torchvision`
+`conda install tensorboard`
+`conda install packaging`
 
 #### Compile
 
@@ -63,6 +65,8 @@ https://github.com/libsdl-org/SDL_image/releases/tag/release-2.6.3
 `mkdir build && cd build`
 
 `cmake .. && make -j&(nproc)`
+
+# Usage
 
 ## Just the ROSHAN Simulation
 
@@ -74,8 +78,3 @@ https://github.com/libsdl-org/SDL_image/releases/tag/release-2.6.3
 
 `cd drone_agent/FireSimAgent`
 `python main.py`
-
-
-
-
-

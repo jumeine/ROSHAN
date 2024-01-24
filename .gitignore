@@ -42,6 +42,7 @@ build
 # Dependencies
 externals/imgui
 externals/ImGuiFileDialog
+externals/*
 nodejs
 
 # Server Junk

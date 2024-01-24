@@ -625,7 +625,9 @@ void FireModel::Config() {
         if (open_file_dialog_) {
             std::string filePathName;
             // open Dialog Simple
-            ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".tif", ".");
+            IGFD::FileDialogConfig config;
+	        config.path = "../maps";
+            ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".tif", config);
 
             // display
             if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey")) {
@@ -794,7 +796,7 @@ void FireModel::ShowPopups() {
         if (ImGui::Begin(popupId, nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar)) {
             ImGui::TextColored(ImVec4(0.5f, 0.5f, 1.0f, 1.0f), "Cell %d %d", it->first, it->second);
             ImGui::SameLine();
-            float windowWidth = ImGui::GetWindowContentRegionWidth();
+            float windowWidth = ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x;
             float buttonWidth = ImGui::CalcTextSize("X").x + ImGui::GetStyle().FramePadding.x;
             ImGui::SetCursorPosX(windowWidth - buttonWidth);
             if (ImGui::Button("X")) {

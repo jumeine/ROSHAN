@@ -53,9 +53,13 @@ https://github.com/libsdl-org/SDL_image/releases/tag/release-2.6.3
 ##### Anaconda & PyTorch
 
 `conda create --name roshan python=3.9 libffi==3.3`
+
 `conda activate roshan`
+
 `pip install torch torchvision`
+
 `conda install tensorboard`
+
 `conda install packaging`
 
 #### Compile
@@ -77,4 +81,5 @@ https://github.com/libsdl-org/SDL_image/releases/tag/release-2.6.3
 ## ROSHAN + Reinforcement Learning
 
 `cd drone_agent/FireSimAgent`
+
 `python main.py`
